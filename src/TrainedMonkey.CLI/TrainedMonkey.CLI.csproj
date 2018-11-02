@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\TrainedMonkey.CSharpGen\TrainedMonkey.CSharpGen.csproj" />
+    <ProjectReference Include="..\TrainedMonkey.GraphqlParser\TrainedMonkey.GraphqlParser.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+  </PropertyGroup>
+
+</Project>
