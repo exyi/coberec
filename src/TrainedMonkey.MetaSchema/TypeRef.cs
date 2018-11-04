@@ -20,6 +20,7 @@ namespace TrainedMonkey.MetaSchema
                 TypeName = typeName;
             }
             public string TypeName { get; }
+            public override FormatResult Format() => TypeName;
         }
         public class NullableTypeCase: TypeRef
         {
@@ -30,6 +31,7 @@ namespace TrainedMonkey.MetaSchema
             }
 
             public TypeRef Type { get; }
+            public override FormatResult Format() => FormatResult.Concat(Type.Format(), "!");
         }
         public class ListTypeCase: TypeRef
         {
@@ -40,6 +42,11 @@ namespace TrainedMonkey.MetaSchema
             }
 
             public TypeRef Type { get; }
+
+            public override FormatResult Format() => FormatResult.Concat("[", Type.Format(), "]");
         }
+
+        public abstract FormatResult Format();
+        public override string ToString() => Format().ToString();
     }
 }

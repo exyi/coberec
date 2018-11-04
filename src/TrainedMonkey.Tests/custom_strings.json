@@ -23,5 +23,12 @@
     "Debug",
     "DEBUG",
     "_CorDllMain",
-    "System"
+    "System",
+    "implements",
+    "interface",
+    "type",
+    "enum",
+    "schema",
+    "ID",
+    "String"
 ]

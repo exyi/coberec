@@ -17,5 +17,11 @@ namespace TrainedMonkey.MetaSchema
         public string Name { get; }
         public ImmutableArray<Directive> Directives { get; }
         public TypeDefCore Core { get; }
+
+        FormatResult FormatDirectives() => FormatResult.Concat(Directives.Select(d => FormatResult.Concat(d.Format(), " ")));
+        string Keyword() => Core.Match(_ => "scalar", _ => "union", _ => "interface", _ => "type");
+
+        public FormatResult Format() => FormatResult.Concat(Keyword(), " ", Name, " ", Core.Format(FormatDirectives()));
+        public override string ToString() => Format().ToString();
     }
 }

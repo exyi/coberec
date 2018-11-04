@@ -18,18 +18,22 @@ namespace TrainedMonkey.MetaSchema
         {
             public PrimitiveCase() {}
             private protected override void Seal() {}
+            public override FormatResult Format(FormatResult directives) => directives;
         }
 
         public sealed class UnionCase: TypeDefCore
         {
             public UnionCase(IEnumerable<TypeRef> options)
             {
+                // TODO: must be actual type
+                // TODO: can't be empty
                 Options = options.ToImmutableArray();
             }
 
             public ImmutableArray<TypeRef> Options { get; }
 
             private protected override void Seal() {}
+            public override FormatResult Format(FormatResult directives) => FormatResult.Concat(directives, "= ", FormatResult.Join(" | ", Options.Select(f => f.Format())));
         }
 
         public sealed class InterfaceCase: TypeDefCore
@@ -42,6 +46,7 @@ namespace TrainedMonkey.MetaSchema
             public ImmutableArray<TypeField> Fields { get; }
 
             private protected override void Seal() {}
+            public override FormatResult Format(FormatResult directives) => FormatResult.Concat(directives, "{", FormatResult.Block(Fields.Select(f => FormatResult.Concat(f.Format(), ","))), "}");
         }
 
         public sealed class CompositeCase: TypeDefCore
@@ -49,12 +54,30 @@ namespace TrainedMonkey.MetaSchema
             public CompositeCase(IEnumerable<TypeField> fields, IEnumerable<TypeRef> implements)
             {
                 Fields = fields.ToImmutableArray();
+                // TODO: must be actual types
                 Implements = implements.ToImmutableArray();
             }
 
             public ImmutableArray<TypeField> Fields { get; }
             public ImmutableArray<TypeRef> Implements { get; }
             private protected override void Seal() {}
+            public override FormatResult Format(FormatResult directives) => FormatResult.Concat(
+                Implements.Length > 0 ? FormatResult.Concat(" implements ", FormatResult.Concat(Implements.Select(f => FormatResult.Concat(f.Format(), " "))))
+                                      : "",
+                directives, "{", FormatResult.Block(Fields.Select(f => FormatResult.Concat(f.Format(), ","))), "}");
         }
+
+        public T Match<T>(Func<PrimitiveCase, T> primitive,
+                          Func<UnionCase, T> union,
+                          Func<InterfaceCase, T> @interface,
+                          Func<CompositeCase, T> composite) =>
+            this is PrimitiveCase p ? primitive(p) :
+            this is UnionCase u ? union(u) :
+            this is InterfaceCase i ? @interface(i) :
+            this is CompositeCase c ? composite(c) :
+            throw new Exception("wtf");
+
+        public abstract FormatResult Format(FormatResult directives);
+        public override string ToString() => Format("").ToString();
     }
 }

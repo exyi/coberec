@@ -1,10 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using FsCheck;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using TrainedMonkey.MetaSchema;
 using IO = System.IO;
 
 namespace TrainedMonkey.Tests.TestGens
@@ -59,7 +63,10 @@ namespace TrainedMonkey.Tests.TestGens
         public static IEnumerable<string> Shrinker(string arg1, string regex)
         {
             var shrinkCandidates = Shrinker(arg1).Concat(new [] { arg1.Remove(arg1.Length-1), arg1.Substring(1) });
-            return shrinkCandidates.Where(s => Regex.IsMatch(s, regex));
+            return from c in shrinkCandidates
+                   let m = Regex.Match(c, regex)
+                   where m.Success
+                   select m.Value;
         }
     }
 
@@ -75,16 +82,139 @@ namespace TrainedMonkey.Tests.TestGens
         public string Name { get; }
         public override string ToString() => Name;
     }
-
-    public class GraphqlArb : Arbitrary<GraphqlName>
+    public sealed class GraphqlArgs
     {
-        public override Gen<GraphqlName> Generator => StringGenUtils.GenOrPickName.Select(n => new GraphqlName(n));
-        public override IEnumerable<GraphqlName> Shrinker(GraphqlName _arg1) =>
-            StringGenUtils.Shrinker(_arg1.Name, GraphqlName.NameRegex).Select(n => new GraphqlName(n));
-    }
+        public const string NameRegex = "[A-Za-z][A-Za-z0-9_]*";
+        public GraphqlArgs(JObject obj)
+        {
+            // Debug.Assert(Regex.IsMatch(name, "^" + NameRegex + "$"));
+            Obj = obj ?? throw new ArgumentNullException(nameof(obj));
+        }
 
+        public JObject Obj { get; }
+        public override string ToString() => Obj.ToString();
+    }
     public static class MyArbs
     {
-        public static Arbitrary<GraphqlName> GraphqlName => new GraphqlArb();
+        private static ConditionalWeakTable<object, object> convertBackTable = new ConditionalWeakTable<object, object>();
+        private static Arbitrary<To> MapArb<To, From>(Arbitrary<From> arb, Func<From, To> func)
+            where To : class =>
+            Arb.Convert<From, To>(
+                FsFunc.Create<From, To>(a => {
+                    var r = func(a);
+                    convertBackTable.GetValue(r, _ => a);
+                    return r;
+                }),
+                FsFunc.Create<To, From>(b => convertBackTable.TryGetValue(b, out var result)
+                                   ? (From)result
+                                   : throw new Exception()),
+                arb
+            );
+
+        private static Arbitrary<T> FilterArb<T>(Arbitrary<T> arb, Func<T, bool> predicate) =>
+            Arb.From(arb.Generator.Where(predicate), arb.Shrinker);
+
+        private static Arbitrary<To> CastArb<To, From>(Arbitrary<From> arb) =>
+            Arb.Convert(FsFunc.Create<From, To>(x => (To)(object)x),
+                        FsFunc.Create<To, From>(x => (From)(object)x),
+                        arb);
+
+        static ConditionalWeakTable<object[], ConditionalWeakTable<object, StrongBox<int>>> arbAddressBack = new ConditionalWeakTable<object[], ConditionalWeakTable<object, StrongBox<int>>>();
+        private static Arbitrary<T> OneOf<T>(Arbitrary<T>[] arb)
+        {
+            var addrBack = arbAddressBack.GetOrCreateValue(arb);
+            return Arb.From<T>(
+                Gen.OneOf<T>(arb.Select((a, index) => a.Generator.Select(g => { addrBack.GetValue(g, _ => new StrongBox<int>(index)); return g; }))),
+                a => addrBack.TryGetValue(a, out var result) ? arb[result.Value].Shrinker(a).Select(g => { addrBack.GetValue(g, _ => result); return g; })
+                                                             : throw new Exception("wtf")
+            );
+        }
+
+        private static Arbitrary<T> LazyArb<T>(Lazy<Arbitrary<T>> arbitrary)
+        {
+            return Arb.From<T>(
+                Arb.Default.Bool().Generator.SelectMany(m => arbitrary.Value.Generator),
+                x => arbitrary.Value.Shrinker(x)
+            );
+        }
+
+        // private static Arbitrary<(A, B)> ZipArb<A, B>(Arbitrary<A> a, Arbitrary<B> b)
+        // {
+        //     return Arb.From(
+        //         Gen.Map2(FsFunc.Create((A valA, B valB) => (valA, valB)), a.Generator, b.Generator),
+        //         FsFunc.Create(((A, B) val) => {
+        //         })
+        //     );
+        // }
+
+        public static Arbitrary<GraphqlName> NameArb => Arb.From(
+            StringGenUtils.GenOrPickName.Select(n => new GraphqlName(n)),
+            arg => StringGenUtils.Shrinker(arg.Name, GraphqlName.NameRegex).Select(n => new GraphqlName(n))
+        );
+
+        private static Gen<TypeRef> ActualTypeRefGen = StringGenUtils.GenOrPickName.Select(TypeRef.ActualType);
+        public static Arbitrary<TypeRef> TypeRefArb =>
+            MapArb(
+                Arb.From<(GraphqlName typename, bool[] nesting)>(),
+                x => {
+                    var t = TypeRef.ActualType(x.typename.Name);
+                    foreach (var n in x.nesting)
+                    {
+                        if (n) t = TypeRef.ListType(t);
+                        else if (!(t is TypeRef.NullableTypeCase))
+                            t = TypeRef.NullableType(t);
+                    }
+                    return t;
+                }
+            );
+        private static Arbitrary<JToken> StringJValueArb => MapArb(Arb.From<string>(), s => (JToken)JValue.CreateString(s));
+        private static Arbitrary<JToken> IntJValueArb => MapArb(Arb.From<int>(), s => (JToken)new JValue(s));
+        private static Arbitrary<JToken> FloatJValueArb => MapArb(Arb.From<float>(), s => (JToken)new JValue(s));
+        private static Arbitrary<JToken> BoolJValueArb => MapArb(Arb.From<bool>(), s => (JToken)new JValue(s));
+        private static Arbitrary<JToken> NullJValueArb => MapArb(Arb.From<bool>(), s => (JToken)JValue.CreateNull());
+        public static Arbitrary<JArray> JArrayArb => MapArb(Arb.From<JToken[]>(), s => new JArray(s));
+        public static Arbitrary<JObject> JObjectArb => MapArb(
+            FilterArb(Arb.From<(GraphqlName name, JToken value)[]>(), xs => xs.Length == new HashSet<string>(xs.Select(x => x.name.Name)).Count),
+            xs => new JObject(xs.Select(x => new JProperty(x.name.Name, x.value))));
+
+        static Lazy<Arbitrary<JToken>> JTokenArb_lazy = new Lazy<Arbitrary<JToken>>(() =>
+                OneOf(new Arbitrary<JToken>[] {
+                    StringJValueArb,
+                    IntJValueArb,
+                    FloatJValueArb,
+                    BoolJValueArb,
+                    NullJValueArb,
+                    CastArb<JToken, JArray>(JArrayArb),
+                    CastArb<JToken, JObject>(JObjectArb),
+                })
+            );
+        public static Arbitrary<JToken> JTokenArb => LazyArb(JTokenArb_lazy);
+        public static Arbitrary<Directive> DirectiveArb => MapArb(Arb.From<(GraphqlName name, JObject args)>(), t => new Directive(t.name.Name, t.args));
+        public static Arbitrary<TypeField> TypeFieldArb =>
+            MapArb(
+                Arb.From<(GraphqlName name, TypeRef type, Directive[] directives)>(),
+                t => new TypeField(t.name.Name, t.type, null, t.directives)
+            );
+
+
+        public static Arbitrary<TypeDefCore> TypeDef =>
+            OneOf(new [] {
+                MapArb(
+                    Arb.From<Microsoft.FSharp.Core.Unit>(),
+                    _ => TypeDefCore.Primitive()),
+                MapArb(
+                    Arb.From<TypeField[]>(),
+                    x => TypeDefCore.Interface(x)),
+                MapArb(
+                    Arb.From<(TypeField[] fields, GraphqlName[] implements)>(),
+                    x => TypeDefCore.Composite(x.fields, x.implements.Select(n => TypeRef.ActualType(n.Name)))),
+                MapArb(
+                    Arb.From<NonEmptyArray<GraphqlName>>(),
+                    x => TypeDefCore.Union(x.Get.Select(n => TypeRef.ActualType(n.Name)))),
+            });
+        public static Arbitrary<TypeDef> TypeDefArb =>
+            MapArb(
+                Arb.From<(GraphqlName name, Directive[] dirs, TypeDefCore core)>(),
+                x => new TypeDef(x.name.Name, x.dirs, x.core));
     }
 }

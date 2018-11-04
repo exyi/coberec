@@ -15,7 +15,10 @@ namespace TrainedMonkey.GraphqlLoader
         public static DataSchema LoadFromGraphQL(IEnumerable<(string name, Lazy<string> source)> documents)
         {
             var rrs =
-                documents.AsParallel()
+                documents
+#if !DEBUG
+                .AsParallel()
+#endif
                 .Select(a => ParseDocument(a.name, a.source.Value))
                 .SelectMany(doc => doc.Definitions)
                 .Select(TransformDeclaration);

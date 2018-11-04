@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using FsCheck;
 using FsCheck.Xunit;
@@ -7,6 +8,7 @@ using Newtonsoft.Json;
 using TrainedMonkey.MetaSchema;
 using TrainedMonkey.Tests.TestGens;
 using Xunit;
+using Seq=Microsoft.FSharp.Collections.SeqModule;
 
 namespace TrainedMonkey.Tests.GraphqlLoader
 {
@@ -71,27 +73,36 @@ namespace TrainedMonkey.Tests.GraphqlLoader
         }
 
         [Property]
-        public void ParseType(GraphqlName name, (GraphqlName, GraphqlName, GraphqlName[])[] fields)
+        public void ParseType(GraphqlName name, (GraphqlName, GraphqlName, GraphqlName[])[] fields, GraphqlName implements, GraphqlName directive)
         {
             string makeField(string n, string t, IEnumerable<string> dirs) =>
                 $"{n}:{t} " + string.Join(" ", dirs.Select(d => $"@{d}"));
 
             var fff = fields.Select(f => makeField(f.Item1.Name, f.Item2.Name, f.Item3.Select(n => n.Name)));
-            var type = $"type {name} implements Ifc123 @directive123 {{ {string.Join(",", fff)} }}";
+            var type = $"type {name} implements {implements} @{directive} {{ {string.Join(",", fff)} }}";
 
             var typeDef = Helpers.ParseTypeDef(type);
+            // Console.WriteLine(typeDef.ToString());
             Assert.Equal(name.Name, typeDef.Name);
-            Assert.Equal(new [] { ("directive123", "{}") }, typeDef.Directives.Select(d => (d.Name, d.Args.ToString(Formatting.None))));
+            Assert.Equal(new [] { (directive.Name, "{}") }, typeDef.Directives.Select(d => (d.Name, d.Args.ToString(Formatting.None))));
             // Assert.True(fields.Length < 1);
             var core = typeDef.Core as TypeDefCore.CompositeCase;
             Assert.NotNull(core);
-            Assert.Equal("Ifc123", (core.Implements.Single() as TypeRef.ActualTypeCase).TypeName);
-            foreach (var ((ename, etype, edirs), tree) in Microsoft.FSharp.Collections.SeqModule.Zip(fields, core.Fields))
+            Assert.Equal(implements.Name, (core.Implements.Single() as TypeRef.ActualTypeCase).TypeName);
+            foreach (var ((ename, etype, edirs), tree) in Seq.Zip(fields, core.Fields))
             {
                 Assert.Equal(etype.Name, ((TypeRef.ActualTypeCase)tree.Type).TypeName);
                 Assert.Equal(ename.Name, tree.Name);
                 Assert.Equal(edirs.Select(a => (a.Name, "{}")), tree.Directives.Select(d => (d.Name, d.Args.ToString(Formatting.None))));
             }
+        }
+
+        [Property]
+        public void ParseArgumentValue(Newtonsoft.Json.Linq.JToken json)
+        {
+            // Console.WriteLine(json.ToString(Formatting.Indented));
+            var json2 = Helpers.ParseValueToJson(Directive.FormatArg(json));
+            Assert.Equal(json.ToString(Formatting.None), json2.ToString(Formatting.None));
         }
     }
 }
