@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../deps/parser/src/GraphQLParser/GraphQLParser.csproj" />
+    <ProjectReference Include="../TrainedMonkey.MetaSchema/TrainedMonkey.MetaSchema.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+</Project>

@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\TrainedMonkey.CSharpGen\TrainedMonkey.CSharpGen.csproj" />
-    <ProjectReference Include="..\TrainedMonkey.GraphqlParser\TrainedMonkey.GraphqlParser.csproj" />
+    <ProjectReference Include="../TrainedMonkey.CSharpGen/TrainedMonkey.CSharpGen.csproj" />
+    <ProjectReference Include="../TrainedMonkey.GraphqlLoader/TrainedMonkey.GraphqlLoader.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
