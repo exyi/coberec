@@ -58,10 +58,13 @@ namespace TrainedMonkey.Tests.TestGens
         );
         public static Gen<string> GenOrPickName =>
             Gen.OneOf(StringGenUtils.GenerateName, Gen.Elements(NastyGraphqlNames.Value));
+        public static Gen<string> GenOrPickString =>
+            Gen.OneOf(Arb.Default.String().Generator.Where(s => s!=null), Gen.Elements(StringConstants.AllNaughtyStrings));
         public static IEnumerable<string> Shrinker(string _arg1)
             => Arb.Default.String().Shrinker(_arg1);
         public static IEnumerable<string> Shrinker(string arg1, string regex)
         {
+            if (string.IsNullOrEmpty(arg1)) return new string[0];
             var shrinkCandidates = Shrinker(arg1).Concat(new [] { arg1.Remove(arg1.Length-1), arg1.Substring(1) });
             return from c in shrinkCandidates
                    let m = Regex.Match(c, regex)
@@ -82,6 +85,18 @@ namespace TrainedMonkey.Tests.TestGens
         public string Name { get; }
         public override string ToString() => Name;
     }
+
+    public sealed class AnyString
+    {
+        public AnyString(string val)
+        {
+            Val = val ?? throw new ArgumentNullException(nameof(val));
+        }
+
+        public string Val { get; }
+        public override string ToString() => Val;
+    }
+
     public sealed class GraphqlArgs
     {
         public const string NameRegex = "[A-Za-z][A-Za-z0-9_]*";
@@ -150,6 +165,11 @@ namespace TrainedMonkey.Tests.TestGens
         public static Arbitrary<GraphqlName> NameArb => Arb.From(
             StringGenUtils.GenOrPickName.Select(n => new GraphqlName(n)),
             arg => StringGenUtils.Shrinker(arg.Name, GraphqlName.NameRegex).Select(n => new GraphqlName(n))
+        );
+
+        public static Arbitrary<AnyString> AnyStringArb => Arb.From(
+            StringGenUtils.GenOrPickString.Select(n => new AnyString(n)),
+            arg => StringGenUtils.Shrinker(arg.Val, GraphqlName.NameRegex).Select(n => new AnyString(n))
         );
 
         private static Gen<TypeRef> ActualTypeRefGen = StringGenUtils.GenOrPickName.Select(TypeRef.ActualType);

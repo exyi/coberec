@@ -5,8 +5,13 @@
     <ProjectReference Include="..\..\deps\ILSpy\ICSharpCode.Decompiler\ICSharpCode.Decompiler.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
 </Project>
