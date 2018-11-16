@@ -994,7 +994,6 @@ namespace TrainedMonkey.CSharpGen.Emit
 
         protected EntityDeclaration DoDecompile(IMethod method, DecompileRun decompileRun, ITypeResolveContext decompilationContext)
         {
-            Console.WriteLine($"Decompiling {method.ReflectionName}");
             Debug.Assert(decompilationContext.CurrentMember == method);
             var typeSystemAstBuilder = CreateAstBuilder(decompilationContext);
             var methodDecl = typeSystemAstBuilder.ConvertEntity(method);

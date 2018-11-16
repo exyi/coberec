@@ -14,6 +14,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using FsCheck.Xunit;
 using System.Reflection;
 using FsCheck;
+using System.Linq;
 
 namespace TrainedMonkey.Tests.CSharp
 {
@@ -36,6 +37,8 @@ namespace TrainedMonkey.Tests.CSharp
                 MetadataReference.CreateFromFile(Assembly.Load(new AssemblyName("netstandard")).Location),
                 MetadataReference.CreateFromFile(Assembly.Load(new AssemblyName("System.Runtime")).Location),
             };
+
+            references = references.Concat(CSharpBackend.GetReferencedPaths().Select(p => MetadataReference.CreateFromFile(p))).ToArray();
 
             var compilation = CSharpCompilation.Create(
                 assemblyName,
@@ -84,6 +87,7 @@ namespace TrainedMonkey.Tests.CSharp
 
             var result = b.Build(schema, defaultSettings);
             CheckItCompiles(result);
+            // Console.WriteLine(result);
         }
 
         [Fact]

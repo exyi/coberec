@@ -73,12 +73,16 @@ namespace TrainedMonkey.Tests.GraphqlLoader
         }
 
         [Property]
-        public void ParseType(GraphqlName name, (GraphqlName, GraphqlName, GraphqlName[])[] fields, GraphqlName implements, GraphqlName directive)
+        public void ParseType(GraphqlName name, (GraphqlName name, GraphqlName type, GraphqlName[] directives)[] fields, GraphqlName implements, GraphqlName directive)
         {
+            // filter out fields with colliding names
+            fields = fields.GroupBy(f => f.name.Name).Select(Enumerable.First).ToArray();
+
             string makeField(string n, string t, IEnumerable<string> dirs) =>
                 $"{n}:{t} " + string.Join(" ", dirs.Select(d => $"@{d}"));
 
-            var fff = fields.Select(f => makeField(f.Item1.Name, f.Item2.Name, f.Item3.Select(n => n.Name)));
+            var fff = fields
+                      .Select(f => makeField(f.name.Name, f.type.Name, f.directives.Select(n => n.Name)));
             var type = $"type {name} implements {implements} @{directive} {{ {string.Join(",", fff)} }}";
 
             var typeDef = Helpers.ParseTypeDef(type);

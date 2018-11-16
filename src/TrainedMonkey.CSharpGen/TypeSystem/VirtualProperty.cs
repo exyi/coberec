@@ -22,6 +22,9 @@ namespace TrainedMonkey.CSharpGen.TypeSystem
             if (setter != null && !getter.Parameters.Select(p => p.Type).SequenceEqual(parameters.Select(p => p.Type).Append(returnType)))
                 throw new Exception($"Setter has an unexpected signature.");
 
+            if (getter is VirtualMethod getterM) getterM.AccessorOwner = this;
+            if (setter is VirtualMethod setterM) setterM.AccessorOwner = this;
+
             this.Getter = getter;
             this.Setter = setter;
             this.IsIndexer = isIndexer;

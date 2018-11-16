@@ -15,7 +15,7 @@ namespace TrainedMonkey.CSharpGen.TypeSystem
 
     public class VirtualMethod : IMethod, IMethodWithDefinition, IHideableMember
     {
-        public VirtualMethod(ITypeDefinition declaringType, Accessibility accessibility, string name, IReadOnlyList<IParameter> parameters, IType returnType, bool isHidden = false)
+        public VirtualMethod(ITypeDefinition declaringType, Accessibility accessibility, string name, IReadOnlyList<IParameter> parameters, IType returnType, bool isOverride = false, bool isVirtual = false, bool isSealed = false, bool isAbstract = false, bool isStatic = false, bool isHidden = false)
         {
             this.DeclaringTypeDefinition = declaringType;
             this.ReturnType = returnType;
@@ -23,6 +23,11 @@ namespace TrainedMonkey.CSharpGen.TypeSystem
             this.Name = name;
             this.Accessibility = accessibility;
             this.IsHidden = isHidden;
+            this.IsOverride = isOverride;
+            this.IsVirtual = isVirtual;
+            this.IsSealed = isSealed;
+            this.IsAbstract = isAbstract;
+            this.IsStatic = isStatic;
         }
 
         public IReadOnlyList<ITypeParameter> TypeParameters => EmptyList<ITypeParameter>.Instance;
@@ -31,17 +36,17 @@ namespace TrainedMonkey.CSharpGen.TypeSystem
 
         public bool IsExtensionMethod => false;
 
-        public bool IsConstructor => false;
+        public bool IsConstructor => this.SymbolKind == SymbolKind.Constructor;
 
-        public bool IsDestructor => false;
+        public bool IsDestructor => this.Name == "Finalize";
 
-        public bool IsOperator => false;
+        public bool IsOperator => this.Name.StartsWith("op_");
 
         public bool HasBody => this.BodyFactory != null;
 
-        public bool IsAccessor => false;
+        public bool IsAccessor => AccessorOwner != null;
 
-        public IMember AccessorOwner => null;
+        public IMember AccessorOwner { get; set; }
 
         public IMethod ReducedFrom => null;
 
@@ -55,11 +60,11 @@ namespace TrainedMonkey.CSharpGen.TypeSystem
 
         public bool IsExplicitInterfaceImplementation => false;
 
-        public bool IsVirtual => false;
+        public bool IsVirtual { get; }
 
-        public bool IsOverride => false;
+        public bool IsOverride { get; }
 
-        public bool IsOverridable => false;
+        public bool IsOverridable => !this.IsSealed && (this.IsVirtual || this.IsOverride || this.IsAbstract);
 
         public TypeParameterSubstitution Substitution => TypeParameterSubstitution.Identity;
 
@@ -75,13 +80,15 @@ namespace TrainedMonkey.CSharpGen.TypeSystem
 
         public Accessibility Accessibility { get; }
 
-        public bool IsStatic => false;
+        public bool IsStatic { get; }
 
-        public bool IsAbstract => false;
+        public bool IsAbstract { get; }
 
-        public bool IsSealed => false;
+        public bool IsSealed { get; }
 
-        public SymbolKind SymbolKind => Name == ".ctor" || Name == ".cctor" ? SymbolKind.Constructor : SymbolKind.Method;
+        public SymbolKind SymbolKind => Name == ".ctor" || Name == ".cctor" ? SymbolKind.Constructor :
+                                        this.IsOperator ? SymbolKind.Operator : // TODO
+                                        SymbolKind.Method;
 
         public ICompilation Compilation => this.ParentModule.Compilation;
 

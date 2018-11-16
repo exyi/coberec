@@ -41,6 +41,8 @@ namespace TrainedMonkey.MetaSchema
             public InterfaceCase(IEnumerable<TypeField> fields)
             {
                 Fields = fields.ToImmutableArray();
+                if (Fields.GroupBy(f => f.Name).FirstOrDefault(g => g.Count() > 1) is var duplicateField && duplicateField != null)
+                    throw new ArgumentException($"Interface can not contain fields with colliding names: {string.Join(", ", duplicateField)}", nameof(fields));
             }
 
             public ImmutableArray<TypeField> Fields { get; }
@@ -56,6 +58,8 @@ namespace TrainedMonkey.MetaSchema
                 Fields = fields.ToImmutableArray();
                 // TODO: must be actual types
                 Implements = implements.ToImmutableArray();
+                if (Fields.GroupBy(f => f.Name).FirstOrDefault(g => g.Count() > 1) is var duplicateField && duplicateField != null)
+                    throw new ArgumentException($"Type can not contain fields with colliding names: {string.Join(", ", duplicateField)}", nameof(fields));
             }
 
             public ImmutableArray<TypeField> Fields { get; }

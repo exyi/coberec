@@ -117,6 +117,8 @@ namespace TrainedMonkey.CSharpGen
 
             type.Methods.Add(ctor);
 
+            type.ImplementEquals(type.GetProperties().ToArray());
+
             // var eqParams = new [] { new DefaultParameter(type, "b") };
             // var equals = new VirtualMethod(type, Accessibility.Public, "Equals", eqParams, cx.FindType<bool>());
             // equals.BodyFactory = () => {
@@ -198,19 +200,20 @@ namespace TrainedMonkey.CSharpGen
             return result;
         }
 
-        private static IEnumerable<PEFile> GetReferencedModules()
-        {
-            var someModules = from r in Enumerable.Concat(typeof(CSharpBackend).Assembly.GetReferencedAssemblies(), new[] {
-                                  typeof(string).Assembly.GetName(),
-                                  // new AssemblyName("netstandard")
-                              })
-                              let location = AssemblyLoadContext.Default.LoadFromAssemblyName(r).Location
-                              where !string.IsNullOrEmpty(location)
-                              let lUrl = new Uri(location)
-                              let fileName = lUrl.AbsolutePath
-                              select new PEFile(fileName);
-            return someModules;
-        }
+        public static IEnumerable<string> GetReferencedPaths() =>
+            from r in Enumerable.Concat(typeof(CSharpBackend).Assembly.GetReferencedAssemblies(), new[] {
+                typeof(string).Assembly.GetName(),
+                typeof(System.Collections.StructuralComparisons).Assembly.GetName(),
+                typeof(ValueTuple<int, int>).Assembly.GetName()
+                // new AssemblyName("netstandard")
+            })
+            let location = AssemblyLoadContext.Default.LoadFromAssemblyName(r).Location
+            where !string.IsNullOrEmpty(location)
+            let lUrl = new Uri(location)
+            select lUrl.AbsolutePath;
+
+        private static IEnumerable<PEFile> GetReferencedModules() =>
+            GetReferencedPaths().Select(a => new PEFile(a));
     }
 
     public sealed class EmitContext

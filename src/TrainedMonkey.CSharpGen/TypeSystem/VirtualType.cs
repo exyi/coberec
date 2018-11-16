@@ -42,7 +42,8 @@ namespace TrainedMonkey.CSharpGen.TypeSystem
 
         public IReadOnlyList<IType> TypeArguments => EmptyList<IType>.Instance;
 
-        public IEnumerable<IType> DirectBaseTypes => EmptyList<IType>.Instance;
+        public List<IType> ImplementedInterfaces = new List<IType>();
+        public IEnumerable<IType> DirectBaseTypes => ImplementedInterfaces;
 
         public string FullName => this.FullTypeName.ReflectionName;
 
@@ -101,25 +102,19 @@ namespace TrainedMonkey.CSharpGen.TypeSystem
             return visitor.VisitTypeDefinition(this);
         }
 
-        public bool Equals(IType other)
-        {
-            return this.ReflectionName == other.ReflectionName;
-        }
+        public bool Equals(IType other) => this.ReflectionName == other.ReflectionName;
 
-        public IEnumerable<IMethod> GetAccessors(Predicate<IMethod> filter = null, GetMemberOptions options = GetMemberOptions.None)
-        {
-            yield break;
-        }
+        public override bool Equals(object other) => other is IType t && this.Equals(t);
+        public override int GetHashCode() => this.ReflectionName.GetHashCode();
+
+        public IEnumerable<IMethod> GetAccessors(Predicate<IMethod> filter = null, GetMemberOptions options = GetMemberOptions.None) => GetMethods(filter, options).Where(m => m.IsAccessor);
 
         public IEnumerable<IAttribute> GetAttributes()
         {
             yield break;
         }
 
-        public IEnumerable<IMethod> GetConstructors(Predicate<IMethod> filter = null, GetMemberOptions options = GetMemberOptions.IgnoreInheritedMembers)
-        {
-            yield break;
-        }
+        public IEnumerable<IMethod> GetConstructors(Predicate<IMethod> filter = null, GetMemberOptions options = GetMemberOptions.IgnoreInheritedMembers) => GetMethods(filter, options).Where(m => m.IsConstructor);
 
         public ITypeDefinition GetDefinition() => this;
 
@@ -136,7 +131,7 @@ namespace TrainedMonkey.CSharpGen.TypeSystem
             this.Methods.Where(a => filter?.Invoke(a) ?? true);
 
         public IEnumerable<IMethod> GetMethods(IReadOnlyList<IType> typeArguments, Predicate<IMethod> filter = null, GetMemberOptions options = GetMemberOptions.None) =>
-            typeArguments.Count == 0 ? GetMethods(filter, options) : throw new NotImplementedException();
+            typeArguments.Count == 0 ? GetMethods(filter, options) : Enumerable.Empty<IMethod>(); // TODO generic methods
             //this.Methods.Where(m => filter?.Invoke(m) != false);
 
         public IEnumerable<IType> GetNestedTypes(Predicate<ITypeDefinition> filter = null, GetMemberOptions options = GetMemberOptions.None) =>

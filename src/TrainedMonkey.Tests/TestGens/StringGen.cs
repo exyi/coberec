@@ -224,10 +224,10 @@ namespace TrainedMonkey.Tests.TestGens
                     _ => TypeDefCore.Primitive()),
                 MapArb(
                     Arb.From<TypeField[]>(),
-                    x => TypeDefCore.Interface(x)),
+                    x => TypeDefCore.Interface(x.GroupBy(f => f.Name).Select(Enumerable.First))),
                 MapArb(
                     Arb.From<(TypeField[] fields, GraphqlName[] implements)>(),
-                    x => TypeDefCore.Composite(x.fields, x.implements.Select(n => TypeRef.ActualType(n.Name)))),
+                    x => TypeDefCore.Composite(x.fields.GroupBy(f => f.Name).Select(Enumerable.First), x.implements.Select(n => TypeRef.ActualType(n.Name)))),
                 MapArb(
                     Arb.From<NonEmptyArray<GraphqlName>>(),
                     x => TypeDefCore.Union(x.Get.Select(n => TypeRef.ActualType(n.Name)))),
