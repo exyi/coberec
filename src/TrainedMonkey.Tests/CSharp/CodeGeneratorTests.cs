@@ -87,7 +87,7 @@ namespace TrainedMonkey.Tests.CSharp
 
             var result = b.Build(schema, defaultSettings);
             CheckItCompiles(result);
-            // Console.WriteLine(result);
+            Console.WriteLine(result);
         }
 
         [Fact]

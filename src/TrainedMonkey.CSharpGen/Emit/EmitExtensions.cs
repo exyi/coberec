@@ -18,7 +18,7 @@ namespace TrainedMonkey.CSharpGen.Emit
         public const string PropertyGetter = "get_{0}";
         public const string PropertySetter = "set_{0}";
 
-        public static (IProperty, IField) AddAutoProperty(this VirtualType declaringType, string name, IType propertyType, Accessibility accessibility = Accessibility.Public, bool isReadOnly = true)
+        public static (IProperty prop, IField field) AddAutoProperty(this VirtualType declaringType, string name, IType propertyType, Accessibility accessibility = Accessibility.Public, bool isReadOnly = true)
         {
             name = SymbolNamer.NameMember(declaringType, name, lowerCase: accessibility == Accessibility.Private);
 
@@ -45,13 +45,36 @@ namespace TrainedMonkey.CSharpGen.Emit
             return (prop, field);
         }
 
+        public static IMember AddCreateConstructor(this VirtualType type, EmitContext cx, (string name, IField field)[] fields)
+        {
+            var parameters = SymbolNamer.NameParameters(fields.Select(f => (IParameter)new DefaultParameter(f.field.Type, f.name))); // TODO: the name is not sanitized, I just want to see the tests finding this bug ;)
+            var ctor = new VirtualMethod(type, Accessibility.Public, ".ctor", parameters, cx.FindType(typeof(void)));
+            var objectCtor = cx.FindMethod(() => new object());
+            ctor.BodyFactory = () =>
+            {
+                var thisParam = new IL.ILVariable(IL.VariableKind.Parameter, type, -1);
+                return EmitExtensions.CreateOneBlockFunction(ctor,
+                    fields.Zip(parameters, (f, p) =>
+                    {
+                        var index = Array.IndexOf(parameters, p);
+                        return (IL.ILInstruction)new IL.StObj(new IL.LdFlda(new IL.LdLoc(thisParam), f.field), new IL.LdLoc(new IL.ILVariable(IL.VariableKind.Parameter, f.field.ReturnType, index) { Name = p.Name }), f.field.ReturnType);
+                    })
+                    .Prepend(new IL.Call(objectCtor) { Arguments = { new IL.LdLoc(thisParam) } })
+                    .ToArray()
+                );
+            };
+
+            type.Methods.Add(ctor);
+            return ctor;
+        }
+
         static IL.ILInstruction InvokeInterfaceMethod(IMethod method, IType targetType, IL.ILInstruction @this, params IL.ILInstruction[] args)
         {
             var explicitImplementation = targetType.GetMethods().FirstOrDefault(m => m.ExplicitlyImplementedInterfaceMembers.Contains(method));
             // var implicitImplementation = propertyType.GetMethods().FirstOrDefault(m => m.
             var usedMethod = explicitImplementation?.Accessibility == Accessibility.Public ? explicitImplementation : method;
             // TODO: call the method directly if there is some
-            var call = new IL.Call(usedMethod);
+            var call = new IL.CallVirt(usedMethod);
             if ((bool)targetType.IsReferenceType)
                 call.Arguments.Add(@this);
             else
@@ -77,7 +100,7 @@ namespace TrainedMonkey.CSharpGen.Emit
             else if (seqInterface != null && (enumerableInterface != null || eqInterface == null))
             {
                 return InvokeInterfaceMethod(propertyType.GetDefinition().Compilation.FindType(typeof(System.Collections.IEqualityComparer)).GetMethods(options: GetMemberOptions.IgnoreInheritedMembers).Single(m => m.Name == "Equals"), seqInterface,
-                    new IL.Call(propertyType.GetDefinition().Compilation.FindType(typeof(System.Collections.StructuralComparisons)).GetProperties().Single(p => p.Name == "StructuralEqualityComparer").Getter),
+                    new IL.CallVirt(propertyType.GetDefinition().Compilation.FindType(typeof(System.Collections.StructuralComparisons)).GetProperties().Single(p => p.Name == "StructuralEqualityComparer").Getter),
                     new IL.Box(@this, propertyType),
                     new IL.Box(other, propertyType)
                 );
@@ -110,7 +133,7 @@ namespace TrainedMonkey.CSharpGen.Emit
             if (seqInterface != null && (enumerableInterface != null || eqInterface == null))
             {
                 return InvokeInterfaceMethod(propertyType.GetDefinition().Compilation.FindType(typeof(System.Collections.IEqualityComparer)).GetMethods(options: GetMemberOptions.IgnoreInheritedMembers).Single(m => m.Name == "GetHashCode"), seqInterface,
-                    new IL.Call(propertyType.GetDefinition().Compilation.FindType(typeof(System.Collections.StructuralComparisons)).GetProperties().Single(p => p.Name == "StructuralEqualityComparer").Getter),
+                    new IL.CallVirt(propertyType.GetDefinition().Compilation.FindType(typeof(System.Collections.StructuralComparisons)).GetProperties().Single(p => p.Name == "StructuralEqualityComparer").Getter),
                     new IL.Box(prop, propertyType)
                 );
             }
@@ -183,12 +206,19 @@ namespace TrainedMonkey.CSharpGen.Emit
 
         static IL.ILInstruction CombineHashCodes(ICompilation compilation, int? seed, params IL.ILInstruction[] nodes)
         {
+            IL.ILInstruction invokeGetHashCode(IL.ILInstruction n)
+            {
+                if (n.ResultType == IL.StackType.I4) // integers return themselves anyway...
+                    return n;
+                else
+                    return new IL.CallVirt(compilation.FindType(typeof(object)).GetMethods().Single(m => m.Name == "GetHashCode")) { Arguments = { n } };
+            }
             if (nodes.Length == 0)
                 return new IL.LdcI4(seed ?? 42);
-            // else if (nodes.Length == 1 && seed == null)
-            //     return nodes[0];
-            // else if (nodes.Length == 1)
-            //     return new IL.BinaryNumericInstruction(IL.BinaryNumericOperator.Add, nodes[0], new IL.LdcI4((int)seed), false, Sign.Signed);
+            else if (nodes.Length == 1 && seed == null)
+                return invokeGetHashCode(nodes[0]);
+            else if (nodes.Length == 1)
+                return invokeGetHashCode(new IL.BinaryNumericInstruction(IL.BinaryNumericOperator.Add, nodes[0], new IL.LdcI4((int)seed), false, Sign.Signed));
             else
             {
                 if (seed != null)
@@ -201,7 +231,7 @@ namespace TrainedMonkey.CSharpGen.Emit
             }
         }
 
-        public static IMethod ImplementEquals(this VirtualType type, params IMember[] properties) =>
+        public static IMethod ImplementEquality(this VirtualType type, params IMember[] properties) =>
             ImplementEquals(type, properties.Select(p =>
                 (p.ReturnType,
                  p is IProperty property ? target => new IL.Call(property.Getter) { Arguments = { target } } :

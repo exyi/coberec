@@ -87,54 +87,40 @@ namespace TrainedMonkey.CSharpGen
         {
             var type = cx.GeneratedTypes[(cx.Settings.Namespace, def.Name)];
 
-            var composite = def.Core as TypeDefCore.CompositeCase;
-            if (composite == null) return;
+            switch(def.Core) {
+                case TypeDefCore.CompositeCase composite:
+                    GenerateComposite(cx, type, composite);
+                    break;
+                case TypeDefCore.PrimitiveCase primitive:
+                    GenerateScalar(cx, type, primitive);
+                    break;
+                default:
+                    break;
+            }
+        }
 
+        private void GenerateScalar(EmitContext cx, VirtualType type, TypeDefCore.PrimitiveCase primitive)
+        {
+            var valueProperty = type.AddAutoProperty("Value", cx.FindType<string>());
+
+            type.AddCreateConstructor(cx, new [] { ("value", valueProperty.field) });
+            type.ImplementEquality(new [] { valueProperty.prop });
+        }
+
+        private void GenerateComposite(EmitContext cx, VirtualType type, TypeDefCore.CompositeCase composite)
+        {
             var props = new Dictionary<string, (IProperty prop, IField field)>();
 
-            foreach(var f in composite.Fields)
+            foreach (var f in composite.Fields)
             {
                 var propType = FindType(cx, f.Type);
                 var (prop, field) = type.AddAutoProperty(f.Name, propType);
                 props.Add(f.Name, (prop, field));
             }
 
-            var parameters = SymbolNamer.NameParameters(composite.Fields.Select(f => (IParameter)new DefaultParameter(props[f.Name].prop.ReturnType, f.Name))); // TODO: the name is not sanitized, I just want to see the tests finding this bug ;)
-            var ctor = new VirtualMethod(type, Accessibility.Public, ".ctor", parameters, cx.FindType(typeof(void)));
-            var objectCtor = cx.FindMethod(() => new object());
-            ctor.BodyFactory = () => {
-                var thisParam = new IL.ILVariable(VariableKind.Parameter, type, -1);
-                return EmitExtensions.CreateOneBlockFunction(ctor,
-                    composite.Fields.Zip(parameters, (TypeField field, IParameter p) => {
-                        var (prop, f) = props[field.Name];
-                        var index = composite.Fields.IndexOf(field);
-                        return (ILInstruction)new IL.StObj(new IL.LdFlda(new IL.LdLoc(thisParam), f), new IL.LdLoc(new IL.ILVariable(VariableKind.Parameter, prop.ReturnType, index) { Name = p.Name }), prop.ReturnType);
-                    })
-                    .Prepend(new IL.Call(objectCtor) { Arguments = { new IL.LdLoc(thisParam) } })
-                    .ToArray()
-                );
-            };
+            type.AddCreateConstructor(cx, props.Select(k => (k.Key, k.Value.field)).ToArray());
 
-            type.Methods.Add(ctor);
-
-            type.ImplementEquals(type.GetProperties().ToArray());
-
-            // var eqParams = new [] { new DefaultParameter(type, "b") };
-            // var equals = new VirtualMethod(type, Accessibility.Public, "Equals", eqParams, cx.FindType<bool>());
-            // equals.BodyFactory = () => {
-            //     var thisParam = new IL.ILVariable(VariableKind.Parameter, type, -1);
-            //     var other = new IL.ILVariable(VariableKind.Parameter, type, 0);
-            //     return EmitExtensions.CreateExpressionFunction(equals,
-            //         new IL.IfInstruction(new IL.LdcI4(1),
-            //             new IL.IfInstruction(new IL.LdcI4(1),
-            //                 new IL.IfInstruction(new IL.LdcI4(1),
-            //                     new IL.LdcI4(1),
-            //                     new IL.LdcI4(0)),
-            //                 new IL.LdcI4(0)),
-            //             new IL.LdcI4(0)));
-            // };
-
-            // type.Methods.Add(equals);
+            type.ImplementEquality(type.GetProperties().ToArray());
         }
 
         public string Build(DataSchema schema, EmitSettings settings)
@@ -142,7 +128,7 @@ namespace TrainedMonkey.CSharpGen
             var cx = new EmitContext(
                 new HackedSimpleCompilation(
                     new VirtualModuleReference(true, "NewEpicModule"),
-                    GetReferencedModules()
+                    ReferencedModules.Value
                 ),
                 settings
             );
@@ -212,8 +198,7 @@ namespace TrainedMonkey.CSharpGen
             let lUrl = new Uri(location)
             select lUrl.AbsolutePath;
 
-        private static IEnumerable<PEFile> GetReferencedModules() =>
-            GetReferencedPaths().Select(a => new PEFile(a));
+        private static Lazy<PEFile[]> ReferencedModules = new Lazy<PEFile[]>(() => GetReferencedPaths().Select(a => new PEFile(a)).ToArray());
     }
 
     public sealed class EmitContext

@@ -167,6 +167,11 @@ namespace TrainedMonkey.CSharpGen.Emit
 			foreach(var v in body.Variables) {
 				CollectNamespacesForTypeReference(v.Type, namespaces);
 			}
+			foreach(var node in body.Descendants) {
+				if (node is LdsFlda staticField) CollectNamespacesForMemberReference(staticField.Field, namespaces);
+				else if (node is CallInstruction call && call.Method.IsStatic) CollectNamespacesForMemberReference(call.Method, namespaces);
+				else if (node is NewObj newObj) CollectNamespacesForTypeReference(newObj.Method.DeclaringType, namespaces);
+			}
 		}
 
         class ILCollectionVisitor : ILVisitor
