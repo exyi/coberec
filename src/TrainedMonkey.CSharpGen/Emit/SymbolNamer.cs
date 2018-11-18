@@ -31,6 +31,7 @@ namespace TrainedMonkey.CSharpGen.Emit
         {
             desiredName = NameSanitizer.SanitizeMemberName(desiredName, lowerCase);
             var existingNames = new HashSet<string>(type.GetMembers().Select(m => m.Name));
+            existingNames.UnionWith(type.NestedTypes.Select(t => t.Name));
             for (IType p = type; p != null; p = p.DeclaringType)
                 existingNames.Add(p.Name);
 

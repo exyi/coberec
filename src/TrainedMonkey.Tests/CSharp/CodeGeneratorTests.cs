@@ -42,7 +42,7 @@ namespace TrainedMonkey.Tests.CSharp
 
             var compilation = CSharpCompilation.Create(
                 assemblyName,
-                syntaxTrees: new[] { CSharpSyntaxTree.ParseText(code) },
+                syntaxTrees: new[] { CSharpSyntaxTree.ParseText(code, new CSharpParseOptions(LanguageVersion.Latest)) },
                 references: references,
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
@@ -59,7 +59,7 @@ namespace TrainedMonkey.Tests.CSharp
                 ["String"] = new FullTypeName("System.String"),
             }));
         [Fact]
-        public void SimpleGenerator()
+        public void SimpleCompositeType()
         {
             var schema = new DataSchema(Enumerable.Empty<Entity>(), new [] {
                 new TypeDef("Test123", Enumerable.Empty<Directive>(), TypeDefCore.Composite(
@@ -69,6 +69,31 @@ namespace TrainedMonkey.Tests.CSharp
                     },
                     new TypeRef[] {}
                 ))
+            });
+
+            var b = new CSharpBackend();
+
+            var result = b.Build(schema, defaultSettings);
+            // Console.WriteLine(result);
+            CheckItCompiles(result);
+        }
+
+        [Fact]
+        public void SimpleUnionType()
+        {
+            var schema = new DataSchema(Enumerable.Empty<Entity>(), new [] {
+                new TypeDef("Test123", Enumerable.Empty<Directive>(), TypeDefCore.Composite(
+                    new [] {
+                        new TypeField("Field543", TypeRef.ListType(TypeRef.ActualType("String")), null, Enumerable.Empty<Directive>()),
+                        new TypeField("abcSS", TypeRef.ActualType("Int"), null, Enumerable.Empty<Directive>()),
+                    },
+                    new TypeRef[] {}
+                )),
+                new TypeDef("Union123", Enumerable.Empty<Directive>(), TypeDefCore.Union(
+                    new [] {
+                        TypeRef.ActualType("Test123"),
+                        TypeRef.ActualType("String"),
+                    }))
             });
 
             var b = new CSharpBackend();

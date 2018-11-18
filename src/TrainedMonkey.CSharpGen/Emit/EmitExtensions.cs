@@ -45,7 +45,7 @@ namespace TrainedMonkey.CSharpGen.Emit
             return (prop, field);
         }
 
-        public static IMember AddCreateConstructor(this VirtualType type, EmitContext cx, (string name, IField field)[] fields)
+        public static IMethod AddCreateConstructor(this VirtualType type, EmitContext cx, (string name, IField field)[] fields)
         {
             var parameters = SymbolNamer.NameParameters(fields.Select(f => (IParameter)new DefaultParameter(f.field.Type, f.name))); // TODO: the name is not sanitized, I just want to see the tests finding this bug ;)
             var ctor = new VirtualMethod(type, Accessibility.Public, ".ctor", parameters, cx.FindType(typeof(void)));
@@ -231,34 +231,13 @@ namespace TrainedMonkey.CSharpGen.Emit
             }
         }
 
-        public static IMethod ImplementEquality(this VirtualType type, params IMember[] properties) =>
-            ImplementEquals(type, properties.Select(p =>
-                (p.ReturnType,
-                 p is IProperty property ? target => new IL.Call(property.Getter) { Arguments = { target } } :
-                 p is IField field ? (Func<IL.ILInstruction, IL.ILInstruction>)(target => new IL.LdObj(new IL.LdFlda(target, field), field.ReturnType)) :
-                 throw new NotSupportedException($"{p.GetType()}")
-                )
-            ).ToArray());
-
-        public static IMethod ImplementEquals(this VirtualType type, params (IType type, Func<IL.ILInstruction, IL.ILInstruction> getter)[] properties)
+        /// Implements IEquatable, Object.Equals, ==, != using the specified Self.Equals(Self) method. Does not implement GetHashCode.
+        static IMethod ImplementEqualityCore(this VirtualType type, Func<IMethod, IL.ILFunction> equalsImplementation)
         {
             type.ImplementedInterfaces.Add(new ParameterizedType(type.Compilation.FindType(typeof(IEquatable<>)), new IType[] { type }));
 
             var eqMethod = new VirtualMethod(type, Accessibility.Public, "Equals", new [] { new DefaultParameter(type, "b") }, type.Compilation.FindType(typeof(bool)), isVirtual: !type.IsSealed);
-            eqMethod.BodyFactory = () => {
-                var @thisParam = new IL.ILVariable(IL.VariableKind.Parameter, type, -1);
-                var otherParam = new IL.ILVariable(IL.VariableKind.Parameter, type, 0);
-                var body =
-                    AndAlso(properties.Select(p => EqualsExpression(p.type, p.getter(new IL.LdLoc(@thisParam)), p.getter(new IL.LdLoc(otherParam)))));
-
-                if (type.IsReferenceType == true)
-                    body = new IL.IfInstruction(
-                        new IL.Comp(IL.ComparisonKind.Equality, Sign.None, new IL.LdLoc(thisParam), new IL.LdLoc(otherParam)),
-                        new IL.LdcI4(1),
-                        body
-                    );
-                return CreateExpressionFunction(eqMethod, body);
-            };
+            eqMethod.BodyFactory = () => equalsImplementation(eqMethod);
 
             type.Methods.Add(eqMethod);
 
@@ -314,15 +293,104 @@ namespace TrainedMonkey.CSharpGen.Emit
                 );
             };
             type.Methods.Add(objEquals);
+            return eqMethod;
+        }
 
+        public static IL.ILInstruction AccessMember(this IL.ILInstruction target, IMember p) =>
+                 p is IProperty property ? new IL.Call(property.Getter) { Arguments = { target } } :
+                 p is IField field ? (IL.ILInstruction)new IL.LdObj(new IL.LdFlda(target, field), field.ReturnType) :
+                 throw new NotSupportedException($"{p.GetType()}");
+
+        public static IMethod ImplementEquality(this VirtualType type, params IMember[] properties) =>
+            ImplementEquality(type, properties.Select(p =>
+                (p.ReturnType, (Func<IL.ILInstruction, IL.ILInstruction>)(target => target.AccessMember(p)))
+            ).ToArray());
+
+        public static IMethod ImplementEquality(this VirtualType type, params (IType type, Func<IL.ILInstruction, IL.ILInstruction> getter)[] properties)
+        {
+            type.ImplementGetHashCode(properties);
+            return type.ImplementEqualityCore((eqMethod) =>
+            {
+                var @thisParam = new IL.ILVariable(IL.VariableKind.Parameter, type, -1);
+                var otherParam = new IL.ILVariable(IL.VariableKind.Parameter, type, 0);
+                var body =
+                    AndAlso(properties.Select(p => EqualsExpression(p.type, p.getter(new IL.LdLoc(@thisParam)), p.getter(new IL.LdLoc(otherParam)))));
+
+                if (type.IsReferenceType == true)
+                    body = new IL.IfInstruction(
+                        new IL.Comp(IL.ComparisonKind.Equality, Sign.None, new IL.LdLoc(thisParam), new IL.LdLoc(otherParam)),
+                        new IL.LdcI4(1),
+                        body
+                    );
+                return CreateExpressionFunction(eqMethod, body);
+            });
+        }
+
+        static IMethod ImplementGetHashCode(this VirtualType type, (IType type, Func<IL.ILInstruction, IL.ILInstruction> getter)[] properties)
+        {
             var getHashCode = new VirtualMethod(type, Accessibility.Public, "GetHashCode", new IParameter[0], type.Compilation.FindType(typeof(int)), isOverride: true);
-            getHashCode.BodyFactory = () => {
+            getHashCode.BodyFactory = () =>
+            {
                 var thisParam = new IL.ILVariable(IL.VariableKind.Parameter, type, -1);
                 var body = CombineHashCodes(type.Compilation, null, properties.Select(p => GetHashCodeExpression(p.type, p.getter(new IL.LdLoc(thisParam)))).ToArray()); // TODO: seed
                 return CreateExpressionFunction(getHashCode, body);
             };
             type.Methods.Add(getHashCode);
-            return eqMethod;
+            return getHashCode;
+        }
+
+        /// Implements IEquatable.Equals, Object.Equals, !=, == using a abstract EqualsCore method
+        public static IMethod ImplementEqualityForBase(this VirtualType type)
+        {
+            Debug.Assert(type.IsAbstract);
+            var eqCoreMethod = new VirtualMethod(type, Accessibility.Protected, "EqualsCore", new [] { new DefaultParameter(type, "b") }, type.Compilation.FindType(typeof(bool)), isAbstract: true);
+            type.Methods.Add(eqCoreMethod);
+            return type.ImplementEqualityCore(eqMethod =>
+            {
+                var @thisParam = new IL.ILVariable(IL.VariableKind.Parameter, type, -1);
+                var otherParam = new IL.ILVariable(IL.VariableKind.Parameter, type, 0);
+                var body = new IL.IfInstruction(
+                    new IL.Comp(IL.ComparisonKind.Equality, Sign.None, new IL.LdLoc(thisParam), new IL.LdLoc(otherParam)),
+                    new IL.LdcI4(1),
+                    new IL.CallVirt(eqCoreMethod) { Arguments = { new IL.LdLoc(thisParam), new IL.LdLoc(otherParam) } }
+                );
+                return CreateExpressionFunction(eqMethod, body);
+            });
+        }
+
+        /// Implements EqualsCore (method required by ImplementEqualityForBase) and GetHashCode methods using the specified properties
+        public static IMethod ImplementEqualityForCase(this VirtualType type, IType baseType, params IMember[] properties) =>
+            type.ImplementEqualityForCase(baseType, properties.Select(p =>
+                (p.ReturnType, (Func<IL.ILInstruction, IL.ILInstruction>)(target => target.AccessMember(p)))
+            ).ToArray());
+        /// Implements EqualsCore (method required by ImplementEqualityForBase) and GetHashCode methods using the specified properties
+        public static IMethod ImplementEqualityForCase(this VirtualType type, IType baseType, params (IType type, Func<IL.ILInstruction, IL.ILInstruction> getter)[] properties)
+        {
+            Debug.Assert(!type.IsAbstract);
+            Debug.Assert(type.DirectBaseType != null);
+            Debug.Assert(type.GetAllBaseTypes().Contains(baseType));
+
+            type.ImplementGetHashCode(properties);
+            var eqCoreMethod = new VirtualMethod(type, Accessibility.Protected, "EqualsCore", new [] { new DefaultParameter(baseType, "b") }, type.Compilation.FindType(typeof(bool)), isOverride: true);
+            eqCoreMethod.BodyFactory = () => {
+                var tmpVar = new IL.ILVariable(IL.VariableKind.StackSlot, type, stackType: IL.StackType.O, 0);
+                var otherParam = new IL.ILVariable(IL.VariableKind.Parameter, type.Compilation.FindType(typeof(object)), 0);
+                var thisParam = new IL.ILVariable(IL.VariableKind.Parameter, type, -1);
+
+                var eqCore =
+                    AndAlso(properties.Select(p => EqualsExpression(p.type, p.getter(new IL.LdLoc(@thisParam)), p.getter(new IL.LdLoc(otherParam)))));
+
+                var body =
+                    // do typecheck of the parameter while assigning the tmpVar
+                    new IL.IfInstruction(
+                        new IL.Comp(IL.ComparisonKind.Inequality, Sign.None, new IL.StLoc(tmpVar, new IL.IsInst(new IL.LdLoc(otherParam), type)), new IL.LdNull()),
+                        eqCore,
+                        new IL.LdcI4(0)
+                    );
+                return CreateExpressionFunction(eqCoreMethod, body);
+            };
+            type.Methods.Add(eqCoreMethod);
+            return eqCoreMethod;
         }
 
         public static IL.ILFunction CreateOneBlockFunction(IMethod method, params IL.ILInstruction[] instructions)

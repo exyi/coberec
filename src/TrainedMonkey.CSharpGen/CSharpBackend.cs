@@ -51,13 +51,15 @@ namespace TrainedMonkey.CSharpGen
         {
             var name = SymbolNamer.NameType(cx.Settings.Namespace, def.Name, cx);
 
+            var isAbstract = def.Core is TypeDefCore.UnionCase;
+
             var type = new VirtualType(
                 TypeKind.Class,
                 Accessibility.Public,
                 new FullTypeName(new TopLevelTypeName(cx.Settings.Namespace, name)),
                 isStatic: false,
-                isSealed: true,
-                isAbstract: false,
+                isSealed: !isAbstract,
+                isAbstract: isAbstract,
                 parentModule: cx.Module
             );
             cx.Module.AddType(type);
@@ -94,6 +96,9 @@ namespace TrainedMonkey.CSharpGen
                 case TypeDefCore.PrimitiveCase primitive:
                     GenerateScalar(cx, type, primitive);
                     break;
+                case TypeDefCore.UnionCase union:
+                    GenerateUnion(cx, type, union);
+                    break;
                 default:
                     break;
             }
@@ -123,6 +128,57 @@ namespace TrainedMonkey.CSharpGen
             type.ImplementEquality(type.GetProperties().ToArray());
         }
 
+        private void GenerateUnion(EmitContext cx, VirtualType type, TypeDefCore.UnionCase union)
+        {
+            type.Methods.Add(new VirtualMethod(type, Accessibility.ProtectedAndInternal, "Seal", new IParameter[0], cx.FindType(typeof(void)), isAbstract: true));
+            type.ImplementEqualityForBase();
+            // var cases = new Dictionary<string, IType>();
+            foreach (var c in union.Options)
+            {
+                var valueType = FindType(cx, c);
+                string name(TypeRef t) =>
+                    t.Match(
+                        actual: x => x.TypeName,
+                        nullable: x => name(x.Type),
+                        list: x => name(x.Type) + "List"
+                    );
+                var caseName = name(c);
+
+                var caseType = new VirtualType(TypeKind.Class, Accessibility.Public,
+                    type.FullTypeName.NestedType(SymbolNamer.NameMember(type, caseName + "Case", lowerCase: false), 0),
+                    isStatic: false,
+                    isSealed: true,
+                    isAbstract: false,
+                    declaringType: type
+                );
+                caseType.DirectBaseType = type;
+                // caseType.ImplementedInterfaces
+                type.NestedTypes.Add(caseType);
+
+                var sealMethod = new VirtualMethod(caseType, Accessibility.ProtectedAndInternal, "Seal", new IParameter[0], cx.FindType(typeof(void)), isOverride: true);
+                sealMethod.BodyFactory = () => EmitExtensions.CreateOneBlockFunction(sealMethod);
+                caseType.Methods.Add(sealMethod);
+
+                var valueProperty = caseType.AddAutoProperty("Item", valueType);
+                var caseCtor = caseType.AddCreateConstructor(cx, new [] { ("item", valueProperty.field) });
+
+                caseType.ImplementEqualityForCase(type, valueProperty.prop);
+
+
+                var caseFactory = new VirtualMethod(type, Accessibility.Public,
+                    SymbolNamer.NameMethod(type, caseName, 0, new IType[] { valueType }),
+                    new [] { new DefaultParameter(valueType, "item") },
+                    returnType: type,
+                    isStatic: true
+                );
+                caseFactory.BodyFactory = () =>
+                    EmitExtensions.CreateExpressionFunction(caseFactory,
+                        new IL.NewObj(caseCtor) { Arguments = { new IL.LdLoc(new IL.ILVariable(VariableKind.Parameter, valueType, 0)) } }
+                    );
+                type.Methods.Add(caseFactory);
+            }
+        }
+
         public string Build(DataSchema schema, EmitSettings settings)
         {
             var cx = new EmitContext(
@@ -138,43 +194,6 @@ namespace TrainedMonkey.CSharpGen
 
             foreach(var t in schema.Types)
                 BuildType(cx, t);
-
-            // var tString = cx.FindType<string>();
-            // var tChar = compilation.FindType(typeof(char));
-            // var t2 = compilation.FindType(typeof(IEnumerable<char>));
-            // var tEnumerable = compilation.FindType(typeof(Enumerable));
-            // var toArray = tEnumerable.GetMethods(m => m.Name == "ToArray").Single().Specialize(new TypeParameterSubstitution(null, new[] { tChar }));
-
-            // var adhocType = new VirtualType(TypeKind.Class, Accessibility.Public, new FullTypeName("SomeNs.SomeType"), isStatic: false, isSealed: false, isAbstract: false, parentModule: mod);
-            // mod.AddType(adhocType);
-            // var methodParams = new[] { new DefaultParameter(tString, "testParam") };
-            // var adhocMethod = new VirtualMethod(adhocType, Accessibility.Public, "SomeMethod", methodParams, t2);
-            // adhocType.Methods.Add(adhocMethod);
-
-            // // var method = tString.GetMethods(m => m.IsConstructor && m.Parameters.Count == 1 && m.Parameters.Single().Type.Name == "IEnumerable`1").Single();
-
-            // adhocMethod.BodyFactory = () =>
-            // {
-            //     var variable = new ILVariable(VariableKind.Local, tString, StackType.O, 0);
-            //     var functionContainer = new BlockContainer(expectedResultType: StackType.O);
-            //     functionContainer.Blocks.Add(
-            //         new Block()
-            //         {
-            //             Instructions = {
-            //                 new IL.StLoc(variable, new IL.LdStr("ahoj\"\u200BF")),
-            //                 new IL.Leave(functionContainer, value: new IL.Call(toArray) { Arguments = { new IL.LdLoc(variable) } })
-            //             },
-            //             // FinalInstruction = new IL.LdLoc(variable)
-            //         });
-
-            //     var ilFunc = new ILFunction(adhocMethod, 10000, new ICSharpCode.Decompiler.TypeSystem.GenericContext(), functionContainer)
-            //     {
-            //         Variables = { variable }
-            //     };
-            //     ilFunc.AddRef(); // whatever, somehow initializes the freaking tree
-            //     Debug.Assert(variable.Function == ilFunc);
-            //     return ilFunc;
-            // };
 
             var s = new DecompilerSettings(LanguageVersion.Latest);
             s.CSharpFormattingOptions.AutoPropertyFormatting = PropertyFormatting.ForceOneLine;
@@ -198,7 +217,7 @@ namespace TrainedMonkey.CSharpGen
             let lUrl = new Uri(location)
             select lUrl.AbsolutePath;
 
-        private static Lazy<PEFile[]> ReferencedModules = new Lazy<PEFile[]>(() => GetReferencedPaths().Select(a => new PEFile(a)).ToArray());
+        private static Lazy<PEFile[]> ReferencedModules = new Lazy<PEFile[]>(() => GetReferencedPaths().Select(a => new PEFile(a, System.Reflection.PortableExecutable.PEStreamOptions.PrefetchMetadata)).ToArray());
     }
 
     public sealed class EmitContext

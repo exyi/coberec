@@ -42,8 +42,9 @@ namespace TrainedMonkey.CSharpGen.TypeSystem
 
         public IReadOnlyList<IType> TypeArguments => EmptyList<IType>.Instance;
 
+        public IType DirectBaseType { get; set; } = null;
         public List<IType> ImplementedInterfaces = new List<IType>();
-        public IEnumerable<IType> DirectBaseTypes => ImplementedInterfaces;
+        public IEnumerable<IType> DirectBaseTypes => ImplementedInterfaces.Concat(DirectBaseType == null ? Enumerable.Empty<IType>() : new [] { DirectBaseType });
 
         public string FullName => this.FullTypeName.ReflectionName;
 
