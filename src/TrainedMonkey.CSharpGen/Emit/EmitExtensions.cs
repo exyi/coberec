@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection.Metadata;
+using ICSharpCode.Decompiler.CSharp.Resolver;
 using ICSharpCode.Decompiler.TypeSystem;
 using ICSharpCode.Decompiler.TypeSystem.Implementation;
 using TrainedMonkey.CSharpGen.TypeSystem;
@@ -88,28 +89,37 @@ namespace TrainedMonkey.CSharpGen.Emit
 
         static IL.ILInstruction EqualsExpression(IType propertyType, IL.ILInstruction @this, IL.ILInstruction other)
         {
+            var originalPropertyType = propertyType;
+            bool needsBoxing;
+            (propertyType, needsBoxing) =
+                propertyType.FullName == "System.Nullable" ?
+                (((ParameterizedType)propertyType).TypeArguments.Single(), true) :
+                (propertyType, false);
+
             var eqInterface = propertyType.GetAllBaseTypes().FirstOrDefault(t => t.FullName == "System.IEquatable") as IType;
             var seqInterface = propertyType.GetAllBaseTypes().FirstOrDefault(t => t.FullName == "System.Collections.IStructuralEquatable") as IType;
             var enumerableInterface = propertyType.GetAllBaseTypes().FirstOrDefault(t => t.FullName == "System.Collections.IEnumerable") as IType;
             var eqOperator = propertyType.GetMethods(options: GetMemberOptions.IgnoreInheritedMembers).FirstOrDefault(t => t.IsOperator && t.Name == "op_Equality");
             if (propertyType.GetStackType() != IL.StackType.O)
             {
-                return new IL.Comp(IL.ComparisonKind.Equality, Sign.None, @this, other);
+                return new IL.Comp(IL.ComparisonKind.Equality, needsBoxing ? IL.ComparisonLiftingKind.CSharp : IL.ComparisonLiftingKind.None, propertyType.GetStackType(), Sign.None, @this, other);
             }
             // enumerable types tend to be reference-equality even though they have IStructuralEquality overridden
             else if (seqInterface != null && (enumerableInterface != null || eqInterface == null))
             {
                 return InvokeInterfaceMethod(propertyType.GetDefinition().Compilation.FindType(typeof(System.Collections.IEqualityComparer)).GetMethods(options: GetMemberOptions.IgnoreInheritedMembers).Single(m => m.Name == "Equals"), seqInterface,
                     new IL.CallVirt(propertyType.GetDefinition().Compilation.FindType(typeof(System.Collections.StructuralComparisons)).GetProperties().Single(p => p.Name == "StructuralEqualityComparer").Getter),
-                    new IL.Box(@this, propertyType),
-                    new IL.Box(other, propertyType)
+                    new IL.Box(@this, originalPropertyType),
+                    new IL.Box(other, originalPropertyType)
                 );
             }
             else if (eqOperator != null)
             {
+                if (needsBoxing)
+                    eqOperator = CSharpOperators.LiftUserDefinedOperator(eqOperator);
                 return new IL.Call(eqOperator) { Arguments = { @this, other } };
             }
-            else if (eqInterface != null)
+            else if (eqInterface != null && !needsBoxing)
             {
                 return InvokeInterfaceMethod(
                     eqInterface.GetMethods(options: GetMemberOptions.IgnoreInheritedMembers).Single(m => m.Name == "Equals"),
@@ -119,7 +129,7 @@ namespace TrainedMonkey.CSharpGen.Emit
                 );
             }
             else
-                throw new NotSupportedException($"Can't compare {propertyType.ReflectionName}, it does not implement IEquatable.");
+                throw new NotSupportedException($"Can't compare {originalPropertyType.ReflectionName}, it does not implement IEquatable.");
         }
 
         static IL.ILInstruction GetHashCodeExpression(IType propertyType, IL.ILInstruction prop)
