@@ -130,8 +130,9 @@ namespace TrainedMonkey.CSharpGen
 
         private void GenerateUnion(EmitContext cx, VirtualType type, TypeDefCore.UnionCase union)
         {
-            type.Methods.Add(new VirtualMethod(type, Accessibility.ProtectedAndInternal, "Seal", new IParameter[0], cx.FindType(typeof(void)), isAbstract: true));
-            type.ImplementEqualityForBase();
+            // var sealMethodName = SymbolNamer.NameMethod(type, "Seal", 0, new IType[0]);
+            // type.Methods.Add(new VirtualMethod(type, Accessibility.ProtectedAndInternal, sealMethodName, new IParameter[0], cx.FindType(typeof(void)), isAbstract: true));
+            var (abstractEqCore, _) = type.ImplementEqualityForBase();
             // var cases = new Dictionary<string, IType>();
             foreach (var c in union.Options)
             {
@@ -155,14 +156,14 @@ namespace TrainedMonkey.CSharpGen
                 // caseType.ImplementedInterfaces
                 type.NestedTypes.Add(caseType);
 
-                var sealMethod = new VirtualMethod(caseType, Accessibility.ProtectedAndInternal, "Seal", new IParameter[0], cx.FindType(typeof(void)), isOverride: true);
-                sealMethod.BodyFactory = () => EmitExtensions.CreateOneBlockFunction(sealMethod);
-                caseType.Methods.Add(sealMethod);
+                // var sealMethod = new VirtualMethod(caseType, Accessibility.ProtectedAndInternal, sealMethodName, new IParameter[0], cx.FindType(typeof(void)), isOverride: true);
+                // sealMethod.BodyFactory = () => EmitExtensions.CreateOneBlockFunction(sealMethod);
+                // caseType.Methods.Add(sealMethod);
 
                 var valueProperty = caseType.AddAutoProperty("Item", valueType);
                 var caseCtor = caseType.AddCreateConstructor(cx, new [] { ("item", valueProperty.field) });
 
-                caseType.ImplementEqualityForCase(type, valueProperty.prop);
+                caseType.ImplementEqualityForCase(abstractEqCore, valueProperty.prop);
 
 
                 var caseFactory = new VirtualMethod(type, Accessibility.Public,

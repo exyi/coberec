@@ -32,5 +32,11 @@
     "ID",
     "String",
     "Equals",
-    "EqualsCore"
+    "EqualsCore",
+    "Value",
+    "Seal",
+    "op_Equality",
+    "xmin",
+    "xmax",
+    "ctid"
 ]

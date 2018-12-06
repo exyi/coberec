@@ -89,7 +89,7 @@ namespace TrainedMonkey.CSharpGen.Emit
             name = SanitizeCsharpName(name, lowerCase);
             if (
                 // I'm simply not going to care about these, although they may exist when they don't collide with any property
-                name.StartsWith("get_") || name.StartsWith("set_") || name.StartsWith("remove_") || name.StartsWith("add_") || prohibitedNames.Contains(name))
+                name.StartsWith("get_") || name.StartsWith("set_") || name.StartsWith("remove_") || name.StartsWith("add_") || name.StartsWith("op_") || prohibitedNames.Contains(name))
             {
                 name = "m" + name;
             }

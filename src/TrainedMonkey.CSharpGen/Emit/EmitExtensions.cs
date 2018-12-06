@@ -350,12 +350,13 @@ namespace TrainedMonkey.CSharpGen.Emit
         }
 
         /// Implements IEquatable.Equals, Object.Equals, !=, == using a abstract EqualsCore method
-        public static IMethod ImplementEqualityForBase(this VirtualType type)
+        public static (IMethod equalsCore, IMethod equals) ImplementEqualityForBase(this VirtualType type)
         {
             Debug.Assert(type.IsAbstract);
-            var eqCoreMethod = new VirtualMethod(type, Accessibility.Protected, "EqualsCore", new [] { new DefaultParameter(type, "b") }, type.Compilation.FindType(typeof(bool)), isAbstract: true);
+            var methodName = SymbolNamer.NameMethod(type, "EqualsCore", 0, new[] { type });
+            var eqCoreMethod = new VirtualMethod(type, Accessibility.ProtectedAndInternal, methodName, new [] { new DefaultParameter(type, "b") }, type.Compilation.FindType(typeof(bool)), isAbstract: true);
             type.Methods.Add(eqCoreMethod);
-            return type.ImplementEqualityCore(eqMethod =>
+            return (eqCoreMethod, type.ImplementEqualityCore(eqMethod =>
             {
                 var @thisParam = new IL.ILVariable(IL.VariableKind.Parameter, type, -1);
                 var otherParam = new IL.ILVariable(IL.VariableKind.Parameter, type, 0);
@@ -365,23 +366,23 @@ namespace TrainedMonkey.CSharpGen.Emit
                     new IL.CallVirt(eqCoreMethod) { Arguments = { new IL.LdLoc(thisParam), new IL.LdLoc(otherParam) } }
                 );
                 return CreateExpressionFunction(eqMethod, body);
-            });
+            }));
         }
 
         /// Implements EqualsCore (method required by ImplementEqualityForBase) and GetHashCode methods using the specified properties
-        public static IMethod ImplementEqualityForCase(this VirtualType type, IType baseType, params IMember[] properties) =>
-            type.ImplementEqualityForCase(baseType, properties.Select(p =>
+        public static IMethod ImplementEqualityForCase(this VirtualType type, IMethod overridesMethod, params IMember[] properties) =>
+            type.ImplementEqualityForCase(overridesMethod, properties.Select(p =>
                 (p.ReturnType, (Func<IL.ILInstruction, IL.ILInstruction>)(target => target.AccessMember(p)))
             ).ToArray());
         /// Implements EqualsCore (method required by ImplementEqualityForBase) and GetHashCode methods using the specified properties
-        public static IMethod ImplementEqualityForCase(this VirtualType type, IType baseType, params (IType type, Func<IL.ILInstruction, IL.ILInstruction> getter)[] properties)
+        public static IMethod ImplementEqualityForCase(this VirtualType type, IMethod overridesMethod, params (IType type, Func<IL.ILInstruction, IL.ILInstruction> getter)[] properties)
         {
             Debug.Assert(!type.IsAbstract);
             Debug.Assert(type.DirectBaseType != null);
-            Debug.Assert(type.GetAllBaseTypes().Contains(baseType));
+            Debug.Assert(type.GetAllBaseTypes().Contains(overridesMethod.DeclaringType));
 
             type.ImplementGetHashCode(properties);
-            var eqCoreMethod = new VirtualMethod(type, Accessibility.Protected, "EqualsCore", new [] { new DefaultParameter(baseType, "b") }, type.Compilation.FindType(typeof(bool)), isOverride: true);
+            var eqCoreMethod = new VirtualMethod(type, overridesMethod.Accessibility, overridesMethod.Name, overridesMethod.Parameters, type.Compilation.FindType(typeof(bool)), isOverride: true);
             eqCoreMethod.BodyFactory = () => {
                 var tmpVar = new IL.ILVariable(IL.VariableKind.StackSlot, type, stackType: IL.StackType.O, 0);
                 var otherParam = new IL.ILVariable(IL.VariableKind.Parameter, type.Compilation.FindType(typeof(object)), 0);

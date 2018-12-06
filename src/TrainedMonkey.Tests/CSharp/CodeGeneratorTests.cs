@@ -103,7 +103,8 @@ namespace TrainedMonkey.Tests.CSharp
             CheckItCompiles(result);
         }
 
-        [Property]
+        // [Property(MaxTest = 10_000, EndSize = 10_000)]
+        [Property()]
         public void GenerateArbitrarySchema(TypeDef typeDef)
         {
             var schema = new DataSchema(Enumerable.Empty<Entity>(), new [] { typeDef });
@@ -112,7 +113,7 @@ namespace TrainedMonkey.Tests.CSharp
 
             var result = b.Build(schema, defaultSettings);
             CheckItCompiles(result);
-            Console.WriteLine(result);
+            // Console.WriteLine(result);
         }
 
         [Fact]
