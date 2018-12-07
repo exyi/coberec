@@ -87,7 +87,7 @@ namespace TrainedMonkey.CSharpGen.Emit
             return call;
         }
 
-        static IL.ILInstruction EqualsExpression(IType propertyType, IL.ILInstruction @this, IL.ILInstruction other)
+        public static IL.ILInstruction EqualsExpression(IType propertyType, IL.ILInstruction @this, IL.ILInstruction other)
         {
             var originalPropertyType = propertyType;
             bool needsBoxing;
@@ -154,8 +154,8 @@ namespace TrainedMonkey.CSharpGen.Emit
             }
         }
 
-        static IL.ILInstruction AndAlso(params IL.ILInstruction[] clauses) => AndAlso(clauses.AsEnumerable());
-        static IL.ILInstruction AndAlso(IEnumerable<IL.ILInstruction> clauses)
+        public static IL.ILInstruction AndAlso(params IL.ILInstruction[] clauses) => AndAlso(clauses.AsEnumerable());
+        public static IL.ILInstruction AndAlso(IEnumerable<IL.ILInstruction> clauses)
         {
             if (clauses.Any())
                 return clauses.Aggregate((a, b) => new IL.IfInstruction(a, b, new IL.LdcI4(0)));

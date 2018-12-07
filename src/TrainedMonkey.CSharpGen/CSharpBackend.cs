@@ -114,18 +114,24 @@ namespace TrainedMonkey.CSharpGen
 
         private void GenerateComposite(EmitContext cx, VirtualType type, TypeDefCore.CompositeCase composite)
         {
-            var props = new Dictionary<string, (IProperty prop, IField field)>();
+            var propDictionary = new Dictionary<string, (TypeField schema, IProperty prop, IField field)>();
+            var props = new List<(TypeField schema, IProperty prop, IField field)>();
 
             foreach (var f in composite.Fields)
             {
                 var propType = FindType(cx, f.Type);
                 var (prop, field) = type.AddAutoProperty(f.Name, propType);
-                props.Add(f.Name, (prop, field));
+                propDictionary.Add(f.Name, (f, prop, field));
+                props.Add((f, prop, field));
             }
 
-            type.AddCreateConstructor(cx, props.Select(k => (k.Key, k.Value.field)).ToArray());
+            var ctor = type.AddCreateConstructor(cx, props.Select(k => (k.schema.Name, k.field)).ToArray());
+            var properties = props.Select(p => p.prop).ToArray();
 
-            type.ImplementEquality(type.GetProperties().ToArray());
+            type.ImplementEquality(properties);
+
+            var withMethod = type.ImplementWithMethod(ctor, properties);
+            var optWithMethod = type.ImplementOptionalWithMethod(withMethod, properties);
         }
 
         private void GenerateUnion(EmitContext cx, VirtualType type, TypeDefCore.UnionCase union)
@@ -153,7 +159,6 @@ namespace TrainedMonkey.CSharpGen
                     declaringType: type
                 );
                 caseType.DirectBaseType = type;
-                // caseType.ImplementedInterfaces
                 type.NestedTypes.Add(caseType);
 
                 // var sealMethod = new VirtualMethod(caseType, Accessibility.ProtectedAndInternal, sealMethodName, new IParameter[0], cx.FindType(typeof(void)), isOverride: true);
