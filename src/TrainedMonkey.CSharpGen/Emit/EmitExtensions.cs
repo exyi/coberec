@@ -69,7 +69,7 @@ namespace TrainedMonkey.CSharpGen.Emit
             return ctor;
         }
 
-        static IL.ILInstruction InvokeInterfaceMethod(IMethod method, IType targetType, IL.ILInstruction @this, params IL.ILInstruction[] args)
+        public static IL.ILInstruction InvokeInterfaceMethod(IMethod method, IType targetType, IL.ILInstruction @this, params IL.ILInstruction[] args)
         {
             var explicitImplementation = targetType.GetMethods().FirstOrDefault(m => m.ExplicitlyImplementedInterfaceMembers.Contains(method));
             // var implicitImplementation = propertyType.GetMethods().FirstOrDefault(m => m.
@@ -87,73 +87,6 @@ namespace TrainedMonkey.CSharpGen.Emit
             return call;
         }
 
-        public static IL.ILInstruction EqualsExpression(IType propertyType, IL.ILInstruction @this, IL.ILInstruction other)
-        {
-            var originalPropertyType = propertyType;
-            bool needsBoxing;
-            (propertyType, needsBoxing) =
-                propertyType.FullName == "System.Nullable" ?
-                (((ParameterizedType)propertyType).TypeArguments.Single(), true) :
-                (propertyType, false);
-
-            var eqInterface = propertyType.GetAllBaseTypes().FirstOrDefault(t => t.FullName == "System.IEquatable") as IType;
-            var seqInterface = propertyType.GetAllBaseTypes().FirstOrDefault(t => t.FullName == "System.Collections.IStructuralEquatable") as IType;
-            var enumerableInterface = propertyType.GetAllBaseTypes().FirstOrDefault(t => t.FullName == "System.Collections.IEnumerable") as IType;
-            var eqOperator = propertyType.GetMethods(options: GetMemberOptions.IgnoreInheritedMembers).FirstOrDefault(t => t.IsOperator && t.Name == "op_Equality");
-            if (propertyType.GetStackType() != IL.StackType.O)
-            {
-                return new IL.Comp(IL.ComparisonKind.Equality, needsBoxing ? IL.ComparisonLiftingKind.CSharp : IL.ComparisonLiftingKind.None, propertyType.GetStackType(), Sign.None, @this, other);
-            }
-            // enumerable types tend to be reference-equality even though they have IStructuralEquality overridden
-            else if (seqInterface != null && (enumerableInterface != null || eqInterface == null))
-            {
-                return InvokeInterfaceMethod(propertyType.GetDefinition().Compilation.FindType(typeof(System.Collections.IEqualityComparer)).GetMethods(options: GetMemberOptions.IgnoreInheritedMembers).Single(m => m.Name == "Equals"), seqInterface,
-                    new IL.CallVirt(propertyType.GetDefinition().Compilation.FindType(typeof(System.Collections.StructuralComparisons)).GetProperties().Single(p => p.Name == "StructuralEqualityComparer").Getter),
-                    new IL.Box(@this, originalPropertyType),
-                    new IL.Box(other, originalPropertyType)
-                );
-            }
-            else if (eqOperator != null)
-            {
-                if (needsBoxing)
-                    eqOperator = CSharpOperators.LiftUserDefinedOperator(eqOperator);
-                return new IL.Call(eqOperator) { Arguments = { @this, other } };
-            }
-            else if (eqInterface != null && !needsBoxing)
-            {
-                return InvokeInterfaceMethod(
-                    eqInterface.GetMethods(options: GetMemberOptions.IgnoreInheritedMembers).Single(m => m.Name == "Equals"),
-                    propertyType,
-                    @this,
-                    other
-                );
-            }
-            else
-                throw new NotSupportedException($"Can't compare {originalPropertyType.ReflectionName}, it does not implement IEquatable.");
-        }
-
-        static IL.ILInstruction GetHashCodeExpression(IType propertyType, IL.ILInstruction prop)
-        {
-            var eqInterface = propertyType.GetAllBaseTypes().FirstOrDefault(t => t.FullName == "System.IEquatable") as IType;
-            var seqInterface = propertyType.GetAllBaseTypes().FirstOrDefault(t => t.FullName == "System.Collections.IStructuralEquatable") as IType;
-            var enumerableInterface = propertyType.GetAllBaseTypes().FirstOrDefault(t => t.FullName == "System.Collections.IEnumerable") as IType;
-            var eqOperator = propertyType.GetMethods(options: GetMemberOptions.IgnoreInheritedMembers).FirstOrDefault(t => t.IsOperator && t.Name == "op_Equality");
-
-            // enumerable types tend to be reference-equality even though they have IStructuralEquality overridden
-            if (seqInterface != null && (enumerableInterface != null || eqInterface == null))
-            {
-                return InvokeInterfaceMethod(propertyType.GetDefinition().Compilation.FindType(typeof(System.Collections.IEqualityComparer)).GetMethods(options: GetMemberOptions.IgnoreInheritedMembers).Single(m => m.Name == "GetHashCode"), seqInterface,
-                    new IL.CallVirt(propertyType.GetDefinition().Compilation.FindType(typeof(System.Collections.StructuralComparisons)).GetProperties().Single(p => p.Name == "StructuralEqualityComparer").Getter),
-                    new IL.Box(prop, propertyType)
-                );
-            }
-            else
-            {
-                // var method = propertyType.GetDefinition().Compilation.FindType(typeof(object)).GetMethods().Single(m => m.Name == "GetHashCode");
-                return prop;
-            }
-        }
-
         public static IL.ILInstruction AndAlso(params IL.ILInstruction[] clauses) => AndAlso(clauses.AsEnumerable());
         public static IL.ILInstruction AndAlso(IEnumerable<IL.ILInstruction> clauses)
         {
@@ -167,7 +100,7 @@ namespace TrainedMonkey.CSharpGen.Emit
         {
             // if (instruction.ResultType != IL.StackType.O && instruction.ResultType != IL.StackType.Ref)
             //     throw new InvalidOperationException($"Can't get result type of non-object expression.");
-            
+
             switch(instruction)
             {
                 case IL.Call call: return call.Method.ReturnType;
@@ -184,7 +117,7 @@ namespace TrainedMonkey.CSharpGen.Emit
             }
         }
 
-        static IL.ILInstruction CreateTuple(ICompilation compilation, params IL.ILInstruction[] nodes)
+        public static IL.ILInstruction CreateTuple(ICompilation compilation, params IL.ILInstruction[] nodes)
         {
             var restTuple = typeof(ValueTuple<,,,,,,,>);
             Debug.Assert(restTuple.GetGenericArguments().Last().Name == "TRest");
@@ -214,195 +147,10 @@ namespace TrainedMonkey.CSharpGen.Emit
             }
         }
 
-        static IL.ILInstruction CombineHashCodes(ICompilation compilation, int? seed, params IL.ILInstruction[] nodes)
-        {
-            IL.ILInstruction invokeGetHashCode(IL.ILInstruction n)
-            {
-                if (n.ResultType == IL.StackType.I4) // integers return themselves anyway...
-                    return n;
-                else
-                    return new IL.CallVirt(compilation.FindType(typeof(object)).GetMethods().Single(m => m.Name == "GetHashCode")) { Arguments = { n } };
-            }
-            if (nodes.Length == 0)
-                return new IL.LdcI4(seed ?? 42);
-            else if (nodes.Length == 1 && seed == null)
-                return invokeGetHashCode(nodes[0]);
-            else if (nodes.Length == 1)
-                return invokeGetHashCode(new IL.BinaryNumericInstruction(IL.BinaryNumericOperator.Add, nodes[0], new IL.LdcI4((int)seed), false, Sign.Signed));
-            else
-            {
-                if (seed != null)
-                    nodes = nodes.Prepend(new IL.LdcI4((int)seed)).ToArray();
-                var tuple = CreateTuple(compilation, nodes);
-                var tupleType = tuple.GetObjectResultType();
-                return new IL.Call(tupleType.GetMethods(options: GetMemberOptions.IgnoreInheritedMembers).Single(m => m.Name == "GetHashCode")) {
-                    Arguments = { new IL.AddressOf(tuple) }
-                };
-            }
-        }
-
-        /// Implements IEquatable, Object.Equals, ==, != using the specified Self.Equals(Self) method. Does not implement GetHashCode.
-        static IMethod ImplementEqualityCore(this VirtualType type, Func<IMethod, IL.ILFunction> equalsImplementation)
-        {
-            type.ImplementedInterfaces.Add(new ParameterizedType(type.Compilation.FindType(typeof(IEquatable<>)), new IType[] { type }));
-
-            var eqMethod = new VirtualMethod(type, Accessibility.Public, "Equals", new [] { new DefaultParameter(type, "b") }, type.Compilation.FindType(typeof(bool)), isVirtual: !type.IsSealed);
-            eqMethod.BodyFactory = () => equalsImplementation(eqMethod);
-
-            type.Methods.Add(eqMethod);
-
-            var eqOperator = new VirtualMethod(type, Accessibility.Public, "op_Equality", new [] { new DefaultParameter(type, "a"), new DefaultParameter(type, "b") }, type.Compilation.FindType(typeof(bool)), isStatic: true);
-            eqOperator.BodyFactory = () => {
-                var aParam = new IL.ILVariable(IL.VariableKind.Parameter, type, 0);
-                var bParam = new IL.ILVariable(IL.VariableKind.Parameter, type, 1);
-                IL.ILInstruction eqCall = new IL.Call(eqMethod) { Arguments = {
-                        (bool)type.IsReferenceType ? new IL.LdLoc(aParam) : (IL.ILInstruction)new IL.LdLoca(aParam),
-                        new IL.LdLoc(bParam)
-                    }};
-                var body =
-                    (bool)type.IsReferenceType ?
-                        new IL.IfInstruction(
-                            new IL.Comp(IL.ComparisonKind.Equality, Sign.None, new IL.LdLoc(aParam), new IL.LdLoc(bParam)),
-                            new IL.LdcI4(1),
-                            AndAlso(
-                                new IL.Comp(IL.ComparisonKind.Inequality, Sign.None, new IL.LdLoc(aParam), new IL.LdNull()),
-                                eqCall
-                            )
-                        ) :
-                        eqCall;
-
-                return CreateExpressionFunction(eqOperator, body);
-            };
-            type.Methods.Add(eqOperator);
-
-            var neqOperator = new VirtualMethod(type, Accessibility.Public, "op_Inequality", new [] { new DefaultParameter(type, "a"), new DefaultParameter(type, "b") }, type.Compilation.FindType(typeof(bool)), isStatic: true);
-            neqOperator.BodyFactory = () => {
-                var aParam = new IL.ILVariable(IL.VariableKind.Parameter, type, 0);
-                var bParam = new IL.ILVariable(IL.VariableKind.Parameter, type, 1);
-                var body =
-                    new IL.Comp(IL.ComparisonKind.Equality, Sign.None,
-                        new IL.Call(eqOperator) { Arguments = { new IL.LdLoc(aParam), new IL.LdLoc(bParam) } },
-                        new IL.LdcI4(0));
-
-                return CreateExpressionFunction(neqOperator, body);
-            };
-            type.Methods.Add(neqOperator);
-
-            var objEquals = new VirtualMethod(type, Accessibility.Public, "Equals", new [] { new DefaultParameter(type.Compilation.FindType(typeof(object)), "b") }, type.Compilation.FindType(typeof(bool)), isOverride: true);
-
-            objEquals.BodyFactory = () => {
-                var tmpVar = new IL.ILVariable(IL.VariableKind.StackSlot, type, stackType: IL.StackType.O, 0);
-                var otherParam = new IL.ILVariable(IL.VariableKind.Parameter, type.Compilation.FindType(typeof(object)), 0);
-                var thisParam = new IL.ILVariable(IL.VariableKind.Parameter, type, -1);
-                return CreateExpressionFunction(objEquals,
-                    new IL.IfInstruction(
-                        new IL.Comp(IL.ComparisonKind.Inequality, Sign.None, new IL.StLoc(tmpVar, new IL.IsInst(new IL.LdLoc(otherParam), type)), new IL.LdNull()),
-                        new IL.Call(eqMethod) { Arguments = { new IL.LdLoc(thisParam), new IL.LdLoc(tmpVar) } },
-                        new IL.LdcI4(0)
-                    )
-                );
-            };
-            type.Methods.Add(objEquals);
-            return eqMethod;
-        }
-
         public static IL.ILInstruction AccessMember(this IL.ILInstruction target, IMember p) =>
                  p is IProperty property ? new IL.Call(property.Getter) { Arguments = { target } } :
                  p is IField field ? (IL.ILInstruction)new IL.LdObj(new IL.LdFlda(target, field), field.ReturnType) :
                  throw new NotSupportedException($"{p.GetType()}");
-
-        public static IMethod ImplementEquality(this VirtualType type, params IMember[] properties) =>
-            ImplementEquality(type, properties.Select(p =>
-                (p.ReturnType, (Func<IL.ILInstruction, IL.ILInstruction>)(target => target.AccessMember(p)))
-            ).ToArray());
-
-        public static IMethod ImplementEquality(this VirtualType type, params (IType type, Func<IL.ILInstruction, IL.ILInstruction> getter)[] properties)
-        {
-            type.ImplementGetHashCode(properties);
-            return type.ImplementEqualityCore((eqMethod) =>
-            {
-                var @thisParam = new IL.ILVariable(IL.VariableKind.Parameter, type, -1);
-                var otherParam = new IL.ILVariable(IL.VariableKind.Parameter, type, 0);
-                var body =
-                    AndAlso(properties.Select(p => EqualsExpression(p.type, p.getter(new IL.LdLoc(@thisParam)), p.getter(new IL.LdLoc(otherParam)))));
-
-                if (type.IsReferenceType == true)
-                    body = new IL.IfInstruction(
-                        new IL.Comp(IL.ComparisonKind.Equality, Sign.None, new IL.LdLoc(thisParam), new IL.LdLoc(otherParam)),
-                        new IL.LdcI4(1),
-                        body
-                    );
-                return CreateExpressionFunction(eqMethod, body);
-            });
-        }
-
-        static IMethod ImplementGetHashCode(this VirtualType type, (IType type, Func<IL.ILInstruction, IL.ILInstruction> getter)[] properties)
-        {
-            var getHashCode = new VirtualMethod(type, Accessibility.Public, "GetHashCode", new IParameter[0], type.Compilation.FindType(typeof(int)), isOverride: true);
-            getHashCode.BodyFactory = () =>
-            {
-                var thisParam = new IL.ILVariable(IL.VariableKind.Parameter, type, -1);
-                var body = CombineHashCodes(type.Compilation, null, properties.Select(p => GetHashCodeExpression(p.type, p.getter(new IL.LdLoc(thisParam)))).ToArray()); // TODO: seed
-                return CreateExpressionFunction(getHashCode, body);
-            };
-            type.Methods.Add(getHashCode);
-            return getHashCode;
-        }
-
-        /// Implements IEquatable.Equals, Object.Equals, !=, == using a abstract EqualsCore method
-        public static (IMethod equalsCore, IMethod equals) ImplementEqualityForBase(this VirtualType type)
-        {
-            Debug.Assert(type.IsAbstract);
-            var methodName = SymbolNamer.NameMethod(type, "EqualsCore", 0, new[] { type });
-            var eqCoreMethod = new VirtualMethod(type, Accessibility.ProtectedAndInternal, methodName, new [] { new DefaultParameter(type, "b") }, type.Compilation.FindType(typeof(bool)), isAbstract: true);
-            type.Methods.Add(eqCoreMethod);
-            return (eqCoreMethod, type.ImplementEqualityCore(eqMethod =>
-            {
-                var @thisParam = new IL.ILVariable(IL.VariableKind.Parameter, type, -1);
-                var otherParam = new IL.ILVariable(IL.VariableKind.Parameter, type, 0);
-                var body = new IL.IfInstruction(
-                    new IL.Comp(IL.ComparisonKind.Equality, Sign.None, new IL.LdLoc(thisParam), new IL.LdLoc(otherParam)),
-                    new IL.LdcI4(1),
-                    new IL.CallVirt(eqCoreMethod) { Arguments = { new IL.LdLoc(thisParam), new IL.LdLoc(otherParam) } }
-                );
-                return CreateExpressionFunction(eqMethod, body);
-            }));
-        }
-
-        /// Implements EqualsCore (method required by ImplementEqualityForBase) and GetHashCode methods using the specified properties
-        public static IMethod ImplementEqualityForCase(this VirtualType type, IMethod overridesMethod, params IMember[] properties) =>
-            type.ImplementEqualityForCase(overridesMethod, properties.Select(p =>
-                (p.ReturnType, (Func<IL.ILInstruction, IL.ILInstruction>)(target => target.AccessMember(p)))
-            ).ToArray());
-        /// Implements EqualsCore (method required by ImplementEqualityForBase) and GetHashCode methods using the specified properties
-        public static IMethod ImplementEqualityForCase(this VirtualType type, IMethod overridesMethod, params (IType type, Func<IL.ILInstruction, IL.ILInstruction> getter)[] properties)
-        {
-            Debug.Assert(!type.IsAbstract);
-            Debug.Assert(type.DirectBaseType != null);
-            Debug.Assert(type.GetAllBaseTypes().Contains(overridesMethod.DeclaringType));
-
-            type.ImplementGetHashCode(properties);
-            var eqCoreMethod = new VirtualMethod(type, overridesMethod.Accessibility, overridesMethod.Name, overridesMethod.Parameters, type.Compilation.FindType(typeof(bool)), isOverride: true);
-            eqCoreMethod.BodyFactory = () => {
-                var tmpVar = new IL.ILVariable(IL.VariableKind.StackSlot, type, stackType: IL.StackType.O, 0);
-                var otherParam = new IL.ILVariable(IL.VariableKind.Parameter, type.Compilation.FindType(typeof(object)), 0);
-                var thisParam = new IL.ILVariable(IL.VariableKind.Parameter, type, -1);
-
-                var eqCore =
-                    AndAlso(properties.Select(p => EqualsExpression(p.type, p.getter(new IL.LdLoc(@thisParam)), p.getter(new IL.LdLoc(otherParam)))));
-
-                var body =
-                    // do typecheck of the parameter while assigning the tmpVar
-                    new IL.IfInstruction(
-                        new IL.Comp(IL.ComparisonKind.Inequality, Sign.None, new IL.StLoc(tmpVar, new IL.IsInst(new IL.LdLoc(otherParam), type)), new IL.LdNull()),
-                        eqCore,
-                        new IL.LdcI4(0)
-                    );
-                return CreateExpressionFunction(eqCoreMethod, body);
-            };
-            type.Methods.Add(eqCoreMethod);
-            return eqCoreMethod;
-        }
 
         public static IL.ILFunction CreateOneBlockFunction(IMethod method, params IL.ILInstruction[] instructions)
         {
