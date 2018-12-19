@@ -139,10 +139,8 @@ namespace TrainedMonkey.CSharpGen
             // var sealMethodName = SymbolNamer.NameMethod(type, "Seal", 0, new IType[0]);
             // type.Methods.Add(new VirtualMethod(type, Accessibility.ProtectedAndInternal, sealMethodName, new IParameter[0], cx.FindType(typeof(void)), isAbstract: true));
             var (abstractEqCore, _) = type.ImplementEqualityForBase();
-            // var cases = new Dictionary<string, IType>();
-            foreach (var c in union.Options)
-            {
-                var valueType = FindType(cx, c);
+
+            var cases = union.Options.Select((c, index) => {
                 string name(TypeRef t) =>
                     t.Match(
                         actual: x => x.TypeName,
@@ -160,6 +158,14 @@ namespace TrainedMonkey.CSharpGen
                 );
                 caseType.DirectBaseType = type;
                 type.NestedTypes.Add(caseType);
+                return (index, c, caseName, caseType);
+            }).ToArray();
+
+            var baseMatch = type.ImplementMatchBase(cases.Select(c => ((IType)c.caseType, c.caseName)).ToArray());
+
+            foreach (var (index, c, caseName, caseType) in cases)
+            {
+                var valueType = FindType(cx, c);
 
                 // var sealMethod = new VirtualMethod(caseType, Accessibility.ProtectedAndInternal, sealMethodName, new IParameter[0], cx.FindType(typeof(void)), isOverride: true);
                 // sealMethod.BodyFactory = () => EmitExtensions.CreateOneBlockFunction(sealMethod);
@@ -169,7 +175,7 @@ namespace TrainedMonkey.CSharpGen
                 var caseCtor = caseType.AddCreateConstructor(cx, new [] { ("item", valueProperty.field) });
 
                 caseType.ImplementEqualityForCase(abstractEqCore, valueProperty.prop);
-
+                caseType.ImplementMatchCase(baseMatch, index);
 
                 var caseFactory = new VirtualMethod(type, Accessibility.Public,
                     SymbolNamer.NameMethod(type, caseName, 0, new IType[] { valueType }),

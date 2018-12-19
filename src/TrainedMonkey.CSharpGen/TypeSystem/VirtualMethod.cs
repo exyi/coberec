@@ -15,7 +15,7 @@ namespace TrainedMonkey.CSharpGen.TypeSystem
 
     public class VirtualMethod : IMethod, IMethodWithDefinition, IHideableMember
     {
-        public VirtualMethod(ITypeDefinition declaringType, Accessibility accessibility, string name, IReadOnlyList<IParameter> parameters, IType returnType, bool isOverride = false, bool isVirtual = false, bool isSealed = false, bool isAbstract = false, bool isStatic = false, bool isHidden = false)
+        public VirtualMethod(ITypeDefinition declaringType, Accessibility accessibility, string name, IReadOnlyList<IParameter> parameters, IType returnType, bool isOverride = false, bool isVirtual = false, bool isSealed = false, bool isAbstract = false, bool isStatic = false, bool isHidden = false, ITypeParameter[] typeParameters = null)
         {
             this.DeclaringTypeDefinition = declaringType;
             this.ReturnType = returnType;
@@ -28,9 +28,10 @@ namespace TrainedMonkey.CSharpGen.TypeSystem
             this.IsSealed = isSealed;
             this.IsAbstract = isAbstract;
             this.IsStatic = isStatic;
+            this.TypeParameters = typeParameters ?? Array.Empty<ITypeParameter>();
         }
 
-        public IReadOnlyList<ITypeParameter> TypeParameters => EmptyList<ITypeParameter>.Instance;
+        public IReadOnlyList<ITypeParameter> TypeParameters { get; }
 
         public IReadOnlyList<IType> TypeArguments => EmptyList<IType>.Instance;
 
@@ -191,10 +192,7 @@ namespace TrainedMonkey.CSharpGen.TypeSystem
             return result;
         }
 
-        public IMethod Specialize(TypeParameterSubstitution substitution)
-        {
-            throw new NotSupportedException();
-        }
+        public IMethod Specialize(TypeParameterSubstitution substitution) => SpecializedMethod.Create(this, substitution);
 
         IMember IMember.Specialize(TypeParameterSubstitution substitution) => this.Specialize(substitution);
     }

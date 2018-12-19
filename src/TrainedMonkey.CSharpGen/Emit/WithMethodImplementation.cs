@@ -33,7 +33,7 @@ namespace TrainedMonkey.CSharpGen.Emit
                     new IL.IfInstruction(
                         EmitExtensions.AndAlso(
                         properties
-                        .Select((mem, parIndex) => EmitExtensions.EqualsExpression(mem.ReturnType, new IL.LdLoc(thisParam).AccessMember(mem), new IL.LdLoc(new IL.ILVariable(IL.VariableKind.Parameter, mem.ReturnType, parIndex))))),
+                        .Select((mem, parIndex) => EqualityImplementation.EqualsExpression(mem.ReturnType, new IL.LdLoc(thisParam).AccessMember(mem), new IL.LdLoc(new IL.ILVariable(IL.VariableKind.Parameter, mem.ReturnType, parIndex))))),
                     new IL.LdLoc(thisParam),
                     constructorCall
                 ));
