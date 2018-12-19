@@ -48,7 +48,7 @@ namespace TrainedMonkey.CSharpGen.Emit
         {
             IType optParamType(IType t) => new ParameterizedType(type.Compilation.FindType(typeof(OptParam<>)), new [] { t });
 
-            var parameters = SymbolNamer.NameParameters(properties.Select(p => new DefaultParameter(optParamType(p.ReturnType), p.Name)));
+            var parameters = SymbolNamer.NameParameters(properties.Select(p => new DefaultParameter(optParamType(p.ReturnType), name: p.Name, isOptional: true)));
 
             var name = SymbolNamer.NameMethod(type, "With", 0, parameters.Select(p => p.Type).ToArray());
             var method = new VirtualMethod(type, Accessibility.Public, name, parameters, type);
