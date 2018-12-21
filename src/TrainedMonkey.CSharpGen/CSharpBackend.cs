@@ -41,6 +41,10 @@ namespace TrainedMonkey.CSharpGen
             PrimitiveTypeMapping = primitiveTypeMapping;
         }
 
+        public bool EmitInterfaceWithMethods { get; } = true;
+        public bool EmitOptionalWithMethods { get; } = true;
+        public bool EmitWithMethods { get; } = true;
+
         public string Namespace { get; }
         public ImmutableDictionary<string, FullTypeName> PrimitiveTypeMapping { get; }
     }
@@ -57,6 +61,9 @@ namespace TrainedMonkey.CSharpGen
         public string Name { get; }
         public Dictionary<string, string> Fields { get; }
         public Dictionary<string, string> SpecialSymbols { get; }
+
+        public string GetSymbol(string name) =>
+            SpecialSymbols?.GetValueOrDefault(name);
     }
 
     public sealed class CSharpBackend
@@ -130,6 +137,7 @@ namespace TrainedMonkey.CSharpGen
 
         private TypeSymbolNameMapping GenerateInterface(VirtualType type, TypeDefCore.InterfaceCase ifc)
         {
+            var specialSymbols = new Dictionary<string, string>();
             var propDictionary = new Dictionary<string, (TypeField schema, IProperty prop)>();
             var props = new List<(TypeField schema, IProperty prop)>();
 
@@ -143,12 +151,17 @@ namespace TrainedMonkey.CSharpGen
 
             // type.ImplementEquality(properties);
 
-            // var withMethod = type.ImplementWithMethod(ctor, properties);
-            // var optWithMethod = type.ImplementOptionalWithMethod(withMethod, properties);
+            if (cx.Settings.EmitInterfaceWithMethods)
+            {
+                var withMethod = type.InterfaceWithMethod(props.Select(p => (p.prop as IMember, p.schema.Name)).ToArray(), isOptional: cx.Settings.EmitOptionalWithMethods);
+
+                specialSymbols.Add("With", withMethod.Name);
+            }
 
             return new TypeSymbolNameMapping(
                 type.Name,
-                props.ToDictionary(p => p.schema.Name, p => p.prop.Name)
+                props.ToDictionary(p => p.schema.Name, p => p.prop.Name),
+                specialSymbols: specialSymbols
             );
         }
 
@@ -175,6 +188,19 @@ namespace TrainedMonkey.CSharpGen
                 props.Add((f, prop, field));
             }
 
+            var ctor = type.AddCreateConstructor(cx, props.Select(k => (k.schema.Name, k.field)).ToArray());
+            var properties = props.Select(p => p.prop).ToArray();
+
+            type.ImplementEquality(properties);
+
+            IMethod withMethod = null;
+            if (cx.Settings.EmitWithMethods)
+            {
+                withMethod = type.ImplementWithMethod(ctor, properties);
+                if (cx.Settings.EmitOptionalWithMethods)
+                    type.ImplementOptionalWithMethod(withMethod, properties);
+            }
+
             foreach (var f in composite.Implements)
             {
                 var interfaceName = ((TypeRef.ActualTypeCase)f).TypeName;
@@ -182,29 +208,41 @@ namespace TrainedMonkey.CSharpGen
                 var (interfaceType, interfaceMapping) = this.BuildType(interfaceDeclaration);
                 type.ImplementedInterfaces.Add(interfaceType);
 
-                foreach (var interfaceProp in ((TypeDefCore.InterfaceCase)interfaceDeclaration.Core).Fields)
-                {
-                    var myProp = propDictionary[interfaceProp.Name];
-                    var interfaceRealProp =
-                        interfaceMapping.Fields[interfaceProp.Name]
-                        .Apply(n => interfaceType.GetProperties(p => p.Name == n))
-                        .Single();
+                var interfaceFields =
+                   (from ifcProp in ((TypeDefCore.InterfaceCase)interfaceDeclaration.Core).Fields
+                    select (
+                        ifcProp,
+                        myProp: propDictionary[ifcProp.Name],
+                        ifcRealProp: interfaceMapping.Fields[ifcProp.Name]
+                                     .Apply(n => interfaceType.GetProperties(p => p.Name == n))
+                                     .Single()
+                    )
 
+                   ).ToArray();
+                foreach (var (ifcProp, myProp, ifcRealProp) in interfaceFields)
+                {
                     if (myProp.prop == null ||
-                        myProp.prop.Name != interfaceRealProp.Name ||
-                        !myProp.prop.ReturnType.Equals(interfaceRealProp.ReturnType))
+                        myProp.prop.Name != ifcRealProp.Name ||
+                        !myProp.prop.ReturnType.Equals(ifcRealProp.ReturnType))
                         // add explicit implementation if needed
-                        type.AddExplicitInterfaceProperty(interfaceRealProp, myProp.prop);
+                        type.AddExplicitInterfaceProperty(ifcRealProp, myProp.prop);
+                }
+
+                if (interfaceMapping.GetSymbol("With") is string withMethodName)
+                {
+                    var ifcWithMethod = interfaceType.GetMethods(m => m.Name == withMethodName).Single();
+
+                    if (withMethod == null) throw new NotSupportedException($"Could not implement {interfaceName} for {type.Name} due to conflict in With method settings.");
+
+                    type.InterfaceImplementationWithMethod(
+                        withMethod,
+                        ifcWithMethod,
+                        interfaceFields.Select(x =>
+                            (x.myProp.prop as IMember, x.ifcProp.Name)).ToArray(),
+                        properties
+                    );
                 }
             }
-
-            var ctor = type.AddCreateConstructor(cx, props.Select(k => (k.schema.Name, k.field)).ToArray());
-            var properties = props.Select(p => p.prop).ToArray();
-
-            type.ImplementEquality(properties);
-
-            var withMethod = type.ImplementWithMethod(ctor, properties);
-            var optWithMethod = type.ImplementOptionalWithMethod(withMethod, properties);
 
             return new TypeSymbolNameMapping(
                 type.Name,

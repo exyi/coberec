@@ -13,17 +13,72 @@ namespace TrainedMonkey.CSharpGen.Emit
 {
     public static class WithMethodImplementation
     {
-        public static IMethod ImplementWithMethod(this VirtualType type, IMethod createConstructor, params IMember[] properties)
+        static VirtualMethod CreateSignatureCore(VirtualType type, IEnumerable<(IType type, string desiredName)> properties, bool isOptional = false)
+        {
+            IType optParamType(IType t) => isOptional ? new ParameterizedType(type.Compilation.FindType(typeof(OptParam<>)), new [] { t }) : t;
+
+            var parameters = SymbolNamer.NameParameters(properties.Select((p) => new DefaultParameter(optParamType(p.type), p.desiredName, isOptional: isOptional)));
+            var withName = SymbolNamer.NameMethod(type, "With", 0, parameters.Select(p => p.Type).ToArray());
+
+            return new VirtualMethod(type, Accessibility.Public, withName, parameters, type);
+        }
+
+        public static IMethod InterfaceWithMethod(this VirtualType type, (IMember property, string desiredName)[] properties, bool isOptional)
+        {
+            Debug.Assert(type.Kind == TypeKind.Interface);
+
+            var method = CreateSignatureCore(type, properties.Select((p) => (p.property.ReturnType, p.desiredName)), isOptional);
+            type.Methods.Add(method);
+            return method;
+        }
+
+        static IType UnwrapOptParam(IType t) =>
+            t.Name == "OptParam" && t.Namespace == "TrainedMonkey.CoreLib" ? t.TypeArguments.Single() : t;
+        public static IMember InterfaceImplementationWithMethod(this VirtualType type, IMethod localWithMethod, IMethod ifcMethod, (IMember localProperty, string desiredName)[] ifcProperties, IMember[] localProperties)
+        {
+            Debug.Assert(ifcProperties.Select(p => p.localProperty.ReturnType).SequenceEqual(ifcMethod.Parameters.Select(p => UnwrapOptParam(p.Type))));
+            Debug.Assert(type.ImplementedInterfaces.Contains(ifcMethod.DeclaringType));
+            Debug.Assert(type.ImplementedInterfaces.Contains(ifcMethod.ReturnType));
+
+            Debug.Assert(localProperties.Select(p => p.ReturnType).SequenceEqual(localWithMethod.Parameters.Select(p => p.Type)));
+
+            var method = new VirtualMethod(type, Accessibility.Private, ifcMethod.FullName, ifcMethod.Parameters, ifcMethod.ReturnType, explicitImplementations: new [] { ifcMethod });
+
+            method.BodyFactory = () => {
+                var thisParam = new IL.ILVariable(IL.VariableKind.Parameter, type, -1);
+
+                var expressions =
+                   (from p in localProperties
+                    let i = Array.FindIndex(ifcProperties, a => a.localProperty.Equals(p))
+                    let parameter = i >= 0 ? ifcMethod.Parameters[i] : null
+                    let parameterLocal = i >= 0 ? new IL.ILVariable(IL.VariableKind.Parameter, parameter.Type, i) : null
+                    let isOptional = parameter?.Type.FullName == "TrainedMonkey.CoreLib.OptParam"
+                    select i < 0 ? new IL.LdLoc(thisParam).AccessMember(p) :
+                           isOptional ? OptParam_ValueOrDefault(parameter.Type, parameterLocal, new IL.LdLoc(thisParam).AccessMember(p)) :
+                           new IL.LdLoc(parameterLocal)
+                   ).ToArray();
+
+                var withInvocation = new IL.Call(localWithMethod);
+                withInvocation.Arguments.Add(new IL.LdLoc(thisParam));
+                withInvocation.Arguments.AddRange(expressions);
+
+                return EmitExtensions.CreateExpressionFunction(
+                    method,
+                    withInvocation
+                );
+            };
+
+            type.Methods.Add(method);
+            return method;
+        }
+
+        public static IMethod ImplementWithMethod(this VirtualType type, IMethod createConstructor, IMember[] properties)
         {
             var ctorParameters = createConstructor.Parameters;
             Debug.Assert(properties.Zip(ctorParameters, (prop, param) => prop.ReturnType.Equals(param.Type)).All(a=>a));
             Debug.Assert(createConstructor.IsConstructor);
 
-            var parameters = SymbolNamer.NameParameters(properties.Zip(ctorParameters, (prop, param) => new DefaultParameter(prop.ReturnType, param.Name)));
-            var withName = SymbolNamer.NameMethod(type, "With", 0, parameters.Select(p => p.Type).ToArray());
-
-
-            var method = new VirtualMethod(type, Accessibility.Public, withName, parameters, type);
+            var method = CreateSignatureCore(type, properties.Zip(ctorParameters, (prop, param) => (prop.ReturnType, param.Name)));
 
             method.BodyFactory = () => {
                 var thisParam = new IL.ILVariable(IL.VariableKind.Parameter, type, -1);
@@ -32,8 +87,8 @@ namespace TrainedMonkey.CSharpGen.Emit
                 return EmitExtensions.CreateExpressionFunction(method,
                     new IL.IfInstruction(
                         EmitExtensions.AndAlso(
-                        properties
-                        .Select((mem, parIndex) => EqualityImplementation.EqualsExpression(mem.ReturnType, new IL.LdLoc(thisParam).AccessMember(mem), new IL.LdLoc(new IL.ILVariable(IL.VariableKind.Parameter, mem.ReturnType, parIndex))))),
+                            properties
+                            .Select((mem, parIndex) => EqualityImplementation.EqualsExpression(mem.ReturnType, new IL.LdLoc(thisParam).AccessMember(mem), new IL.LdLoc(new IL.ILVariable(IL.VariableKind.Parameter, mem.ReturnType, parIndex))))),
                     new IL.LdLoc(thisParam),
                     constructorCall
                 ));
@@ -46,22 +101,17 @@ namespace TrainedMonkey.CSharpGen.Emit
 
         public static IMethod ImplementOptionalWithMethod(this VirtualType type, IMethod withMethod, IMember[] properties)
         {
-            IType optParamType(IType t) => new ParameterizedType(type.Compilation.FindType(typeof(OptParam<>)), new [] { t });
-
-            var parameters = SymbolNamer.NameParameters(properties.Select(p => new DefaultParameter(optParamType(p.ReturnType), name: p.Name, isOptional: true)));
-
-            var name = SymbolNamer.NameMethod(type, "With", 0, parameters.Select(p => p.Type).ToArray());
-            var method = new VirtualMethod(type, Accessibility.Public, name, parameters, type);
+            var method = CreateSignatureCore(type, withMethod.Parameters.Select(p => (p.Type, p.Name)), isOptional: true);
 
             method.BodyFactory = () => {
                 var thisParam = new IL.ILVariable(IL.VariableKind.Parameter, type, -1);
                 var normalWithCall = new IL.CallVirt(withMethod);
                 var paramsWithVariables =
-                    parameters.Select((p, index) =>
+                    method.Parameters.Select((p, index) =>
                         new { p, index, var = new IL.ILVariable(IL.VariableKind.Parameter, p.Type, index) });
                 normalWithCall.Arguments.Add(new IL.LdLoc(thisParam));
                 normalWithCall.Arguments.AddRange(properties.Zip(paramsWithVariables, (p, parameter) =>
-                    new IL.Call(parameter.p.Type.GetMethods(m => m.Name == nameof(OptParam<int>.ValueOrDefault)).Single()) { Arguments = { new IL.LdLoca(parameter.var), new IL.LdLoc(thisParam).AccessMember(p) } }
+                    OptParam_ValueOrDefault(parameter.p.Type, parameter.var, new IL.LdLoc(thisParam).AccessMember(p))
                 ));
                 return EmitExtensions.CreateExpressionFunction(method,
                     normalWithCall
@@ -71,5 +121,8 @@ namespace TrainedMonkey.CSharpGen.Emit
             type.Methods.Add(method);
             return method;
         }
+
+        static IL.ILInstruction OptParam_ValueOrDefault(IType parameterType, IL.ILVariable parameter, IL.ILInstruction defaultValue) =>
+            new IL.Call(parameterType.GetMethods(m => m.Name == nameof(OptParam<int>.ValueOrDefault)).Single()) { Arguments = { new IL.LdLoca(parameter), defaultValue } };
     }
 }
