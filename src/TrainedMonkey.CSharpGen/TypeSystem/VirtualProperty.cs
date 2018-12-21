@@ -8,7 +8,7 @@ namespace TrainedMonkey.CSharpGen.TypeSystem
 {
     public class VirtualProperty : IProperty, IHideableMember
     {
-        public VirtualProperty(ITypeDefinition declaringTypeDefinition, Accessibility accessibility, string name, IMethod getter, IMethod setter = null, bool isIndexer = false, bool isVirtual = false, bool isOverride = false, bool isStatic = false, bool isAbstract = false, bool isSealed = false, IReadOnlyList<IParameter> parameters = null, bool isHidden = false)
+        public VirtualProperty(ITypeDefinition declaringTypeDefinition, Accessibility accessibility, string name, IMethod getter, IMethod setter = null, bool isIndexer = false, bool isVirtual = false, bool isOverride = false, bool isStatic = false, bool isAbstract = false, bool isSealed = false, IReadOnlyList<IParameter> parameters = null, bool isHidden = false, IEnumerable<IMember> explicitImplementations = null)
         {
             var returnType = getter?.ReturnType ?? setter?.Parameters.Last().Type ?? throw new Exception($"Property {name} does not have getter nor setter");
 
@@ -39,6 +39,7 @@ namespace TrainedMonkey.CSharpGen.TypeSystem
             this.IsSealed = isSealed;
             this.Parameters = parameters;
             this.IsHidden = isHidden;
+            this.ExplicitlyImplementedInterfaceMembers = explicitImplementations?.ToArray() ?? Array.Empty<IMember>();
         }
 
         public bool CanGet => Getter != null;
@@ -57,9 +58,9 @@ namespace TrainedMonkey.CSharpGen.TypeSystem
 
         public IType ReturnType { get; }
 
-        public IEnumerable<IMember> ExplicitlyImplementedInterfaceMembers => Enumerable.Empty<IMember>();
+        public IEnumerable<IMember> ExplicitlyImplementedInterfaceMembers { get; }
 
-        public bool IsExplicitInterfaceImplementation => false;
+        public bool IsExplicitInterfaceImplementation => ExplicitlyImplementedInterfaceMembers.Count() > 0;
 
         public bool IsVirtual { get; }
 

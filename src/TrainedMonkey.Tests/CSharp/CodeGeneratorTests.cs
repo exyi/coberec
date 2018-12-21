@@ -71,9 +71,7 @@ namespace TrainedMonkey.Tests.CSharp
                 ))
             });
 
-            var b = new CSharpBackend();
-
-            var result = b.Build(schema, defaultSettings);
+            var result = CSharpBackend.Build(schema, defaultSettings);
             // Console.WriteLine(result);
             CheckItCompiles(result);
         }
@@ -81,13 +79,19 @@ namespace TrainedMonkey.Tests.CSharp
         [Fact]
         public void SimpleUnionType()
         {
+            TypeField field543 = new TypeField("Field543", TypeRef.ListType(TypeRef.ActualType("String")), null, Enumerable.Empty<Directive>());
             var schema = new DataSchema(Enumerable.Empty<Entity>(), new [] {
+                new TypeDef("Interface1", Enumerable.Empty<Directive>(), TypeDefCore.Interface(
+                    new [] {
+                        field543
+                    }
+                )),
                 new TypeDef("Test123", Enumerable.Empty<Directive>(), TypeDefCore.Composite(
                     new [] {
-                        new TypeField("Field543", TypeRef.ListType(TypeRef.ActualType("String")), null, Enumerable.Empty<Directive>()),
+                        field543,
                         new TypeField("abcSS", TypeRef.ActualType("Int"), null, Enumerable.Empty<Directive>()),
                     },
-                    new TypeRef[] {}
+                    new TypeRef[] { TypeRef.ActualType("Interface1") }
                 )),
                 new TypeDef("Union123", Enumerable.Empty<Directive>(), TypeDefCore.Union(
                     new [] {
@@ -96,22 +100,18 @@ namespace TrainedMonkey.Tests.CSharp
                     }))
             });
 
-            var b = new CSharpBackend();
-
-            var result = b.Build(schema, defaultSettings);
+            var result = CSharpBackend.Build(schema, defaultSettings);
             Console.WriteLine(result);
             CheckItCompiles(result);
         }
 
         // [Property(MaxTest = 10_000, EndSize = 10_000)]
         [Property()]
-        public void GenerateArbitrarySchema(TypeDef typeDef)
+        public void GenerateArbitrarySchema(DataSchema schema)
         {
-            var schema = new DataSchema(Enumerable.Empty<Entity>(), new [] { typeDef });
+            // var schema = new DataSchema(Enumerable.Empty<Entity>(), new [] { typeDef });
 
-            var b = new CSharpBackend();
-
-            var result = b.Build(schema, defaultSettings);
+            var result = CSharpBackend.Build(schema, defaultSettings);
             CheckItCompiles(result);
             // Console.WriteLine(result);
         }

@@ -15,7 +15,7 @@ namespace TrainedMonkey.CSharpGen.TypeSystem
 
     public class VirtualMethod : IMethod, IMethodWithDefinition, IHideableMember
     {
-        public VirtualMethod(ITypeDefinition declaringType, Accessibility accessibility, string name, IReadOnlyList<IParameter> parameters, IType returnType, bool isOverride = false, bool isVirtual = false, bool isSealed = false, bool isAbstract = false, bool isStatic = false, bool isHidden = false, ITypeParameter[] typeParameters = null)
+        public VirtualMethod(ITypeDefinition declaringType, Accessibility accessibility, string name, IReadOnlyList<IParameter> parameters, IType returnType, bool isOverride = false, bool isVirtual = false, bool isSealed = false, bool isAbstract = false, bool isStatic = false, bool isHidden = false, ITypeParameter[] typeParameters = null, IEnumerable<IMember> explicitImplementations = null)
         {
             this.DeclaringTypeDefinition = declaringType;
             this.ReturnType = returnType;
@@ -29,6 +29,7 @@ namespace TrainedMonkey.CSharpGen.TypeSystem
             this.IsAbstract = isAbstract;
             this.IsStatic = isStatic;
             this.TypeParameters = typeParameters ?? Array.Empty<ITypeParameter>();
+            this.ExplicitlyImplementedInterfaceMembers = explicitImplementations?.ToArray() ?? Array.Empty<IMember>();
         }
 
         public IReadOnlyList<ITypeParameter> TypeParameters { get; }
@@ -57,9 +58,9 @@ namespace TrainedMonkey.CSharpGen.TypeSystem
 
         public IType ReturnType { get; }
 
-        public IEnumerable<IMember> ExplicitlyImplementedInterfaceMembers => EmptyList<IMember>.Instance;
+        public IEnumerable<IMember> ExplicitlyImplementedInterfaceMembers { get; }
 
-        public bool IsExplicitInterfaceImplementation => false;
+        public bool IsExplicitInterfaceImplementation => ExplicitlyImplementedInterfaceMembers.Count() > 0;
 
         public bool IsVirtual { get; }
 

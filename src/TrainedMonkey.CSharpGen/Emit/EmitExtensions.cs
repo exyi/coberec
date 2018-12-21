@@ -19,6 +19,36 @@ namespace TrainedMonkey.CSharpGen.Emit
         public const string PropertyGetter = "get_{0}";
         public const string PropertySetter = "set_{0}";
 
+        public static IProperty AddExplicitInterfaceProperty(this VirtualType declaringType, IProperty ifcProperty, IMember baseMember)
+        {
+            Debug.Assert(declaringType.Equals(baseMember.DeclaringType) || declaringType.GetAllBaseTypeDefinitions().Contains(baseMember.DeclaringType));
+            Debug.Assert(ifcProperty.DeclaringType.Kind == TypeKind.Interface);
+
+            var getter = new VirtualMethod(declaringType, Accessibility.Private, "get_" + ifcProperty.FullName, new IParameter[0], ifcProperty.ReturnType, explicitImplementations: new [] { ifcProperty.Getter }, isHidden: true);
+            getter.BodyFactory = () => {
+                var thisParam = new IL.ILVariable(IL.VariableKind.Parameter, declaringType, -1);
+                return CreateExpressionFunction(getter, new IL.LdLoc(thisParam).AccessMember(baseMember));
+            };
+            var setter =
+                ifcProperty.Setter == null ? null :
+                new VirtualMethod(declaringType, Accessibility.Private, "get_" + ifcProperty.FullName, ifcProperty.Setter.Parameters, ifcProperty.Setter.ReturnType, explicitImplementations: new [] { ifcProperty.Setter }, isHidden: true);
+
+            if (setter != null)
+                setter.BodyFactory = () => {
+                    var thisParam = new IL.ILVariable(IL.VariableKind.Parameter, declaringType, -1);
+                    var valueParam = new IL.ILVariable(IL.VariableKind.Parameter, declaringType, 0);
+                    return CreateExpressionFunction(getter, new IL.LdLoc(thisParam).AssignMember(baseMember, new IL.LdLoc(valueParam)));
+                };
+
+            var prop = new VirtualProperty(declaringType, Accessibility.Private, ifcProperty.FullName, getter, setter, explicitImplementations: new [] { ifcProperty });
+
+            getter.ApplyAction(declaringType.Methods.Add);
+            setter?.ApplyAction(declaringType.Methods.Add);
+            prop.ApplyAction(declaringType.Properties.Add);
+
+            return prop;
+        }
+
         public static (IProperty prop, IField field) AddAutoProperty(this VirtualType declaringType, string name, IType propertyType, Accessibility accessibility = Accessibility.Public, bool isReadOnly = true)
         {
             name = SymbolNamer.NameMember(declaringType, name, lowerCase: accessibility == Accessibility.Private);
@@ -44,6 +74,22 @@ namespace TrainedMonkey.CSharpGen.Emit
             declaringType.Properties.Add(prop);
 
             return (prop, field);
+        }
+
+        public static IProperty AddInterfaceProperty(this VirtualType declaringType, string name, IType propertyType, bool isReadOnly = true)
+        {
+            name = SymbolNamer.NameMember(declaringType, name, lowerCase: false);
+
+            var getter = new VirtualMethod(declaringType, Accessibility.Public, string.Format(PropertyGetter, name), Array.Empty<IParameter>(), propertyType, isHidden: true);
+            var setter = isReadOnly ? null :
+                         new VirtualMethod(declaringType, Accessibility.Public, string.Format(PropertySetter, name), new [] { new DefaultParameter(propertyType, "value") }, declaringType.Compilation.FindType(typeof(void)), isHidden: true);
+            var prop = new VirtualProperty(declaringType, Accessibility.Public, name, getter, setter, isVirtual: true);
+
+
+            declaringType.Methods.Add(getter);
+            if (setter != null) declaringType.Methods.Add(setter);
+            declaringType.Properties.Add(prop);
+            return prop;
         }
 
         public static IMethod AddCreateConstructor(this VirtualType type, EmitContext cx, (string name, IField field)[] fields)
@@ -148,9 +194,14 @@ namespace TrainedMonkey.CSharpGen.Emit
         }
 
         public static IL.ILInstruction AccessMember(this IL.ILInstruction target, IMember p) =>
-                 p is IProperty property ? new IL.Call(property.Getter) { Arguments = { target } } :
-                 p is IField field ? (IL.ILInstruction)new IL.LdObj(new IL.LdFlda(target, field), field.ReturnType) :
-                 throw new NotSupportedException($"{p.GetType()}");
+            p is IProperty property ? new IL.Call(property.Getter) { Arguments = { target } } :
+            p is IField field ? (IL.ILInstruction)new IL.LdObj(new IL.LdFlda(target, field), field.ReturnType) :
+            throw new NotSupportedException($"{p.GetType()}");
+
+        public static IL.ILInstruction AssignMember(this IL.ILInstruction target, IMember p, IL.ILInstruction value) =>
+            p is IProperty property ? new IL.Call(property.Setter) { Arguments = { target, value } } :
+            p is IField field ? (IL.ILInstruction)new IL.StObj(new IL.LdFlda(target, field), value, field.ReturnType) :
+            throw new NotSupportedException($"{p.GetType()}");
 
         public static IL.ILFunction CreateOneBlockFunction(IMethod method, params IL.ILInstruction[] instructions)
         {

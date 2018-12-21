@@ -43,6 +43,9 @@ namespace TrainedMonkey.MetaSchema
             }
             public string TypeName { get; }
             public override FormatResult Format() => TypeName;
+            public override bool Equals(object obj) =>
+                obj is ActualTypeCase o && this.TypeName.Equals(o.TypeName);
+            public override int GetHashCode() => (TypeName, 67464).GetHashCode();
         }
         public class NullableTypeCase: TypeRef
         {
@@ -54,6 +57,9 @@ namespace TrainedMonkey.MetaSchema
 
             public TypeRef Type { get; }
             public override FormatResult Format() => FormatResult.Concat(Type.Format(), "!");
+            public override bool Equals(object obj) =>
+                obj is NullableTypeCase o && this.Type.Equals(o.Type);
+            public override int GetHashCode() => (Type.GetHashCode(), 76545476).GetHashCode();
         }
         public class ListTypeCase: TypeRef
         {
@@ -66,6 +72,9 @@ namespace TrainedMonkey.MetaSchema
             public TypeRef Type { get; }
 
             public override FormatResult Format() => FormatResult.Concat("[", Type.Format(), "]");
+            public override bool Equals(object obj) =>
+                obj is ListTypeCase o && this.Type.Equals(o.Type);
+            public override int GetHashCode() => (Type.GetHashCode(), 3564364).GetHashCode();
         }
 
         public T Match<T>(Func<ActualTypeCase, T> actual,

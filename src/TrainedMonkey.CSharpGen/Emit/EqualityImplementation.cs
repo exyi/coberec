@@ -28,6 +28,7 @@ namespace TrainedMonkey.CSharpGen.Emit
             var seqInterface = propertyType.GetAllBaseTypes().FirstOrDefault(t => t.FullName == "System.Collections.IStructuralEquatable") as IType;
             var enumerableInterface = propertyType.GetAllBaseTypes().FirstOrDefault(t => t.FullName == "System.Collections.IEnumerable") as IType;
             var eqOperator = propertyType.GetMethods(options: GetMemberOptions.IgnoreInheritedMembers).FirstOrDefault(t => t.IsOperator && t.Name == "op_Equality");
+            var compilation = propertyType.GetDefinition().Compilation;
             if (propertyType.GetStackType() != IL.StackType.O)
             {
                 return new IL.Comp(IL.ComparisonKind.Equality, needsBoxing ? IL.ComparisonLiftingKind.CSharp : IL.ComparisonLiftingKind.None, propertyType.GetStackType(), Sign.None, @this, other);
@@ -35,8 +36,8 @@ namespace TrainedMonkey.CSharpGen.Emit
             // enumerable types tend to be reference-equality even though they have IStructuralEquality overridden
             else if (seqInterface != null && (enumerableInterface != null || eqInterface == null))
             {
-                return InvokeInterfaceMethod(propertyType.GetDefinition().Compilation.FindType(typeof(System.Collections.IEqualityComparer)).GetMethods(options: GetMemberOptions.IgnoreInheritedMembers).Single(m => m.Name == "Equals"), seqInterface,
-                    new IL.CallVirt(propertyType.GetDefinition().Compilation.FindType(typeof(System.Collections.StructuralComparisons)).GetProperties().Single(p => p.Name == "StructuralEqualityComparer").Getter),
+                return InvokeInterfaceMethod(compilation.FindType(typeof(System.Collections.IEqualityComparer)).GetMethods(options: GetMemberOptions.IgnoreInheritedMembers).Single(m => m.Name == "Equals"), seqInterface,
+                    new IL.CallVirt(compilation.FindType(typeof(System.Collections.StructuralComparisons)).GetProperties().Single(p => p.Name == "StructuralEqualityComparer").Getter),
                     new IL.Box(@this, originalPropertyType),
                     new IL.Box(other, originalPropertyType)
                 );
@@ -55,6 +56,13 @@ namespace TrainedMonkey.CSharpGen.Emit
                     @this,
                     other
                 );
+            }
+            else if (propertyType.Kind == TypeKind.Interface)
+            {
+                Debug.Assert(!needsBoxing); // interface should not be in Nullable<_>
+                // if the type is a interface, let's compare it using the object.Equals method and hope that it will be implemented correctly in the implementation
+                var objectEqualsMethod = compilation.FindType(KnownTypeCode.Object).GetMethods(m => m.Parameters.Count == 2 && m.Name == "Equals" && m.IsStatic).Single();
+                return new IL.Call(objectEqualsMethod) { Arguments = { @this, other } };
             }
             else
                 throw new NotSupportedException($"Can't compare {originalPropertyType.ReflectionName}, it does not implement IEquatable.");

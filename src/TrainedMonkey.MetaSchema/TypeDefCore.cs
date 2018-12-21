@@ -27,6 +27,7 @@ namespace TrainedMonkey.MetaSchema
             {
                 // TODO: must be actual type
                 // TODO: can't be empty
+                // TODO: can't contain duplicates
                 Options = options.ToImmutableArray();
             }
 

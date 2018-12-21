@@ -18,7 +18,6 @@ namespace TrainedMonkey.CLI
             var input = Console.In.ReadToEnd();
 
             var schema = TrainedMonkey.GraphqlLoader.GraphqlLoader.LoadFromGraphQL(new [] { ("stdin.gql", new Lazy<string>(input)) });
-            var backend = new CSharpBackend();
             var settings = new EmitSettings("GeneratedProject.ModelNamespace",
                 ImmutableDictionary.CreateRange<string, FullTypeName>(new Dictionary<string,FullTypeName>{
                     ["Int"] = new FullTypeName("System.Int32"),
@@ -27,7 +26,7 @@ namespace TrainedMonkey.CLI
                     ["Float"] = new FullTypeName("System.Double"),
                     ["Boolean"] = new FullTypeName("System.Boolean"),
                 }));
-            var result = backend.Build(schema, settings);
+            var result = CSharpBackend.Build(schema, settings);
             Console.WriteLine(result);
 
             // Emit(args[0], args[1]).Wait();

@@ -230,11 +230,45 @@ namespace TrainedMonkey.Tests.TestGens
                     x => TypeDefCore.Composite(x.fields.GroupBy(f => f.Name).Select(Enumerable.First), x.implements.Select(n => TypeRef.ActualType(n.Name)))),
                 MapArb(
                     Arb.From<NonEmptyArray<GraphqlName>>(),
-                    x => TypeDefCore.Union(x.Get.Select(n => TypeRef.ActualType(n.Name)))),
+                    x => TypeDefCore.Union(x.Get.Select(n => TypeRef.ActualType(n.Name)).Distinct())),
             });
         public static Arbitrary<TypeDef> TypeDefArb =>
             MapArb(
                 Arb.From<(GraphqlName name, Directive[] dirs, TypeDefCore core)>(),
                 x => new TypeDef(x.name.Name, x.dirs, x.core));
+
+        public static Arbitrary<DataSchema> DataSchemaArb =>
+            MapArb(
+                Arb.From<(TypeDef[] types, DoNotSize<int> seed)>(),
+                x => {
+                    int random(int seed2, int range) => FsCheck.Random.stdRange(0, range, FsCheck.Random.StdGen.NewStdGen(x.seed.Item, seed2)).Item1;
+                    // remove types that have colliding names
+                    var types = x.types.GroupBy(t => t.Name).Select(t => t.First()).ToArray();
+
+                    var interfaces =
+                       (from t in types
+                        let composite = t.Core as TypeDefCore.CompositeCase
+                        where composite != null
+                        from ifcName in composite.Implements
+                        select (ifcName, t, composite)
+                        ).ToLookup(xx => ((TypeRef.ActualTypeCase)xx.ifcName).TypeName);
+
+                    // just remove types which name collides with some interface that is going to be created
+                    types = types.Where(t => t.Core is TypeDefCore.InterfaceCase || !interfaces.Contains(t.Name)).ToArray();
+
+                    var generatedInterfaces =
+                       (from i in interfaces
+                        let name = i.Key
+                        let maxFields = i.Select(t => t.composite.Fields.Select(f => (f.Name, f.Type)).ToImmutableHashSet()).Aggregate((a, b) => a.Intersect(b))
+                        let chosenFields =
+                            maxFields.Where((f, index) => random(index, 2) >= 1)
+                        let core = TypeDefCore.Interface(chosenFields.Select(
+                            xx => new TypeField(xx.Name, xx.Type, "", new Directive[0])
+                        ))
+                        select new TypeDef(name, new Directive[0], core)
+                       ).ToArray();
+
+                    return new DataSchema(new Entity[0], types.Concat(generatedInterfaces));
+                });
     }
 }

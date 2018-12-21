@@ -38,5 +38,6 @@
     "op_Equality",
     "xmin",
     "xmax",
-    "ctid"
+    "ctid",
+    "Match"
 ]

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Loader;
 using ICSharpCode.Decompiler.IL;
-using IL=ICSharpCode.Decompiler.IL;
+using IL = ICSharpCode.Decompiler.IL;
 using ICSharpCode.Decompiler.Metadata;
 using ICSharpCode.Decompiler.TypeSystem;
 using ICSharpCode.Decompiler.TypeSystem.Implementation;
@@ -45,20 +45,44 @@ namespace TrainedMonkey.CSharpGen
         public ImmutableDictionary<string, FullTypeName> PrimitiveTypeMapping { get; }
     }
 
+    public sealed class TypeSymbolNameMapping
+    {
+        public TypeSymbolNameMapping(string name, Dictionary<string, string> fields = null, Dictionary<string, string> specialSymbols = null)
+        {
+            Name = name ?? throw new ArgumentNullException(nameof(name), "Every type has a name");
+            Fields = fields;
+            SpecialSymbols = specialSymbols;
+        }
+
+        public string Name { get; }
+        public Dictionary<string, string> Fields { get; }
+        public Dictionary<string, string> SpecialSymbols { get; }
+    }
+
     public sealed class CSharpBackend
     {
+        private readonly EmitContext cx;
+        private Dictionary<string, TypeDef> typeSchemas;
+        private Dictionary<string, VirtualType> prebuiltTypes = new Dictionary<string, VirtualType>();
+        private Dictionary<string, (VirtualType type, TypeSymbolNameMapping mapping)> realizedTypes = new Dictionary<string, (VirtualType, TypeSymbolNameMapping)>();
+        private CSharpBackend(EmitContext cx)
+        {
+            this.cx = cx;
+        }
         VirtualType AddType(EmitContext cx, TypeDef def)
         {
             var name = SymbolNamer.NameType(cx.Settings.Namespace, def.Name, cx);
 
             var isAbstract = def.Core is TypeDefCore.UnionCase;
+            var typeKind = def.Core is TypeDefCore.InterfaceCase ? TypeKind.Interface :
+                           TypeKind.Class;
 
             var type = new VirtualType(
-                TypeKind.Class,
+                typeKind,
                 Accessibility.Public,
                 new FullTypeName(new TopLevelTypeName(cx.Settings.Namespace, name)),
                 isStatic: false,
-                isSealed: !isAbstract,
+                isSealed: !isAbstract && typeKind == TypeKind.Class,
                 isAbstract: isAbstract,
                 parentModule: cx.Module
             );
@@ -66,63 +90,112 @@ namespace TrainedMonkey.CSharpGen
             return type;
         }
 
-        IType FindType(EmitContext cx, string name) =>
-            cx.GeneratedTypes.TryGetValue((cx.Settings.Namespace, name), out var propType) ? (IType)propType :
+        IType FindType(string name) =>
+            this.prebuiltTypes.TryGetValue(name, out var propType) ? (IType)propType :
             cx.Settings.PrimitiveTypeMapping.TryGetValue(name, out var fullName) ? cx.FindType(fullName) :
             // throw new Exception($"Could not resolve type '{name}'");
             cx.FindType<string>();
 
-        IType FindType(EmitContext cx, TypeRef type) =>
-            type.Match(a => FindType(cx, a.TypeName),
-                       n => {
-                           var t = FindType(cx, n.Type);
-                           if (t.IsReferenceType == false) return new ParameterizedType(cx.FindType(typeof(Nullable<>)), new [] { t });
+        IType FindType(TypeRef type) =>
+            type.Match(a => FindType(a.TypeName),
+                       n =>
+                       {
+                           var t = FindType(n.Type);
+                           if (t.IsReferenceType == false) return new ParameterizedType(cx.FindType(typeof(Nullable<>)), new[] { t });
                            else return t;
                        },
-                       l => {
-                           var t = FindType(cx, l.Type);
-                           return new ParameterizedType(cx.FindType(typeof(ImmutableArray<>)), new [] { t });
+                       l =>
+                       {
+                           var t = FindType(l.Type);
+                           return new ParameterizedType(cx.FindType(typeof(ImmutableArray<>)), new[] { t });
                        });
 
-
-        void BuildType(EmitContext cx, TypeDef def)
+        (VirtualType, TypeSymbolNameMapping) BuildType(TypeDef def)
         {
-            var type = cx.GeneratedTypes[(cx.Settings.Namespace, def.Name)];
+            if (this.realizedTypes.TryGetValue(def.Name, out var result))
+                return result;
 
-            switch(def.Core) {
-                case TypeDefCore.CompositeCase composite:
-                    GenerateComposite(cx, type, composite);
-                    break;
-                case TypeDefCore.PrimitiveCase primitive:
-                    GenerateScalar(cx, type, primitive);
-                    break;
-                case TypeDefCore.UnionCase union:
-                    GenerateUnion(cx, type, union);
-                    break;
-                default:
-                    break;
-            }
+            var type = this.prebuiltTypes[def.Name];
+
+            var mapping = def.Core.Match(
+                composite: composite => GenerateComposite(type, composite),
+                primitive: primitive => GenerateScalar(type, primitive),
+                union: union => GenerateUnion(type, union),
+                @interface: ifc => GenerateInterface(type, ifc));
+
+            result = (type, mapping);
+            this.realizedTypes.Add(def.Name, result);
+            return result;
         }
 
-        private void GenerateScalar(EmitContext cx, VirtualType type, TypeDefCore.PrimitiveCase primitive)
+        private TypeSymbolNameMapping GenerateInterface(VirtualType type, TypeDefCore.InterfaceCase ifc)
+        {
+            var propDictionary = new Dictionary<string, (TypeField schema, IProperty prop)>();
+            var props = new List<(TypeField schema, IProperty prop)>();
+
+            foreach (var f in ifc.Fields)
+            {
+                var propType = FindType(f.Type);
+                var prop = type.AddInterfaceProperty(f.Name, propType);
+                propDictionary.Add(f.Name, (f, prop));
+                props.Add((f, prop));
+            }
+
+            // type.ImplementEquality(properties);
+
+            // var withMethod = type.ImplementWithMethod(ctor, properties);
+            // var optWithMethod = type.ImplementOptionalWithMethod(withMethod, properties);
+
+            return new TypeSymbolNameMapping(
+                type.Name,
+                props.ToDictionary(p => p.schema.Name, p => p.prop.Name)
+            );
+        }
+
+        private TypeSymbolNameMapping GenerateScalar(VirtualType type, TypeDefCore.PrimitiveCase primitive)
         {
             var valueProperty = type.AddAutoProperty("Value", cx.FindType<string>());
 
-            type.AddCreateConstructor(cx, new [] { ("value", valueProperty.field) });
-            type.ImplementEquality(new [] { valueProperty.prop });
+            type.AddCreateConstructor(cx, new[] { ("value", valueProperty.field) });
+            type.ImplementEquality(new[] { valueProperty.prop });
+
+            return new TypeSymbolNameMapping(type.Name);
         }
 
-        private void GenerateComposite(EmitContext cx, VirtualType type, TypeDefCore.CompositeCase composite)
+        private TypeSymbolNameMapping GenerateComposite(VirtualType type, TypeDefCore.CompositeCase composite)
         {
             var propDictionary = new Dictionary<string, (TypeField schema, IProperty prop, IField field)>();
             var props = new List<(TypeField schema, IProperty prop, IField field)>();
 
             foreach (var f in composite.Fields)
             {
-                var propType = FindType(cx, f.Type);
+                var propType = FindType(f.Type);
                 var (prop, field) = type.AddAutoProperty(f.Name, propType);
                 propDictionary.Add(f.Name, (f, prop, field));
                 props.Add((f, prop, field));
+            }
+
+            foreach (var f in composite.Implements)
+            {
+                var interfaceName = ((TypeRef.ActualTypeCase)f).TypeName;
+                var interfaceDeclaration = this.typeSchemas[interfaceName];
+                var (interfaceType, interfaceMapping) = this.BuildType(interfaceDeclaration);
+                type.ImplementedInterfaces.Add(interfaceType);
+
+                foreach (var interfaceProp in ((TypeDefCore.InterfaceCase)interfaceDeclaration.Core).Fields)
+                {
+                    var myProp = propDictionary[interfaceProp.Name];
+                    var interfaceRealProp =
+                        interfaceMapping.Fields[interfaceProp.Name]
+                        .Apply(n => interfaceType.GetProperties(p => p.Name == n))
+                        .Single();
+
+                    if (myProp.prop == null ||
+                        myProp.prop.Name != interfaceRealProp.Name ||
+                        !myProp.prop.ReturnType.Equals(interfaceRealProp.ReturnType))
+                        // add explicit implementation if needed
+                        type.AddExplicitInterfaceProperty(interfaceRealProp, myProp.prop);
+                }
             }
 
             var ctor = type.AddCreateConstructor(cx, props.Select(k => (k.schema.Name, k.field)).ToArray());
@@ -132,22 +205,28 @@ namespace TrainedMonkey.CSharpGen
 
             var withMethod = type.ImplementWithMethod(ctor, properties);
             var optWithMethod = type.ImplementOptionalWithMethod(withMethod, properties);
+
+            return new TypeSymbolNameMapping(
+                type.Name,
+                props.ToDictionary(p => p.schema.Name, p => p.prop.Name)
+            );
         }
 
-        private void GenerateUnion(EmitContext cx, VirtualType type, TypeDefCore.UnionCase union)
+        private TypeSymbolNameMapping GenerateUnion(VirtualType type, TypeDefCore.UnionCase union)
         {
             // var sealMethodName = SymbolNamer.NameMethod(type, "Seal", 0, new IType[0]);
             // type.Methods.Add(new VirtualMethod(type, Accessibility.ProtectedAndInternal, sealMethodName, new IParameter[0], cx.FindType(typeof(void)), isAbstract: true));
             var (abstractEqCore, _) = type.ImplementEqualityForBase();
 
-            var cases = union.Options.Select((c, index) => {
+            var cases = union.Options.Select((schema, index) =>
+            {
                 string name(TypeRef t) =>
                     t.Match(
                         actual: x => x.TypeName,
                         nullable: x => name(x.Type),
                         list: x => name(x.Type) + "List"
                     );
-                var caseName = name(c);
+                var caseName = name(schema);
 
                 var caseType = new VirtualType(TypeKind.Class, Accessibility.Public,
                     type.FullTypeName.NestedType(SymbolNamer.NameMember(type, caseName + "Case", lowerCase: false), 0),
@@ -158,28 +237,28 @@ namespace TrainedMonkey.CSharpGen
                 );
                 caseType.DirectBaseType = type;
                 type.NestedTypes.Add(caseType);
-                return (index, c, caseName, caseType);
+                return (index, schema, caseName, caseType);
             }).ToArray();
 
             var baseMatch = type.ImplementMatchBase(cases.Select(c => ((IType)c.caseType, c.caseName)).ToArray());
 
-            foreach (var (index, c, caseName, caseType) in cases)
+            foreach (var (index, schema, caseName, caseType) in cases)
             {
-                var valueType = FindType(cx, c);
+                var valueType = FindType(schema);
 
                 // var sealMethod = new VirtualMethod(caseType, Accessibility.ProtectedAndInternal, sealMethodName, new IParameter[0], cx.FindType(typeof(void)), isOverride: true);
                 // sealMethod.BodyFactory = () => EmitExtensions.CreateOneBlockFunction(sealMethod);
                 // caseType.Methods.Add(sealMethod);
 
                 var valueProperty = caseType.AddAutoProperty("Item", valueType);
-                var caseCtor = caseType.AddCreateConstructor(cx, new [] { ("item", valueProperty.field) });
+                var caseCtor = caseType.AddCreateConstructor(cx, new[] { ("item", valueProperty.field) });
 
                 caseType.ImplementEqualityForCase(abstractEqCore, valueProperty.prop);
                 caseType.ImplementMatchCase(baseMatch, index);
 
                 var caseFactory = new VirtualMethod(type, Accessibility.Public,
                     SymbolNamer.NameMethod(type, caseName, 0, new IType[] { valueType }),
-                    new [] { new DefaultParameter(valueType, "item") },
+                    new[] { new DefaultParameter(valueType, "item") },
                     returnType: type,
                     isStatic: true
                 );
@@ -189,23 +268,32 @@ namespace TrainedMonkey.CSharpGen
                     );
                 type.Methods.Add(caseFactory);
             }
+
+            return new TypeSymbolNameMapping(
+                type.Name,
+                cases.ToDictionary(c => c.caseName, c => c.caseType.Name)
+            );
         }
 
-        public string Build(DataSchema schema, EmitSettings settings)
+        public static string Build(DataSchema schema, EmitSettings settings)
         {
             var cx = new EmitContext(
                 new HackedSimpleCompilation(
                     new VirtualModuleReference(true, "NewEpicModule"),
                     ReferencedModules.Value
                 ),
-                settings
+                settings,
+                schema
             );
 
-            var types = schema.Types.ToDictionary(t => (settings.Namespace, t.Name), t => AddType(cx, t));
-            cx.GeneratedTypes = types;
+            var @this = new CSharpBackend(cx);
 
-            foreach(var t in schema.Types)
-                BuildType(cx, t);
+            @this.typeSchemas = schema.Types.ToDictionary(t => t.Name);
+
+            @this.prebuiltTypes = schema.Types.ToDictionary(t => t.Name, t => @this.AddType(cx, t));
+
+            foreach (var t in schema.Types)
+                @this.BuildType(t);
 
             var s = new DecompilerSettings(LanguageVersion.Latest);
             s.CSharpFormattingOptions.AutoPropertyFormatting = PropertyFormatting.ForceOneLine;
@@ -234,11 +322,12 @@ namespace TrainedMonkey.CSharpGen
 
     public sealed class EmitContext
     {
-        public EmitContext(HackedSimpleCompilation hackedSimpleCompilation, EmitSettings settings)
+        public EmitContext(HackedSimpleCompilation hackedSimpleCompilation, EmitSettings settings, DataSchema fullSchema)
         {
             HackedSimpleCompilation = hackedSimpleCompilation;
             Module = (VirtualModule)Compilation.MainModule;
             Settings = settings;
+            FullSchema = fullSchema;
         }
 
         public HackedSimpleCompilation HackedSimpleCompilation { get; }
@@ -248,7 +337,7 @@ namespace TrainedMonkey.CSharpGen
         public ICompilation Compilation => HackedSimpleCompilation;
 
         public EmitSettings Settings { get; }
-        public Dictionary<(string @namespace, string name), VirtualType> GeneratedTypes { get; set; }
+        public DataSchema FullSchema { get; }
 
         public IType FindType(Type t) => Compilation.FindType(t);
         public IType FindType<T>() => Compilation.FindType(typeof(T));
@@ -257,7 +346,7 @@ namespace TrainedMonkey.CSharpGen
         {
             var body = expr.Body;
             var methodInfo = body is MethodCallExpression call ? call.Method :
-                                body is NewExpression @new        ? (MethodBase)@new.Constructor :
+                                body is NewExpression @new ? (MethodBase)@new.Constructor :
                                 throw new NotSupportedException($"Expression '{expr}' of type '{body}' is not supported");
 
             var t = FindType(methodInfo.DeclaringType);
