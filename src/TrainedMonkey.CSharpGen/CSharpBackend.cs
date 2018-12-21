@@ -153,7 +153,7 @@ namespace TrainedMonkey.CSharpGen
 
             if (cx.Settings.EmitInterfaceWithMethods)
             {
-                var withMethod = type.InterfaceWithMethod(props.Select(p => (p.prop as IMember, p.schema.Name)).ToArray(), isOptional: cx.Settings.EmitOptionalWithMethods);
+                var withMethod = type.InterfaceWithMethod(props.Select(p => (p.prop as IMember, p.schema.Name)).ToArray(), isOptional: cx.Settings.EmitOptionalWithMethods && props.Count > 1);
 
                 specialSymbols.Add("With", withMethod.Name);
             }
@@ -197,7 +197,7 @@ namespace TrainedMonkey.CSharpGen
             if (cx.Settings.EmitWithMethods)
             {
                 withMethod = type.ImplementWithMethod(ctor, properties);
-                if (cx.Settings.EmitOptionalWithMethods)
+                if (cx.Settings.EmitOptionalWithMethods && properties.Length > 1)
                     type.ImplementOptionalWithMethod(withMethod, properties);
             }
 
