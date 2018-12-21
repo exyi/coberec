@@ -7,6 +7,7 @@ using FsCheck.Xunit;
 using Newtonsoft.Json;
 using TrainedMonkey.MetaSchema;
 using TrainedMonkey.Tests.TestGens;
+using TrainedMonkey.CSharpGen;
 using Xunit;
 using Seq=Microsoft.FSharp.Collections.SeqModule;
 
@@ -76,7 +77,7 @@ namespace TrainedMonkey.Tests.GraphqlLoader
         public void ParseType(GraphqlName name, (GraphqlName name, GraphqlName type, GraphqlName[] directives)[] fields, GraphqlName implements, GraphqlName directive)
         {
             // filter out fields with colliding names
-            fields = fields.GroupBy(f => f.name.Name).Select(Enumerable.First).ToArray();
+            fields = fields.DistinctBy(f => f.name.Name).ToArray();
 
             string makeField(string n, string t, IEnumerable<string> dirs) =>
                 $"{n}:{t} " + string.Join(" ", dirs.Select(d => $"@{d}"));
