@@ -228,7 +228,7 @@ namespace TrainedMonkey.Tests.TestGens
                     x => TypeDefCore.Interface(x.DistinctBy(f => f.Name))),
                 MapArb(
                     Arb.From<(TypeField[] fields, GraphqlName[] implements)>(),
-                    x => TypeDefCore.Composite(x.fields.DistinctBy(f => f.Name), x.implements.Select(n => TypeRef.ActualType(n.Name)))),
+                    x => TypeDefCore.Composite(x.fields.DistinctBy(f => f.Name), x.implements.Select(n => TypeRef.ActualType(n.Name)).Distinct())),
                 MapArb(
                     Arb.From<NonEmptyArray<GraphqlName>>(),
                     x => TypeDefCore.Union(x.Get.Select(n => TypeRef.ActualType(n.Name)).Distinct())),
@@ -244,7 +244,7 @@ namespace TrainedMonkey.Tests.TestGens
                 x => {
                     int random(int seed2, int range) => FsCheck.Random.stdRange(0, range, FsCheck.Random.StdGen.NewStdGen(x.seed.Item, seed2)).Item1;
                     // remove types that have colliding names
-                    var types = x.types.GroupBy(t => t.Name).Select(t => t.First()).ToArray();
+                    var types = x.types.DistinctBy(t => t.Name).ToArray();
 
                     var interfaces =
                        (from t in types
@@ -255,14 +255,15 @@ namespace TrainedMonkey.Tests.TestGens
                         ).ToLookup(xx => ((TypeRef.ActualTypeCase)xx.ifcName).TypeName);
 
                     // just remove types which name collides with some interface that is going to be created
-                    types = types.Where(t => t.Core is TypeDefCore.InterfaceCase || !interfaces.Contains(t.Name)).ToArray();
+                    types = types.Where(t => !interfaces.Contains(t.Name)).ToArray();
 
                     var generatedInterfaces =
                        (from i in interfaces
                         let name = i.Key
                         let maxFields = i.Select(t => t.composite.Fields.Select(f => (f.Name, f.Type)).ToImmutableHashSet()).Aggregate((a, b) => a.Intersect(b))
                         let chosenFields =
-                            maxFields.Where((f, index) => random(index, 2) >= 1)
+                            // maxFields.Where((f, index) => random(index, 2) >= 1)
+                            maxFields
                         let core = TypeDefCore.Interface(chosenFields.Select(
                             xx => new TypeField(xx.Name, xx.Type, "", new Directive[0])
                         ))

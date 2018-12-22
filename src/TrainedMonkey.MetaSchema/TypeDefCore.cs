@@ -58,6 +58,7 @@ namespace TrainedMonkey.MetaSchema
             {
                 Fields = fields.ToImmutableArray();
                 // TODO: must be actual types
+                // TODO: must be distinct
                 Implements = implements.ToImmutableArray();
                 if (Fields.GroupBy(f => f.Name).FirstOrDefault(g => g.Count() > 1) is var duplicateField && duplicateField != null)
                     throw new ArgumentException($"Type can not contain fields with colliding names: {string.Join(", ", duplicateField)}", nameof(fields));
