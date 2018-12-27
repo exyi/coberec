@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using ICSharpCode.Decompiler.TypeSystem;
-using TrainedMonkey.CSharpGen;
-using TrainedMonkey.MetaSchema;
+using Coberec.CSharpGen;
+using Coberec.MetaSchema;
 using Xunit;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Scripting;
@@ -16,7 +16,7 @@ using System.Reflection;
 using FsCheck;
 using System.Linq;
 
-namespace TrainedMonkey.Tests.CSharp
+namespace Coberec.Tests.CSharp
 {
     public class CodeGeneratorTests
     {
@@ -105,8 +105,8 @@ namespace TrainedMonkey.Tests.CSharp
             CheckItCompiles(result);
         }
 
-        // [Property(MaxTest = 10_000, EndSize = 10_000)]
-        [Property()]
+        // [Property(MaxTest = 2000, EndSize = 10_000)]
+        [Property]
         public void GenerateArbitrarySchema(DataSchema schema)
         {
             // var schema = new DataSchema(Enumerable.Empty<Entity>(), new [] { typeDef });

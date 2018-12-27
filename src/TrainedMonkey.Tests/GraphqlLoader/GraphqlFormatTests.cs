@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using FsCheck;
 using FsCheck.Xunit;
-using TrainedMonkey.MetaSchema;
-using TrainedMonkey.Tests.TestGens;
+using Coberec.MetaSchema;
+using Coberec.Tests.TestGens;
 using Xunit;
 
-namespace TrainedMonkey.Tests.GraphqlLoader
+namespace Coberec.Tests.GraphqlLoader
 {
     public class GraphqlFormatTests
     {

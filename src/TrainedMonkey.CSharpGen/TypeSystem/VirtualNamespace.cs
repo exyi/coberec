@@ -8,7 +8,7 @@ using ICSharpCode.Decompiler.Metadata;
 using ICSharpCode.Decompiler.TypeSystem;
 using ICSharpCode.Decompiler.TypeSystem.Implementation;
 
-namespace TrainedMonkey.CSharpGen.TypeSystem
+namespace Coberec.CSharpGen.TypeSystem
 {
     public class VirtualNamespace : INamespace
     {

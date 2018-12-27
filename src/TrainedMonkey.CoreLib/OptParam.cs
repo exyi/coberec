@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace TrainedMonkey.CoreLib
+namespace Coberec.CoreLib
 {
     public readonly struct OptParam<T>
     {

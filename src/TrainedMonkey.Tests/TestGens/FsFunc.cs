@@ -8,10 +8,10 @@ using System.Text.RegularExpressions;
 using FsCheck;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using TrainedMonkey.MetaSchema;
+using Coberec.MetaSchema;
 using IO = System.IO;
 
-namespace TrainedMonkey.Tests.TestGens
+namespace Coberec.Tests.TestGens
 {
 
     public static class FsFunc

@@ -45,9 +45,9 @@ using ICSharpCode.Decompiler.Disassembler;
 using System.Reflection.Metadata.Ecma335;
 using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.CSharp;
-using TrainedMonkey.CSharpGen.TypeSystem;
+using Coberec.CSharpGen.TypeSystem;
 
-namespace TrainedMonkey.CSharpGen.Emit
+namespace Coberec.CSharpGen.Emit
 {
     /// <summary>
     /// Main class of the C# decompiler engine.

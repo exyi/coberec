@@ -4,7 +4,7 @@ using System.Linq;
 using ICSharpCode.Decompiler.TypeSystem;
 using ICSharpCode.Decompiler.TypeSystem.Implementation;
 
-namespace TrainedMonkey.CSharpGen.TypeSystem
+namespace Coberec.CSharpGen.TypeSystem
 {
     public class HackedSimpleCompilation : SimpleCompilation, IDecompilerTypeSystem
     {

@@ -5,11 +5,11 @@ using System.Diagnostics;
 using System.Linq;
 using ICSharpCode.Decompiler.TypeSystem;
 using ICSharpCode.Decompiler.TypeSystem.Implementation;
-using TrainedMonkey.CoreLib;
-using TrainedMonkey.CSharpGen.TypeSystem;
+using Coberec.CoreLib;
+using Coberec.CSharpGen.TypeSystem;
 using IL=ICSharpCode.Decompiler.IL;
 
-namespace TrainedMonkey.CSharpGen.Emit
+namespace Coberec.CSharpGen.Emit
 {
     public static class WithMethodImplementation
     {
@@ -33,7 +33,7 @@ namespace TrainedMonkey.CSharpGen.Emit
         }
 
         static IType UnwrapOptParam(IType t) =>
-            t.Name == "OptParam" && t.Namespace == "TrainedMonkey.CoreLib" ? t.TypeArguments.Single() : t;
+            t.Name == "OptParam" && t.Namespace == "Coberec.CoreLib" ? t.TypeArguments.Single() : t;
         public static IMember InterfaceImplementationWithMethod(this VirtualType type, IMethod localWithMethod, IMethod ifcMethod, (IMember localProperty, string desiredName)[] ifcProperties, IMember[] localProperties)
         {
             Debug.Assert(ifcProperties.Select(p => p.localProperty.ReturnType).SequenceEqual(ifcMethod.Parameters.Select(p => UnwrapOptParam(p.Type))));
@@ -52,7 +52,7 @@ namespace TrainedMonkey.CSharpGen.Emit
                     let i = Array.FindIndex(ifcProperties, a => a.localProperty.Equals(p))
                     let parameter = i >= 0 ? ifcMethod.Parameters[i] : null
                     let parameterLocal = i >= 0 ? new IL.ILVariable(IL.VariableKind.Parameter, parameter.Type, i) : null
-                    let isOptional = parameter?.Type.FullName == "TrainedMonkey.CoreLib.OptParam"
+                    let isOptional = parameter?.Type.FullName == "Coberec.CoreLib.OptParam"
                     select i < 0 ? new IL.LdLoc(thisParam).AccessMember(p) :
                            isOptional ? OptParam_ValueOrDefault(parameter.Type, parameterLocal, new IL.LdLoc(thisParam).AccessMember(p)) :
                            new IL.LdLoc(parameterLocal)

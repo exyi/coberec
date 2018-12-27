@@ -17,7 +17,7 @@ using ICSharpCode.Decompiler.Util;
 
 using static ICSharpCode.Decompiler.Metadata.ILOpCodeExtensions;
 
-namespace TrainedMonkey.CSharpGen.Emit
+namespace Coberec.CSharpGen.Emit
 {
 	public class RequiredNamespaceCollector
 	{

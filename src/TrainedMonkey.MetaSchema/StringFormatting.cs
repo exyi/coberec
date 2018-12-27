@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
-namespace TrainedMonkey.MetaSchema
+namespace Coberec.MetaSchema
 {
     public sealed class FormatResult
     {

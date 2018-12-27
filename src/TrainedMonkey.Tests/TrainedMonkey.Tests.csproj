@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../TrainedMonkey.CLI/TrainedMonkey.CLI.csproj" />
+    <ProjectReference Include="../Coberec.CLI/Coberec.CLI.csproj" />
   </ItemGroup>
 
   <ItemGroup>

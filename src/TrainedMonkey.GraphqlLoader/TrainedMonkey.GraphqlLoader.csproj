@@ -2,7 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../deps/parser/src/GraphQLParser/GraphQLParser.csproj" />
-    <ProjectReference Include="../TrainedMonkey.MetaSchema/TrainedMonkey.MetaSchema.csproj" />
+    <ProjectReference Include="../Coberec.MetaSchema/Coberec.MetaSchema.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

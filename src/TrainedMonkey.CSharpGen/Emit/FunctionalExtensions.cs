@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace TrainedMonkey.CSharpGen
+namespace Coberec.CSharpGen
 {
     public static class FunctionalExtensions
     {

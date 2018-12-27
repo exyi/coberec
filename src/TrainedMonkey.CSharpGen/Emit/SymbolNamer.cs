@@ -4,9 +4,9 @@ using System.Diagnostics;
 using System.Linq;
 using ICSharpCode.Decompiler.TypeSystem;
 using ICSharpCode.Decompiler.TypeSystem.Implementation;
-using TrainedMonkey.CSharpGen.TypeSystem;
+using Coberec.CSharpGen.TypeSystem;
 
-namespace TrainedMonkey.CSharpGen.Emit
+namespace Coberec.CSharpGen.Emit
 {
     public static class SymbolNamer
     {

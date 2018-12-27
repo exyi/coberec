@@ -8,23 +8,23 @@ using System.Text.RegularExpressions;
 using FsCheck;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using TrainedMonkey.MetaSchema;
-using TrainedMonkey.CSharpGen;
+using Coberec.MetaSchema;
+using Coberec.CSharpGen;
 using IO = System.IO;
 
-namespace TrainedMonkey.Tests.TestGens
+namespace Coberec.Tests.TestGens
 {
     public static class StringConstants
     {
         static readonly Lazy<string[]> blns = new Lazy<string[]>(() =>
             (string[])new JsonSerializer().Deserialize(
-                new IO.StreamReader(typeof(StringConstants).Assembly.GetManifestResourceStream("TrainedMonkey.Tests.blns.json")),
+                new IO.StreamReader(typeof(StringConstants).Assembly.GetManifestResourceStream("Coberec.Tests.blns.json")),
                 typeof(string[])
             )
         );
         static readonly Lazy<string[]> customStrings = new Lazy<string[]>(() =>
             (string[])new JsonSerializer().Deserialize(
-                new IO.StreamReader(typeof(StringConstants).Assembly.GetManifestResourceStream("TrainedMonkey.Tests.custom_strings.json")),
+                new IO.StreamReader(typeof(StringConstants).Assembly.GetManifestResourceStream("Coberec.Tests.custom_strings.json")),
                 typeof(string[])
             )
         );

@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
-using TrainedMonkey.MetaSchema;
+using Coberec.MetaSchema;
 using G=GraphQLParser;
 using Kind=GraphQLParser.AST.ASTNodeKind;
 
-namespace TrainedMonkey.GraphqlLoader
+namespace Coberec.GraphqlLoader
 {
     static class GraphqlAstResolver
     {

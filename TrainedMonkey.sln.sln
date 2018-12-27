@@ -5,15 +5,15 @@ VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{B7E9A229-AB31-47E5-A5BD-EA96F839A5AC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrainedMonkey.CLI", "src\TrainedMonkey.CLI\TrainedMonkey.CLI.csproj", "{BE144C5A-5886-44E3-9056-66E170EA5710}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coberec.CLI", "src\Coberec.CLI\Coberec.CLI.csproj", "{BE144C5A-5886-44E3-9056-66E170EA5710}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrainedMonkey.CSharpGen", "src\TrainedMonkey.CSharpGen\TrainedMonkey.CSharpGen.csproj", "{A8044164-57E0-4D70-B573-66B0EBD7C3BB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coberec.CSharpGen", "src\Coberec.CSharpGen\Coberec.CSharpGen.csproj", "{A8044164-57E0-4D70-B573-66B0EBD7C3BB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrainedMonkey.GraphqlLoader", "src\TrainedMonkey.GraphqlParser\TrainedMonkey.GraphqlParser.csproj", "{2B21261A-B7AC-4453-AD4E-88A3AD50BCF9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coberec.GraphqlLoader", "src\Coberec.GraphqlParser\Coberec.GraphqlParser.csproj", "{2B21261A-B7AC-4453-AD4E-88A3AD50BCF9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrainedMonkey.MetaSchema", "src\TrainedMonkey.MetaSchema\TrainedMonkey.MetaSchema.csproj", "{ED58046D-6764-4860-AEC1-472336D7AEE9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coberec.MetaSchema", "src\Coberec.MetaSchema\Coberec.MetaSchema.csproj", "{ED58046D-6764-4860-AEC1-472336D7AEE9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrainedMonkey.Tests", "src\TrainedMonkey.Tests\TrainedMonkey.Tests.csproj", "{9FD0E589-53DA-4E4D-9EF8-D66B4B764BCB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coberec.Tests", "src\Coberec.Tests\Coberec.Tests.csproj", "{9FD0E589-53DA-4E4D-9EF8-D66B4B764BCB}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "deps", "deps", "{2C20E006-2DA4-4248-8B98-506C906F5D0B}"
 EndProject

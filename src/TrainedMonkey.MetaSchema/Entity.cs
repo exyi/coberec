@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 
-namespace TrainedMonkey.MetaSchema
+namespace Coberec.MetaSchema
 {
     public sealed class Entity
     {

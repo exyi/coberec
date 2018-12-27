@@ -3,14 +3,14 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Newtonsoft.Json.Linq;
-using TrainedMonkey.MetaSchema;
+using Coberec.MetaSchema;
 
-namespace TrainedMonkey.Tests.GraphqlLoader
+namespace Coberec.Tests.GraphqlLoader
 {
     public static class Helpers
     {
         public static DataSchema ParseSchema(string code) =>
-            TrainedMonkey.GraphqlLoader.GraphqlLoader.LoadFromGraphQL(new [] { ("testfile.gql", new Lazy<string>(code)) });
+            Coberec.GraphqlLoader.GraphqlLoader.LoadFromGraphQL(new [] { ("testfile.gql", new Lazy<string>(code)) });
 
         public static TypeDef ParseTypeDef(string code) =>
             ParseSchema(code).Types.Single();

@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using TrainedMonkey.MetaSchema;
+using Coberec.MetaSchema;
 using G = GraphQLParser;
 
-namespace TrainedMonkey.GraphqlLoader
+namespace Coberec.GraphqlLoader
 {
     public class GraphqlLoader
     {

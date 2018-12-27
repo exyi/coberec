@@ -4,12 +4,12 @@ using System.Linq;
 using FsCheck;
 using FsCheck.Xunit;
 using Microsoft.CodeAnalysis.CSharp;
-using TrainedMonkey.CSharpGen;
-using TrainedMonkey.CSharpGen.Emit;
-using TrainedMonkey.Tests.TestGens;
+using Coberec.CSharpGen;
+using Coberec.CSharpGen.Emit;
+using Coberec.Tests.TestGens;
 using Xunit;
 
-namespace TrainedMonkey.Tests.CSharp
+namespace Coberec.Tests.CSharp
 {
     public class UtilityTests
     {

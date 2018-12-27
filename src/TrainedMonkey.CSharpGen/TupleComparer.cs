@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace TrainedMonkey.CSharpGen
+namespace Coberec.CSharpGen
 {
     public class TupleComparer<T1, T2> : IEqualityComparer<(T1, T2)>
     {

@@ -9,7 +9,7 @@ using ICSharpCode.Decompiler.TypeSystem;
 using ICSharpCode.Decompiler.TypeSystem.Implementation;
 using ICSharpCode.Decompiler.Util;
 
-namespace TrainedMonkey.CSharpGen.TypeSystem
+namespace Coberec.CSharpGen.TypeSystem
 {
 
     public class VirtualType : ITypeDefinition, IHideableMember

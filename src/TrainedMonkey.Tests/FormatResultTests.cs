@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
-using static TrainedMonkey.MetaSchema.FormatResult;
+using static Coberec.MetaSchema.FormatResult;
 
-namespace TrainedMonkey.Tests
+namespace Coberec.Tests
 {
     public class FormatResultTests
     {

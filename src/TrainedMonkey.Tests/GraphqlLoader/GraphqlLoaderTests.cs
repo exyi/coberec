@@ -5,13 +5,13 @@ using System.Linq;
 using FsCheck;
 using FsCheck.Xunit;
 using Newtonsoft.Json;
-using TrainedMonkey.MetaSchema;
-using TrainedMonkey.Tests.TestGens;
-using TrainedMonkey.CSharpGen;
+using Coberec.MetaSchema;
+using Coberec.Tests.TestGens;
+using Coberec.CSharpGen;
 using Xunit;
 using Seq=Microsoft.FSharp.Collections.SeqModule;
 
-namespace TrainedMonkey.Tests.GraphqlLoader
+namespace Coberec.Tests.GraphqlLoader
 {
     public class GraphqlLoaderTests
     {

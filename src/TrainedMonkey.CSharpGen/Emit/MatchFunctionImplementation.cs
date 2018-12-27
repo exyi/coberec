@@ -5,13 +5,13 @@ using System.Diagnostics;
 using System.Linq;
 using ICSharpCode.Decompiler.TypeSystem;
 using ICSharpCode.Decompiler.TypeSystem.Implementation;
-using TrainedMonkey.CoreLib;
-using TrainedMonkey.CSharpGen.TypeSystem;
+using Coberec.CoreLib;
+using Coberec.CSharpGen.TypeSystem;
 using IL=ICSharpCode.Decompiler.IL;
-using static TrainedMonkey.CSharpGen.Emit.EmitExtensions;
+using static Coberec.CSharpGen.Emit.EmitExtensions;
 using System.Reflection.Metadata;
 
-namespace TrainedMonkey.CSharpGen.Emit
+namespace Coberec.CSharpGen.Emit
 {
     public static class MatchFunctionImplementation
     {

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace TrainedMonkey.MetaSchema
+namespace Coberec.MetaSchema
 {
     public abstract class TypeRef
     {

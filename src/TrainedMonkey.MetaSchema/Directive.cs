@@ -4,7 +4,7 @@ using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace TrainedMonkey.MetaSchema
+namespace Coberec.MetaSchema
 {
     public class Directive
     {

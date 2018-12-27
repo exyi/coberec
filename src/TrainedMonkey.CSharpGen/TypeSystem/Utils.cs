@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using ICSharpCode.Decompiler.TypeSystem;
 
-namespace TrainedMonkey.CSharpGen.TypeSystem
+namespace Coberec.CSharpGen.TypeSystem
 {
     public static class Utils
     {

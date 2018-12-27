@@ -6,10 +6,10 @@ using System.Threading.Tasks;
 using ICSharpCode.Decompiler.TypeSystem;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.MSBuild;
-using TrainedMonkey.CSharpGen;
+using Coberec.CSharpGen;
 using IO = System.IO;
 
-namespace TrainedMonkey.CLI
+namespace Coberec.CLI
 {
     public class Program
     {
@@ -17,7 +17,7 @@ namespace TrainedMonkey.CLI
         {
             var input = Console.In.ReadToEnd();
 
-            var schema = TrainedMonkey.GraphqlLoader.GraphqlLoader.LoadFromGraphQL(new [] { ("stdin.gql", new Lazy<string>(input)) });
+            var schema = Coberec.GraphqlLoader.GraphqlLoader.LoadFromGraphQL(new [] { ("stdin.gql", new Lazy<string>(input)) });
             var settings = new EmitSettings("GeneratedProject.ModelNamespace",
                 ImmutableDictionary.CreateRange<string, FullTypeName>(new Dictionary<string,FullTypeName>{
                     ["Int"] = new FullTypeName("System.Int32"),

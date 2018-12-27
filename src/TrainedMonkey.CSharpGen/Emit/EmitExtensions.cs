@@ -7,10 +7,10 @@ using System.Reflection.Metadata;
 using ICSharpCode.Decompiler.CSharp.Resolver;
 using ICSharpCode.Decompiler.TypeSystem;
 using ICSharpCode.Decompiler.TypeSystem.Implementation;
-using TrainedMonkey.CSharpGen.TypeSystem;
+using Coberec.CSharpGen.TypeSystem;
 using IL=ICSharpCode.Decompiler.IL;
 
-namespace TrainedMonkey.CSharpGen.Emit
+namespace Coberec.CSharpGen.Emit
 {
     public static class EmitExtensions
     {

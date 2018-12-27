@@ -7,11 +7,11 @@ using System.Reflection.Metadata;
 using ICSharpCode.Decompiler.CSharp.Resolver;
 using ICSharpCode.Decompiler.TypeSystem;
 using ICSharpCode.Decompiler.TypeSystem.Implementation;
-using TrainedMonkey.CSharpGen.TypeSystem;
+using Coberec.CSharpGen.TypeSystem;
 using IL=ICSharpCode.Decompiler.IL;
-using static TrainedMonkey.CSharpGen.Emit.EmitExtensions;
+using static Coberec.CSharpGen.Emit.EmitExtensions;
 
-namespace TrainedMonkey.CSharpGen.Emit
+namespace Coberec.CSharpGen.Emit
 {
     public static class EqualityImplementation
     {

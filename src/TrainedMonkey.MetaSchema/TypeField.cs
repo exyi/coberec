@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 
-namespace TrainedMonkey.MetaSchema
+namespace Coberec.MetaSchema
 {
     public sealed class TypeField
     {
@@ -14,6 +14,8 @@ namespace TrainedMonkey.MetaSchema
             Description = description;
             Directives = directives.ToImmutableArray();
         }
+
+        
 
         public string Name { get; }
         public TypeRef Type { get; }

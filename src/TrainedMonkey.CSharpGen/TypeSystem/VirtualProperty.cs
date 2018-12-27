@@ -4,7 +4,7 @@ using System.Linq;
 using System.Reflection.Metadata;
 using ICSharpCode.Decompiler.TypeSystem;
 
-namespace TrainedMonkey.CSharpGen.TypeSystem
+namespace Coberec.CSharpGen.TypeSystem
 {
     public class VirtualProperty : IProperty, IHideableMember
     {

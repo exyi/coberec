@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\TrainedMonkey.MetaSchema\TrainedMonkey.MetaSchema.csproj" />
+    <ProjectReference Include="..\Coberec.MetaSchema\Coberec.MetaSchema.csproj" />
     <ProjectReference Include="..\..\deps\ILSpy\ICSharpCode.Decompiler\ICSharpCode.Decompiler.csproj" />
   </ItemGroup>
 
