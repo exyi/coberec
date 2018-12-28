@@ -71,7 +71,7 @@ namespace Coberec.CSharpGen
             key = pair.Key;
             value = pair.Value;
         }
-        public static IEnumerable<(int, T)> Indexed<T>(this IEnumerable<T> enumerable) =>
+        public static IEnumerable<(int index, T value)> Indexed<T>(this IEnumerable<T> enumerable) =>
             enumerable.Select((a, b) => (b, a));
         public static (T, U) MakeTuple<T, U>(T a, U b) => (a, b);
         public static IEnumerable<(T, U)> ZipTuples<T, U>(this IEnumerable<T> a, IEnumerable<U> b) => a.Zip(b, MakeTuple);

@@ -110,17 +110,17 @@ namespace Coberec.CSharpGen
             var type = this.prebuiltTypes[def.Name];
 
             var mapping = def.Core.Match(
-                composite: composite => GenerateComposite(type, composite),
-                primitive: primitive => GenerateScalar(type, primitive),
-                union: union => GenerateUnion(type, union),
-                @interface: ifc => GenerateInterface(type, ifc));
+                composite: composite => GenerateComposite(type, composite, def),
+                primitive: primitive => GenerateScalar(type, primitive, def),
+                union: union => GenerateUnion(type, union, def),
+                @interface: ifc => GenerateInterface(type, ifc, def));
 
             result = (type, mapping);
             this.realizedTypes.Add(def.Name, result);
             return result;
         }
 
-        private TypeSymbolNameMapping GenerateInterface(VirtualType type, TypeDefCore.InterfaceCase ifc)
+        private TypeSymbolNameMapping GenerateInterface(VirtualType type, TypeDefCore.InterfaceCase ifc, TypeDef typeDef)
         {
             var specialSymbols = new Dictionary<string, string>();
             var propDictionary = new Dictionary<string, (TypeField schema, IProperty prop)>();
@@ -150,17 +150,24 @@ namespace Coberec.CSharpGen
             );
         }
 
-        private TypeSymbolNameMapping GenerateScalar(VirtualType type, TypeDefCore.PrimitiveCase primitive)
+        private TypeSymbolNameMapping GenerateScalar(VirtualType type, TypeDefCore.PrimitiveCase primitive, TypeDef typeDef)
         {
             var valueProperty = type.AddAutoProperty("Value", cx.FindType<string>());
+            var typeMapping = new TypeSymbolNameMapping(type.Name);
 
-            type.AddCreateConstructor(cx, new[] { ("value", valueProperty.field) });
+            var (noValCtor, publicCtor, validateMethod) = type.AddObjectCreationStuff(
+                cx,
+                typeMapping,
+                new[] { ("value", valueProperty.field) },
+                this.GetValidators(typeDef),
+                needsNoValidationConstructor: true);
+            type.AddCreateFunction(cx, validateMethod, noValCtor);
             type.ImplementEquality(new[] { valueProperty.prop });
 
-            return new TypeSymbolNameMapping(type.Name);
+            return typeMapping;
         }
 
-        private TypeSymbolNameMapping GenerateComposite(VirtualType type, TypeDefCore.CompositeCase composite)
+        private TypeSymbolNameMapping GenerateComposite(VirtualType type, TypeDefCore.CompositeCase composite, TypeDef typeDef)
         {
             var propDictionary = new Dictionary<string, (TypeField schema, IProperty prop, IField field)>();
             var props = new List<(TypeField schema, IProperty prop, IField field)>();
@@ -173,7 +180,20 @@ namespace Coberec.CSharpGen
                 props.Add((f, prop, field));
             }
 
-            var ctor = type.AddCreateConstructor(cx, props.Select(k => (k.schema.Name, k.field)).ToArray());
+            var typeMapping = new TypeSymbolNameMapping(
+                type.Name,
+                props.ToDictionary(p => p.schema.Name, p => p.prop.Name)
+            );
+
+            var (noValCtor, publicCtor, validateMethod) = type.AddObjectCreationStuff(
+                cx,
+                typeMapping,
+                props.Select(k => (k.schema.Name, k.field)).ToArray(),
+                this.GetValidators(typeDef),
+                needsNoValidationConstructor: true);
+
+            type.AddCreateFunction(cx, validateMethod, noValCtor);
+
             var properties = props.Select(p => p.prop).ToArray();
 
             type.ImplementEquality(properties);
@@ -181,7 +201,7 @@ namespace Coberec.CSharpGen
             IMethod withMethod = null;
             if (cx.Settings.EmitWithMethods)
             {
-                withMethod = type.ImplementWithMethod(ctor, properties);
+                withMethod = type.ImplementWithMethod(publicCtor, properties);
                 if (cx.Settings.EmitOptionalWithMethods && properties.Length > 1)
                     type.ImplementOptionalWithMethod(withMethod, properties);
             }
@@ -229,13 +249,10 @@ namespace Coberec.CSharpGen
                 }
             }
 
-            return new TypeSymbolNameMapping(
-                type.Name,
-                props.ToDictionary(p => p.schema.Name, p => p.prop.Name)
-            );
+            return typeMapping;
         }
 
-        private TypeSymbolNameMapping GenerateUnion(VirtualType type, TypeDefCore.UnionCase union)
+        private TypeSymbolNameMapping GenerateUnion(VirtualType type, TypeDefCore.UnionCase union, TypeDef typeDef)
         {
             // var sealMethodName = SymbolNamer.NameMethod(type, "Seal", 0, new IType[0]);
             // type.Methods.Add(new VirtualMethod(type, Accessibility.ProtectedAndInternal, sealMethodName, new IParameter[0], cx.FindType(typeof(void)), isAbstract: true));
@@ -274,7 +291,7 @@ namespace Coberec.CSharpGen
                 // caseType.Methods.Add(sealMethod);
 
                 var valueProperty = caseType.AddAutoProperty("Item", valueType);
-                var caseCtor = caseType.AddCreateConstructor(cx, new[] { ("item", valueProperty.field) });
+                var caseCtor = caseType.AddCreateConstructor(cx, new[] { ("item", valueProperty.field) }, false);
 
                 caseType.ImplementEqualityForCase(abstractEqCore, valueProperty.prop);
                 caseType.ImplementMatchCase(baseMatch, index);
@@ -296,6 +313,11 @@ namespace Coberec.CSharpGen
                 type.Name,
                 cases.ToDictionary(c => c.caseName, c => c.caseType.Name)
             );
+        }
+
+        private ValidatorUsage[] GetValidators(TypeDef type, string unionCase = null)
+        {
+            return type.GetValidatorsForType(n => cx.Settings.Validators.GetValueOrDefault(n)?.ValidatorParameters.Select(p => p.name).ToArray()).ToArray();
         }
 
         public static string Build(DataSchema schema, EmitSettings settings)

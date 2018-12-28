@@ -8,7 +8,7 @@ namespace Coberec.MetaSchema
 {
     public sealed class DataSchema
     {
-        public static ValidationErrors Validate(ImmutableArray<Entity> entities, ImmutableArray<TypeDef> types)
+        public static ValidationErrors ValidateFields(ImmutableArray<Entity> entities, ImmutableArray<TypeDef> types)
         {
             // IEnumerable<string> getReferencedTypes(TypeRef t) =>
             //     t.Match(
@@ -32,7 +32,7 @@ namespace Coberec.MetaSchema
                 if (d.Count() > 1)
                 {
                     foreach(var (type, index) in d)
-                        result.Add(ValidationErrors.CreateField(new []{ index.ToString(), "name" }, $"Name of this type is not unique."));
+                        result.Add(ValidationErrors.CreateField(new []{ "entities", index.ToString(), "name" }, $"Name of this type is not unique."));
                 }
             }
 
@@ -50,7 +50,7 @@ namespace Coberec.MetaSchema
             ImmutableArray<TypeDef> types
         )
         {
-            Validate(entities, types).ThrowErrors("Could not create DataSchema");
+            ValidateFields(entities, types).ThrowErrors("Could not create DataSchema");
 
             Entities = entities;
             Types = types;
@@ -62,7 +62,7 @@ namespace Coberec.MetaSchema
             ImmutableArray<TypeDef> types
         )
         {
-            Validate(entities, types).ThrowErrors("Could not create DataSchema");
+            ValidateFields(entities, types).ThrowErrors("Could not create DataSchema");
 
             Entities = entities;
             Types = types;
@@ -78,7 +78,7 @@ namespace Coberec.MetaSchema
             ImmutableArray<TypeDef> types
         )
         {
-            var validation = Validate(entities, types);
+            var validation = ValidateFields(entities, types);
             if (validation.IsValid())
                 return ValidationResult.Create(new DataSchema(default(NoNeedForValidationSentinel), entities, types));
             else

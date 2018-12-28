@@ -2,10 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Coberec.MetaSchema
+namespace Coberec.CoreLib
 {
-    public static class SchemaValidators
+    public struct NoNeedForValidationSentinel
     {
-        
     }
 }

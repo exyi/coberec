@@ -24,8 +24,8 @@ namespace Coberec.CoreLib
         public static ValidationErrors CreateField(string[] field, string message)
         {
             var error = ValidationErrors.Create(message);
-            foreach (var f in field)
-                error = error.Nest(f);
+            for (int i = field.Length - 1; i >= 0 ; i--)
+                error = error.Nest(field[i]);
             return error;
         }
 
@@ -117,7 +117,7 @@ namespace Coberec.CoreLib
 
             foreach (var msg in errors.ToErrorMessages(objPath))
             {
-                if (softLengthLimit > result.Length && !first)
+                if (softLengthLimit < result.Length && !first)
                 {
                     result.Append(", ...");
                     break;

@@ -46,9 +46,8 @@ namespace Coberec.Tests.GraphqlLoader
         }
 
         [Property]
-        public void TestDataSchemaWithoutEntities(TypeDef[] types)
+        public void TestDataSchema(DataSchema schema)
         {
-            var schema = new DataSchema(Enumerable.Empty<Entity>(), types);
             var clone = Helpers.ParseSchema(schema.ToString());
             Assert.Equal(clone.ToString(), schema.ToString());
         }

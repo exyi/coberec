@@ -38,5 +38,11 @@ namespace Coberec.CoreLib
             if (errors.IsValid()) throw new InvalidOperationException("Can not create ValidationResult.Invalid without validation errors.");
             return new ValidationResult<T>(errors, default);
         }
+
+        public static ValidationResult<T> CreateErrorsOrValue<T>(ValidationErrors errors, T value)
+        {
+            if (errors.IsValid()) return Create(value);
+            else return CreateErrors<T>(errors);
+        }
     }
 }

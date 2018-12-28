@@ -61,12 +61,18 @@ namespace Coberec.CSharpGen
         public IType FindType(Type t) => Compilation.FindType(t);
         public IType FindType<T>() => Compilation.FindType(typeof(T));
         public IType FindType(FullTypeName name) => new GetClassTypeReference(name).Resolve(new SimpleTypeResolveContext(Compilation));
-        public IMethod FindMethod<TResult>(Expression<Func<TResult>> expr)
+        public IMethod FindMethod(string method)
+        {
+            var type = FindType(new FullTypeName(method.Substring(0, method.LastIndexOf('.'))));
+            return type.GetMethods(m => m.FullName == method).SingleOrDefault() ??
+                   Compilation.GetAllTypeDefinitions().SelectMany(t => t.GetMethods(m => m.FullName == method)).Single();
+        }
+        public IMethod FindMethod(Expression<Action> expr)
         {
             var body = expr.Body;
             var methodInfo = body is MethodCallExpression call ? call.Method :
-                                body is NewExpression @new ? (MethodBase)@new.Constructor :
-                                throw new NotSupportedException($"Expression '{expr}' of type '{body}' is not supported");
+                             body is NewExpression @new ? (MethodBase)@new.Constructor :
+                             throw new NotSupportedException($"Expression '{expr}' of type '{body}' is not supported");
 
             var t = FindType(methodInfo.DeclaringType);
             var parameters = methodInfo.GetParameters();

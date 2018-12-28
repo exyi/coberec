@@ -15,6 +15,7 @@ using FsCheck.Xunit;
 using System.Reflection;
 using FsCheck;
 using System.Linq;
+using Newtonsoft.Json.Linq;
 
 namespace Coberec.Tests.CSharp
 {
@@ -57,7 +58,9 @@ namespace Coberec.Tests.CSharp
             ImmutableDictionary.CreateRange<string, FullTypeName>(new Dictionary<string,FullTypeName>{
                 ["Int"] = new FullTypeName("System.Int32"),
                 ["String"] = new FullTypeName("System.String"),
-            }));
+            }),
+            validators: ImmutableDictionary<string, ValidatorConfig>.Empty
+                        .Add("notEmpty", new ValidatorConfig("Coberec.CoreLib.BasicValidators.NotEmpty", null)));
         [Fact]
         public void SimpleCompositeType()
         {
@@ -79,7 +82,7 @@ namespace Coberec.Tests.CSharp
         [Fact]
         public void SimpleUnionType()
         {
-            TypeField field543 = new TypeField("Field543", TypeRef.ListType(TypeRef.ActualType("String")), null, Enumerable.Empty<Directive>());
+            TypeField field543 = new TypeField("Field543", TypeRef.ListType(TypeRef.ActualType("String")), null, new [] { new Directive("validateNotEmpty", JObject.Parse("{}")) });
             var schema = new DataSchema(Enumerable.Empty<Entity>(), new [] {
                 new TypeDef("Interface1", Enumerable.Empty<Directive>(), TypeDefCore.Interface(
                     new [] {

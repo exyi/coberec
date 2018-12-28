@@ -9,6 +9,7 @@ using ICSharpCode.Decompiler.TypeSystem;
 using ICSharpCode.Decompiler.TypeSystem.Implementation;
 using Coberec.CSharpGen.TypeSystem;
 using IL=ICSharpCode.Decompiler.IL;
+using Coberec.CoreLib;
 
 namespace Coberec.CSharpGen.Emit
 {
@@ -90,29 +91,6 @@ namespace Coberec.CSharpGen.Emit
             if (setter != null) declaringType.Methods.Add(setter);
             declaringType.Properties.Add(prop);
             return prop;
-        }
-
-        public static IMethod AddCreateConstructor(this VirtualType type, EmitContext cx, (string name, IField field)[] fields)
-        {
-            var parameters = SymbolNamer.NameParameters(fields.Select(f => (IParameter)new DefaultParameter(f.field.Type, f.name))); // TODO: the name is not sanitized, I just want to see the tests finding this bug ;)
-            var ctor = new VirtualMethod(type, Accessibility.Public, ".ctor", parameters, cx.FindType(typeof(void)));
-            var objectCtor = cx.FindMethod(() => new object());
-            ctor.BodyFactory = () =>
-            {
-                var thisParam = new IL.ILVariable(IL.VariableKind.Parameter, type, -1);
-                return EmitExtensions.CreateOneBlockFunction(ctor,
-                    fields.Zip(parameters, (f, p) =>
-                    {
-                        var index = Array.IndexOf(parameters, p);
-                        return (IL.ILInstruction)new IL.StObj(new IL.LdFlda(new IL.LdLoc(thisParam), f.field), new IL.LdLoc(new IL.ILVariable(IL.VariableKind.Parameter, f.field.ReturnType, index) { Name = p.Name }), f.field.ReturnType);
-                    })
-                    .Prepend(new IL.Call(objectCtor) { Arguments = { new IL.LdLoc(thisParam) } })
-                    .ToArray()
-                );
-            };
-
-            type.Methods.Add(ctor);
-            return ctor;
         }
 
         public static IL.ILInstruction InvokeInterfaceMethod(IMethod method, IType targetType, IL.ILInstruction @this, params IL.ILInstruction[] args)
@@ -267,5 +245,22 @@ namespace Coberec.CSharpGen.Emit
                 ImmutableArray<CustomAttributeTypedArgument<IType>>.Empty,
                 ImmutableArray<CustomAttributeNamedArgument<IType>>.Empty
             );
+
+        public static IL.ILInstruction MakeArray(IType elementType, IL.ILInstruction[] items)
+        {
+            var variable = new IL.ILVariable(IL.VariableKind.Local, new ArrayType(elementType.GetDefinition().Compilation, elementType), 0);
+            var block = new IL.Block(IL.BlockKind.CollectionInitializer);
+            block.Instructions.Add(new IL.StLoc(variable, new IL.NewArr(elementType, new IL.LdcI4(items.Length))));
+            foreach (var (index, item) in items.Indexed())
+            {
+                block.Instructions.Add(new IL.StObj(
+                    new IL.LdElema(elementType, new IL.LdLoc(variable), new IL.LdcI4(index)),
+                    item,
+                    elementType
+                ));
+            }
+            block.FinalInstruction = new IL.LdLoc(variable);
+            return block;
+        }
     }
 }
