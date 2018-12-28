@@ -248,8 +248,8 @@ namespace Coberec.CSharpGen.Emit
 
         public static IL.ILInstruction MakeArray(IType elementType, IL.ILInstruction[] items)
         {
-            var variable = new IL.ILVariable(IL.VariableKind.Local, new ArrayType(elementType.GetDefinition().Compilation, elementType), 0);
-            var block = new IL.Block(IL.BlockKind.CollectionInitializer);
+            var variable = new IL.ILVariable(IL.VariableKind.InitializerTarget, new ArrayType(elementType.GetDefinition().Compilation, elementType), 0);
+            var block = new IL.Block(IL.BlockKind.ArrayInitializer);
             block.Instructions.Add(new IL.StLoc(variable, new IL.NewArr(elementType, new IL.LdcI4(items.Length))));
             foreach (var (index, item) in items.Indexed())
             {

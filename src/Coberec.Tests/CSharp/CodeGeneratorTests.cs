@@ -60,7 +60,8 @@ namespace Coberec.Tests.CSharp
                 ["String"] = new FullTypeName("System.String"),
             }),
             validators: ImmutableDictionary<string, ValidatorConfig>.Empty
-                        .Add("notEmpty", new ValidatorConfig("Coberec.CoreLib.BasicValidators.NotEmpty", null)));
+                        .Add("notEmpty", new ValidatorConfig("Coberec.CoreLib.BasicValidators.NotEmpty", null))
+                        .Add("range", new ValidatorConfig("Coberec.CoreLib.BasicValidators.Range", new [] { ("low", 0, (JToken)null), ("high", 1, null) })));
         [Fact]
         public void SimpleCompositeType()
         {
@@ -92,7 +93,7 @@ namespace Coberec.Tests.CSharp
                 new TypeDef("Test123", Enumerable.Empty<Directive>(), TypeDefCore.Composite(
                     new [] {
                         field543,
-                        new TypeField("abcSS", TypeRef.ActualType("Int"), null, Enumerable.Empty<Directive>()),
+                        new TypeField("abcSS", TypeRef.ActualType("Int"), null, new [] { new Directive("validateRange", JObject.Parse("{low: 1, high: 10}")) }),
                     },
                     new TypeRef[] { TypeRef.ActualType("Interface1") }
                 )),
