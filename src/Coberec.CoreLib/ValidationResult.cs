@@ -11,7 +11,7 @@ namespace Coberec.CoreLib
         public T Expect(string message)
         {
             if (Errors == null) throw new InvalidOperationException("Invalid object created.");
-            Errors.ThrowErrors($"Expected '{message}', but validation has failed.");
+            Errors.ThrowErrors($"Expected {message}, but validation has failed.");
             return ValueOrDefault;
         }
 
@@ -27,6 +27,14 @@ namespace Coberec.CoreLib
         {
             this.Errors = errors;
             this.ValueOrDefault = value;
+        }
+
+        public ValidationResult<T2> Cast<T2>() where T2 : class
+        {
+            if (Errors.IsValid())
+                return new ValidationResult<T2>(this.Errors, null);
+            else
+                return new ValidationResult<T2>(this.Errors, (T2)(object)this.ValueOrDefault);
         }
     }
 

@@ -13,21 +13,24 @@ namespace Coberec.CSharpGen.Emit
 {
     public static class WithMethodImplementation
     {
-        static VirtualMethod CreateSignatureCore(VirtualType type, IEnumerable<(IType type, string desiredName)> properties, bool isOptional = false)
+        static VirtualMethod CreateSignatureCore(VirtualType type, IEnumerable<(IType type, string desiredName)> properties, bool isOptional, bool returnValidationResult)
         {
             IType optParamType(IType t) => isOptional ? new ParameterizedType(type.Compilation.FindType(typeof(OptParam<>)), new [] { t }) : t;
 
             var parameters = SymbolNamer.NameParameters(properties.Select((p) => new DefaultParameter(optParamType(p.type), p.desiredName, isOptional: isOptional)));
             var withName = SymbolNamer.NameMethod(type, "With", 0, parameters.Select(p => p.Type).ToArray());
+            var returnType = returnValidationResult ?
+                             new ParameterizedType(type.Compilation.FindType(typeof(ValidationResult<>)), new [] { type }) :
+                             (IType)type;
 
-            return new VirtualMethod(type, Accessibility.Public, withName, parameters, type);
+            return new VirtualMethod(type, Accessibility.Public, withName, parameters, returnType);
         }
 
-        public static IMethod InterfaceWithMethod(this VirtualType type, (IMember property, string desiredName)[] properties, bool isOptional)
+        public static IMethod InterfaceWithMethod(this VirtualType type, (IMember property, string desiredName)[] properties, bool isOptional, bool returnValidationResult = true)
         {
             Debug.Assert(type.Kind == TypeKind.Interface);
 
-            var method = CreateSignatureCore(type, properties.Select((p) => (p.property.ReturnType, p.desiredName)), isOptional);
+            var method = CreateSignatureCore(type, properties.Select((p) => (p.property.ReturnType, p.desiredName)), isOptional, returnValidationResult);
             type.Methods.Add(method);
             return method;
         }
@@ -38,7 +41,6 @@ namespace Coberec.CSharpGen.Emit
         {
             Debug.Assert(ifcProperties.Select(p => p.localProperty.ReturnType).SequenceEqual(ifcMethod.Parameters.Select(p => UnwrapOptParam(p.Type))));
             Debug.Assert(type.ImplementedInterfaces.Contains(ifcMethod.DeclaringType));
-            Debug.Assert(type.ImplementedInterfaces.Contains(ifcMethod.ReturnType));
 
             Debug.Assert(localProperties.Select(p => p.ReturnType).SequenceEqual(localWithMethod.Parameters.Select(p => p.Type)));
 
@@ -58,13 +60,34 @@ namespace Coberec.CSharpGen.Emit
                            new IL.LdLoc(parameterLocal)
                    ).ToArray();
 
+                // invoke normal With method
                 var withInvocation = new IL.Call(localWithMethod);
                 withInvocation.Arguments.Add(new IL.LdLoc(thisParam));
                 withInvocation.Arguments.AddRange(expressions);
 
+                var castInvocation =
+                    localWithMethod.ReturnType.GetAllBaseTypes().Contains(ifcMethod.ReturnType) ?
+                        (IL.ILInstruction)withInvocation :
+                    localWithMethod.ReturnType.FullName == typeof(ValidationResult).FullName && ifcMethod.ReturnType.FullName == typeof(ValidationResult).FullName ?
+                        // cast ValidationResult<Type> into ValidationResult<Interface>
+                        new IL.Call(localWithMethod.ReturnType.GetMethods(m => m.Name == "Cast" && m.TypeParameters.Count == 1 && m.Parameters.Count == 0).Single().Specialize(new TypeParameterSubstitution(null, new [] { ifcMethod.DeclaringType }))) {
+                            Arguments = { new IL.AddressOf(withInvocation) }
+                        } :
+                    localWithMethod.ReturnType.Equals(type) && ifcMethod.ReturnType.FullName == typeof(ValidationResult).FullName ?
+                        new IL.Call(type.Compilation.FindType(typeof(ValidationResult)).GetMethods(m => m.Name == "Create" && m.Parameters.Count == 1).Single().Specialize(new TypeParameterSubstitution(null, new [] { ifcMethod.DeclaringType }))) {
+                        // cast Type into ValidationResult<Interface>
+                            Arguments = { withInvocation }
+                        } :
+                    localWithMethod.ReturnType.FullName == typeof(ValidationResult).FullName && ifcMethod.ReturnType.Equals(ifcMethod.DeclaringType) ?
+                        // cast ValidationResult<Type> into Interface
+                        (IL.ILInstruction)new IL.Call(localWithMethod.ReturnType.GetMethods(m => m.Name == nameof(ValidationResult<int>.Expect) && m.Parameters.Count == 1).Single()) {
+                            Arguments = { new IL.AddressOf(withInvocation), new IL.LdStr($"we can modify {type.Name}") }
+                        } :
+                    throw new NotSupportedException();
+
                 return EmitExtensions.CreateExpressionFunction(
                     method,
-                    withInvocation
+                    castInvocation
                 );
             };
 
@@ -72,25 +95,32 @@ namespace Coberec.CSharpGen.Emit
             return method;
         }
 
-        public static IMethod ImplementWithMethod(this VirtualType type, IMethod createConstructor, IMember[] properties)
+        public static IMethod ImplementWithMethod(this VirtualType type, IMethod factory, IMember[] properties, bool returnValidationResult = true)
         {
-            var ctorParameters = createConstructor.Parameters;
+            var ctorParameters = factory.Parameters;
             Debug.Assert(properties.Zip(ctorParameters, (prop, param) => prop.ReturnType.Equals(param.Type)).All(a=>a));
-            Debug.Assert(createConstructor.IsConstructor);
 
-            var method = CreateSignatureCore(type, properties.Zip(ctorParameters, (prop, param) => (prop.ReturnType, param.Name)));
+            var method = CreateSignatureCore(type, properties.Zip(ctorParameters, (prop, param) => (prop.ReturnType, param.Name)), isOptional: false, returnValidationResult: returnValidationResult);
+
+            Debug.Assert(factory.IsConstructor || factory.ReturnType.Equals(method.ReturnType));
 
             method.BodyFactory = () => {
                 var thisParam = new IL.ILVariable(IL.VariableKind.Parameter, type, -1);
-                var constructorCall = new IL.NewObj(createConstructor);
-                constructorCall.Arguments.AddRange(properties.Select(p => new IL.LdLoc(thisParam).AccessMember(p)));
+                var factoryCall = factory.IsConstructor ? new IL.NewObj(factory) : (IL.CallInstruction)new IL.Call(factory);
+                factoryCall.Arguments.AddRange(properties.Select(p => new IL.LdLoc(thisParam).AccessMember(p)));
+                var noChangeExpression = returnValidationResult ?
+                               new IL.Call(type.Compilation.FindType(typeof(ValidationResult)).GetMethods(m => m.Name == "Create" && m.Parameters.Count == 1).Single().Specialize(new TypeParameterSubstitution(null, new [] { type }))) {
+                                   // cast Type into ValidationResult<Interface>
+                                   Arguments = { new IL.LdLoc(thisParam) }
+                               } :
+                               (IL.ILInstruction)new IL.LdLoc(thisParam);
                 return EmitExtensions.CreateExpressionFunction(method,
                     new IL.IfInstruction(
                         EmitExtensions.AndAlso(
                             properties
                             .Select((mem, parIndex) => EqualityImplementation.EqualsExpression(mem.ReturnType, new IL.LdLoc(thisParam).AccessMember(mem), new IL.LdLoc(new IL.ILVariable(IL.VariableKind.Parameter, mem.ReturnType, parIndex))))),
-                    new IL.LdLoc(thisParam),
-                    constructorCall
+                    noChangeExpression,
+                    factoryCall
                 ));
             };
 
@@ -101,7 +131,8 @@ namespace Coberec.CSharpGen.Emit
 
         public static IMethod ImplementOptionalWithMethod(this VirtualType type, IMethod withMethod, IMember[] properties)
         {
-            var method = CreateSignatureCore(type, withMethod.Parameters.Select(p => (p.Type, p.Name)), isOptional: true);
+            var returnValidationResult = withMethod.ReturnType.FullName == typeof(ValidationResult).FullName;
+            var method = CreateSignatureCore(type, withMethod.Parameters.Select(p => (p.Type, p.Name)), isOptional: true, returnValidationResult);
 
             method.BodyFactory = () => {
                 var thisParam = new IL.ILVariable(IL.VariableKind.Parameter, type, -1);

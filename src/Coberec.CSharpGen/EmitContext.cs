@@ -34,6 +34,7 @@ namespace Coberec.CSharpGen
         public bool EmitInterfaceWithMethods { get; } = true;
         public bool EmitOptionalWithMethods { get; } = true;
         public bool EmitWithMethods { get; } = true;
+        public bool WithMethodReturnValidationResult { get; } = true;
 
         public string Namespace { get; }
         public ImmutableDictionary<string, FullTypeName> PrimitiveTypeMapping { get; }

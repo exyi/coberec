@@ -138,7 +138,11 @@ namespace Coberec.CSharpGen
 
             if (cx.Settings.EmitInterfaceWithMethods)
             {
-                var withMethod = type.InterfaceWithMethod(props.Select(p => (p.prop as IMember, p.schema.Name)).ToArray(), isOptional: cx.Settings.EmitOptionalWithMethods && props.Count > 1);
+                var withMethod = type.InterfaceWithMethod(
+                    props.Select(p => (p.prop as IMember, p.schema.Name)).ToArray(),
+                    isOptional: cx.Settings.EmitOptionalWithMethods && props.Count > 1,
+                    returnValidationResult: cx.Settings.WithMethodReturnValidationResult
+                );
 
                 specialSymbols.Add("With", withMethod.Name);
             }
@@ -192,7 +196,7 @@ namespace Coberec.CSharpGen
                 this.GetValidators(typeDef),
                 needsNoValidationConstructor: true);
 
-            type.AddCreateFunction(cx, validateMethod, noValCtor);
+            var createFn = type.AddCreateFunction(cx, validateMethod, noValCtor);
 
             var properties = props.Select(p => p.prop).ToArray();
 
@@ -201,7 +205,7 @@ namespace Coberec.CSharpGen
             IMethod withMethod = null;
             if (cx.Settings.EmitWithMethods)
             {
-                withMethod = type.ImplementWithMethod(publicCtor, properties);
+                withMethod = type.ImplementWithMethod(cx.Settings.WithMethodReturnValidationResult ? createFn : publicCtor, properties, cx.Settings.WithMethodReturnValidationResult);
                 if (cx.Settings.EmitOptionalWithMethods && properties.Length > 1)
                     type.ImplementOptionalWithMethod(withMethod, properties);
             }
