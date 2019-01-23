@@ -16,11 +16,13 @@ using System.Reflection;
 using FsCheck;
 using System.Linq;
 using Newtonsoft.Json.Linq;
+using CheckTestOutput;
 
 namespace Coberec.Tests.CSharp
 {
     public class CodeGeneratorTests
     {
+        CheckTestOutput.CheckTestOutput check = new CheckTestOutput.CheckTestOutput("testoutputs");
         public CodeGeneratorTests()
         {
             Arb.Register(typeof(TestGens.MyArbs));
@@ -76,8 +78,8 @@ namespace Coberec.Tests.CSharp
             });
 
             var result = CSharpBackend.Build(schema, defaultSettings);
-            // Console.WriteLine(result);
             CheckItCompiles(result);
+            check.CheckString(result, fileExtension: "cs");
         }
 
         [Fact]
@@ -85,17 +87,12 @@ namespace Coberec.Tests.CSharp
         {
             TypeField field543 = new TypeField("Field543", TypeRef.ListType(TypeRef.ActualType("String")), null, new [] { new Directive("validateNotEmpty", JObject.Parse("{}")) });
             var schema = new DataSchema(Enumerable.Empty<Entity>(), new [] {
-                new TypeDef("Interface1", Enumerable.Empty<Directive>(), TypeDefCore.Interface(
-                    new [] {
-                        field543
-                    }
-                )),
                 new TypeDef("Test123", Enumerable.Empty<Directive>(), TypeDefCore.Composite(
                     new [] {
                         field543,
                         new TypeField("abcSS", TypeRef.ActualType("Int"), null, new [] { new Directive("validateRange", JObject.Parse("{low: 1, high: 10}")) }),
                     },
-                    new TypeRef[] { TypeRef.ActualType("Interface1") }
+                    new TypeRef[] { }
                 )),
                 new TypeDef("Union123", Enumerable.Empty<Directive>(), TypeDefCore.Union(
                     new [] {
@@ -105,8 +102,44 @@ namespace Coberec.Tests.CSharp
             });
 
             var result = CSharpBackend.Build(schema, defaultSettings);
-            Console.WriteLine(result);
             CheckItCompiles(result);
+            check.CheckString(result, fileExtension: "cs");
+        }
+
+        [Theory]
+        [InlineData("default", true)]
+        [InlineData("noOptionalWith", false)]
+        public void SimpleInterfaceType(string caseName, bool optionalInterfaceWith)
+        {
+            TypeField field543 = new TypeField("Field543", TypeRef.ListType(TypeRef.ActualType("String")), null, new [] { new Directive("validateNotEmpty", JObject.Parse("{}")) });
+            TypeField field2 = new TypeField("someName", TypeRef.ListType(TypeRef.ActualType("Int")), null, new Directive[0]);
+            var schema = new DataSchema(Enumerable.Empty<Entity>(), new [] {
+                new TypeDef("Interface1", Enumerable.Empty<Directive>(), TypeDefCore.Interface(
+                    new [] {
+                        field543,
+                        field2
+                    }
+                )),
+                new TypeDef("Test123", Enumerable.Empty<Directive>(), TypeDefCore.Composite(
+                    new [] {
+                        field543,
+                        field2,
+                        new TypeField("abcSS", TypeRef.ActualType("Int"), null, new [] { new Directive("validateRange", JObject.Parse("{low: 1, high: 10}")) }),
+                    },
+                    new TypeRef[] { TypeRef.ActualType("Interface1") }
+                ))
+            });
+
+            var settings = new EmitSettings(
+                defaultSettings.Namespace,
+                defaultSettings.PrimitiveTypeMapping,
+                defaultSettings.Validators,
+                emitOptionalWithMethod: optionalInterfaceWith
+            );
+
+            var result = CSharpBackend.Build(schema, settings);
+            CheckItCompiles(result);
+            check.CheckString(result, checkName: caseName, fileExtension: "cs");
         }
 
         // [Property(MaxTest = 2000, EndSize = 10_000)]

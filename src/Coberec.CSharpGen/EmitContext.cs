@@ -24,11 +24,22 @@ namespace Coberec.CSharpGen
 {
     public sealed class EmitSettings
     {
-        public EmitSettings(string @namespace, ImmutableDictionary<string, FullTypeName> primitiveTypeMapping, ImmutableDictionary<string, ValidatorConfig> validators = null)
+        public EmitSettings(
+            string @namespace,
+            ImmutableDictionary<string, FullTypeName> primitiveTypeMapping,
+            ImmutableDictionary<string, ValidatorConfig> validators = null,
+            bool emitWithMethod = true,
+            bool emitInterfaceWithMethods = true,
+            bool emitOptionalWithMethod = true,
+            bool withMethodReturnsValidationResult = true)
         {
             Namespace = @namespace;
             PrimitiveTypeMapping = primitiveTypeMapping;
             Validators = validators ?? ImmutableDictionary<string, ValidatorConfig>.Empty;
+            EmitWithMethods = emitWithMethod;
+            EmitInterfaceWithMethods = emitInterfaceWithMethods;
+            EmitOptionalWithMethods = emitOptionalWithMethod;
+            WithMethodReturnValidationResult = withMethodReturnsValidationResult;
         }
 
         public bool EmitInterfaceWithMethods { get; } = true;
