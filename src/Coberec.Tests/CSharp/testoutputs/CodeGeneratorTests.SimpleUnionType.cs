@@ -17,7 +17,7 @@ namespace GeneratedProject.ModelNamespace
 
 		private static ValidationErrors ValidateObject(Test123 obj)
 		{
-			return ValidationErrors.Join(BasicValidators.NotEmpty(obj.Field543), BasicValidators.Range(1, 10, obj.AbcSS));
+			return ValidationErrors.Join(BasicValidators.NotEmpty(obj.Field543).Nest("Field543"), BasicValidators.Range(1, 10, obj.AbcSS).Nest("abcSS"));
 		}
 
 		private Test123(NoNeedForValidationSentinel _, ImmutableArray<string> field543, int abcSS)

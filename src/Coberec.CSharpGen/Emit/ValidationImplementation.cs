@@ -106,6 +106,11 @@ namespace Coberec.CSharpGen.Emit
                 validateCalls.Add(@this => {
                     var call = new IL.Call(method);
                     call.Arguments.AddRange(method.Parameters.Select(p => parameters.GetValue(p).Invoke(@this)));
+                    foreach (var field in fields.First())
+                    {
+                        // TODO: properly represent errors of more than one field
+                        call = new IL.Call(cx.FindMethod(() => default(ValidationErrors).Nest(""))) { Arguments = { call, new IL.LdStr(field) } };
+                    }
                     return call;
                 });
             }
