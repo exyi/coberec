@@ -31,8 +31,8 @@ namespace Coberec.CSharpGen.TypeSystem
             this.ReturnType = returnType;
             this.IsVirtual = isVirtual;
             this.IsOverride = isOverride;
-            this.Name = name;
-            this.DeclaringTypeDefinition = declaringTypeDefinition;
+            this.Name = name ?? throw new ArgumentNullException(nameof(name));
+            this.DeclaringTypeDefinition = declaringTypeDefinition ?? throw new ArgumentNullException(nameof(declaringTypeDefinition));
             this.Accessibility = accessibility;
             this.IsStatic = isStatic;
             this.IsAbstract = isAbstract;

@@ -16,6 +16,8 @@ namespace Coberec.CSharpGen.TypeSystem
     {
         public VirtualType(TypeKind kind, Accessibility accessibility, FullTypeName name, bool isStatic, bool isSealed, bool isAbstract, ITypeDefinition declaringType = null, IModule parentModule = null, bool isHidden = false)
         {
+            if (declaringType == null && parentModule == null) throw new ArgumentException("declaringType or parentModule parameter must be non-null");
+            if (name.Name == null) throw new ArgumentException(nameof(name));
             this.Kind = kind;
             this.DeclaringTypeDefinition = declaringType;
             this.Accessibility = accessibility;

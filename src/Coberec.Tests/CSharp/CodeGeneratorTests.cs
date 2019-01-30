@@ -17,6 +17,7 @@ using FsCheck;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using CheckTestOutput;
+using Coberec.CoreLib;
 
 namespace Coberec.Tests.CSharp
 {
@@ -28,7 +29,19 @@ namespace Coberec.Tests.CSharp
             Arb.Register(typeof(TestGens.MyArbs));
         }
 
-        void CheckItCompiles(string code)
+        private const string ImplicitlyIncludedCode = @"
+using System;
+using Coberec.CoreLib;
+
+namespace GeneratedProject {
+    public static partial class Validators {
+        public static ValidationErrors MySpecialStringValidator(int param1, string value) =>
+            throw new NotImplementedException();
+    }
+}
+";
+
+        void CheckItCompiles(string code, string extension = "")
         {
             var assemblyName = System.IO.Path.GetRandomFileName();
             var references = new MetadataReference[]
@@ -43,9 +56,14 @@ namespace Coberec.Tests.CSharp
 
             references = references.Concat(CSharpBackend.GetReferencedPaths().Select(p => MetadataReference.CreateFromFile(p))).ToArray();
 
+            CSharpParseOptions options = new CSharpParseOptions(LanguageVersion.Latest);
             var compilation = CSharpCompilation.Create(
                 assemblyName,
-                syntaxTrees: new[] { CSharpSyntaxTree.ParseText(code, new CSharpParseOptions(LanguageVersion.Latest)) },
+                syntaxTrees: new[] {
+                    CSharpSyntaxTree.ParseText(code, options),
+                    CSharpSyntaxTree.ParseText(ImplicitlyIncludedCode, options),
+                    CSharpSyntaxTree.ParseText(extension, options)
+                },
                 references: references,
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
@@ -62,8 +80,17 @@ namespace Coberec.Tests.CSharp
                 ["String"] = new FullTypeName("System.String"),
             }),
             validators: ImmutableDictionary<string, ValidatorConfig>.Empty
+                        .Add("mySpecialStringValidator", new ValidatorConfig("GeneratedProject.Validators.MySpecialStringValidator", new [] { ("param1", 0, JToken.FromObject(0)) }))
                         .Add("notEmpty", new ValidatorConfig("Coberec.CoreLib.BasicValidators.NotEmpty", null))
-                        .Add("range", new ValidatorConfig("Coberec.CoreLib.BasicValidators.Range", new [] { ("low", 0, (JToken)null), ("high", 1, null) })));
+                        .Add("range", new ValidatorConfig("Coberec.CoreLib.BasicValidators.Range", new [] { ("low", 0, (JToken)null), ("high", 1, null) })),
+            externalSymbols: new [] {
+                new ExternalSymbolConfig("GeneratedProject", "Validators", ExternalSymbolKind.TypeDefinition),
+                new ExternalSymbolConfig("GeneratedProject.Validators", "MySpecialStringValidator", ExternalSymbolKind.StaticMethod, typeof(ValidationErrors).FullName, ImmutableArray.Create(
+                    new SymbolArgumentConfig("param1", "System.Int32"),
+                    new SymbolArgumentConfig("value", "System.String")
+                )),
+            }
+        );
         [Fact]
         public void SimpleCompositeType()
         {
@@ -130,16 +157,48 @@ namespace Coberec.Tests.CSharp
                 ))
             });
 
-            var settings = new EmitSettings(
-                defaultSettings.Namespace,
-                defaultSettings.PrimitiveTypeMapping,
-                defaultSettings.Validators,
-                emitOptionalWithMethod: optionalInterfaceWith
-            );
+            var settings = defaultSettings.With(emitOptionalWithMethod: optionalInterfaceWith);
 
             var result = CSharpBackend.Build(schema, settings);
             CheckItCompiles(result);
             check.CheckString(result, checkName: caseName, fileExtension: "cs");
+        }
+
+        [Fact]
+        public void CyclicValidatorTest()
+        {
+            var schema = new DataSchema(Enumerable.Empty<Entity>(), new [] {
+                new TypeDef("MyType", new Directive[] {
+                    new Directive("validateCustomRule", new JObject()),
+                    new Directive("validateCustomRule", new JObject(new JProperty("forFields", new JArray("f4")))),
+                }, TypeDefCore.Composite(new [] {
+                    new TypeField("f1", TypeRef.NullableType(TypeRef.ActualType("MyType")), null, new Directive[] { new Directive("validateCustomRule", new JObject()) }),
+                    new TypeField("f2", TypeRef.NullableType(TypeRef.ActualType("String")), null, new Directive[] { new Directive("validateMySpecialStringValidator", new JObject()) }),
+                    new TypeField("f3", TypeRef.NullableType(TypeRef.ActualType("String")), null, new Directive[] { new Directive("validateMySpecialStringValidator", new JObject(new JProperty("param1", 12))) }),
+                    new TypeField("f4", TypeRef.NullableType(TypeRef.ActualType("MyType")), null, new Directive[] { }),
+                }, new TypeRef[0]))
+            });
+            var settings = defaultSettings.With(
+                externalSymbols: defaultSettings.ExternalSymbols.Add(
+                    new ExternalSymbolConfig("GeneratedProject.Validators", "CustomValidator", ExternalSymbolKind.StaticMethod, typeof(ValidationErrors).FullName, ImmutableArray.Create(new SymbolArgumentConfig("value", "MyType")))),
+                validators: defaultSettings.Validators.Add(
+                    "customRule", new ValidatorConfig("GeneratedProject.Validators.CustomValidator", null))
+            );
+
+            var result = CSharpBackend.Build(schema, settings);
+            CheckItCompiles(result, @"
+using System;
+using Coberec.CoreLib;
+using GeneratedProject.ModelNamespace;
+
+namespace GeneratedProject {
+    public static partial class Validators {
+        public static ValidationErrors CustomValidator(MyType value) =>
+            throw new NotImplementedException();
+    }
+}
+");
+            check.CheckString(result, fileExtension: "cs");
         }
 
         // [Property(MaxTest = 2000, EndSize = 10_000)]

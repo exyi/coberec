@@ -10,11 +10,11 @@ namespace Coberec.CSharpGen.TypeSystem
     {
         public VirtualField(ITypeDefinition declaringTypeDefinition, Accessibility accessibility, string name, IType returnType, bool isReadOnly = true, bool isVolatile = false, bool isStatic = false, bool isHidden = false)
         {
-            this.Name = name;
+            this.Name = name ?? throw new ArgumentNullException(nameof(name));
             this.IsReadOnly = isReadOnly;
             this.IsVolatile = isVolatile;
-            this.ReturnType = returnType;
-            this.DeclaringTypeDefinition = declaringTypeDefinition;
+            this.ReturnType = returnType ?? throw new ArgumentNullException(nameof(returnType));
+            this.DeclaringTypeDefinition = declaringTypeDefinition ?? throw new ArgumentNullException(nameof(declaringTypeDefinition));
             this.Accessibility = accessibility;
             this.IsStatic = isStatic;
             this.IsConst = false;
@@ -24,11 +24,11 @@ namespace Coberec.CSharpGen.TypeSystem
 
         public VirtualField(ITypeDefinition declaringTypeDefinition, Accessibility accessibility, string name, IType returnType, bool isConst, object defaltValue)
         {
-            this.Name = name;
+            this.Name = name ?? throw new ArgumentNullException(nameof(name));
             this.IsReadOnly = true;
             this.IsVolatile = false;
-            this.ReturnType = returnType;
-            this.DeclaringTypeDefinition = declaringTypeDefinition;
+            this.ReturnType = returnType ?? throw new ArgumentNullException(nameof(returnType));
+            this.DeclaringTypeDefinition = declaringTypeDefinition ?? throw new ArgumentNullException(nameof(declaringTypeDefinition));
             this.Accessibility = accessibility;
             this.IsStatic = true;
             this.IsConst = isConst;

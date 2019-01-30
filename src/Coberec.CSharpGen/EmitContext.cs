@@ -19,6 +19,7 @@ using System.Text;
 using Coberec.MetaSchema;
 using System.Collections.Immutable;
 using ICSharpCode.Decompiler.CSharp.OutputVisitor;
+using Coberec.CoreLib;
 
 namespace Coberec.CSharpGen
 {
@@ -28,6 +29,7 @@ namespace Coberec.CSharpGen
             string @namespace,
             ImmutableDictionary<string, FullTypeName> primitiveTypeMapping,
             ImmutableDictionary<string, ValidatorConfig> validators = null,
+            IEnumerable<ExternalSymbolConfig> externalSymbols = null,
             bool emitWithMethod = true,
             bool emitInterfaceWithMethods = true,
             bool emitOptionalWithMethod = true,
@@ -36,6 +38,7 @@ namespace Coberec.CSharpGen
             Namespace = @namespace;
             PrimitiveTypeMapping = primitiveTypeMapping;
             Validators = validators ?? ImmutableDictionary<string, ValidatorConfig>.Empty;
+            ExternalSymbols = externalSymbols?.ToImmutableArray() ?? ImmutableArray<ExternalSymbolConfig>.Empty;
             EmitWithMethods = emitWithMethod;
             EmitInterfaceWithMethods = emitInterfaceWithMethods;
             EmitOptionalWithMethods = emitOptionalWithMethod;
@@ -50,6 +53,26 @@ namespace Coberec.CSharpGen
         public string Namespace { get; }
         public ImmutableDictionary<string, FullTypeName> PrimitiveTypeMapping { get; }
         public ImmutableDictionary<string, ValidatorConfig> Validators { get; }
+        public ImmutableArray<ExternalSymbolConfig> ExternalSymbols { get; }
+
+        public EmitSettings With(
+            OptParam<ImmutableDictionary<string, FullTypeName>> primitiveTypeMapping = default,
+            OptParam<ImmutableDictionary<string, ValidatorConfig>> validators = default,
+            OptParam<IEnumerable<ExternalSymbolConfig>> externalSymbols = default,
+            OptParam<bool> emitOptionalWithMethod = default
+        )
+        {
+            return new EmitSettings(
+                this.Namespace,
+                primitiveTypeMapping.ValueOrDefault(this.PrimitiveTypeMapping),
+                validators.ValueOrDefault(this.Validators),
+                externalSymbols.ValueOrDefault(this.ExternalSymbols),
+                this.EmitWithMethods,
+                this.EmitInterfaceWithMethods,
+                emitOptionalWithMethod.ValueOrDefault(this.EmitOptionalWithMethods),
+                this.WithMethodReturnValidationResult
+            );
+        }
     }
     public sealed class EmitContext
     {

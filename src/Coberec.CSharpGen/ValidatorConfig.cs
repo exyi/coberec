@@ -10,8 +10,8 @@ namespace Coberec.CSharpGen
     {
         public ValidatorConfig(
             string validationMethodName,
-            IEnumerable<(string name, int parameterIndex, JToken defaultValue)> validatorParameters,
-            bool acceptsNull = true
+            IEnumerable<(string name, int parameterIndex, JToken defaultValue)> validatorParameters = null,
+            bool acceptsNull = false
         )
         {
             this.ValidationMethodName = validationMethodName;

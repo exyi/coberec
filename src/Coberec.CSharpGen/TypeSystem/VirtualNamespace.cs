@@ -34,12 +34,12 @@ namespace Coberec.CSharpGen.TypeSystem
 
         public VirtualNamespace(string name, INamespace parentNamespace, ICompilation compilation, IModule[] modules)
         {
-            this.Compilation = compilation;
+            this.Compilation = compilation ?? throw new ArgumentNullException(nameof(compilation));
             this.types = new Dictionary<(string name, int typeParameterCount), ITypeDefinition>(new TupleComparer<string, int>(compilation.NameComparer, EqualityComparer<int>.Default));
             this.namespaces = new Dictionary<string, VirtualNamespace>(compilation.NameComparer);
             this.ContributingModules = modules;
             this.ParentNamespace = parentNamespace;
-            this.Name = name;
+            this.Name = name ?? throw new ArgumentNullException(nameof(name));
         }
 
         internal IEnumerable<ITypeDefinition> GetAllTypes(bool includeNestedTypes)

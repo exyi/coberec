@@ -58,8 +58,8 @@ namespace Coberec.CSharpGen.TypeSystem
 
         public VirtualModule(ICompilation compilation, string assemblyName, bool isMainModule)
         {
-            this.Compilation = compilation;
-            this.AssemblyName = assemblyName;
+            this.Compilation = compilation ?? throw new ArgumentNullException(nameof(compilation));
+            this.AssemblyName = assemblyName ?? throw new ArgumentNullException(nameof(assemblyName));
             this.IsMainModule = isMainModule;
             this.RootNamespace = new VirtualNamespace("", null, compilation, new[] { this });
         }

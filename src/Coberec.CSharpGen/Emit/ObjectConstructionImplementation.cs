@@ -72,8 +72,9 @@ namespace Coberec.CSharpGen.Emit
             return ctor;
         }
 
-        public static (IMethod noValidationConsructor, IMethod contructor, IMethod validationMethod)
-            AddObjectCreationStuff(this VirtualType type, EmitContext cx,
+        public static (IMethod noValidationConsructor, IMethod contructor, IMethod validationMethod) AddObjectCreationStuff(
+            this VirtualType type,
+            EmitContext cx,
             TypeSymbolNameMapping typeMapping,
             (string name, IField field)[] fields,
             IEnumerable<ValidatorUsage> validators,

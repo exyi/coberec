@@ -324,6 +324,38 @@ namespace Coberec.CSharpGen
             return type.GetValidatorsForType(n => cx.Settings.Validators.GetValueOrDefault(n)?.ValidatorParameters.Select(p => p.name).ToArray()).ToArray();
         }
 
+        private void InitializeExternalSymbols()
+        {
+            IType findType(string name)
+            {
+                if (this.prebuiltTypes.TryGetValue(name, out var result))
+                    return result;
+                return cx.FindType(new FullTypeName(name));
+            }
+            foreach (var s in cx.Settings.ExternalSymbols)
+            {
+                switch (s.Kind) {
+                    case ExternalSymbolKind.TypeDefinition: {
+                        // TODO: warning when in the same namespace as model
+                        //       error in case of real name collision
+                        var newType = new VirtualType(TypeKind.Class, Accessibility.Public, new FullTypeName(new TopLevelTypeName(s.DeclaredIn, s.Name)), isStatic: false, isSealed: false, isAbstract: false, parentModule: cx.Module, isHidden: true);
+                        cx.Module.AddType(newType);
+                        break;
+                    }
+                    case ExternalSymbolKind.Method:
+                    case ExternalSymbolKind.StaticMethod: {
+                        var methodArgs = s.Args.Select(a => new DefaultParameter(findType(a.Type), a.Name)).ToArray();
+                        var declaringType = (VirtualType)findType(s.DeclaredIn);
+                        var newMethod = new VirtualMethod(declaringType, Accessibility.Public, s.Name, methodArgs, findType(s.ResultType), isStatic: s.Kind == ExternalSymbolKind.StaticMethod, isHidden: true);
+                        declaringType.Methods.Add(newMethod);
+                        break;
+                    }
+                    default:
+                        throw new NotSupportedException($"External symbols of kind {s.Kind} are not supported.");
+                }
+            }
+        }
+
         public static string Build(DataSchema schema, EmitSettings settings)
         {
             var cx = new EmitContext(
@@ -340,6 +372,8 @@ namespace Coberec.CSharpGen
             @this.typeSchemas = schema.Types.ToDictionary(t => t.Name);
 
             @this.prebuiltTypes = schema.Types.ToDictionary(t => t.Name, t => @this.AddType(cx, t));
+
+            @this.InitializeExternalSymbols();
 
             foreach (var t in schema.Types)
                 @this.BuildType(t);

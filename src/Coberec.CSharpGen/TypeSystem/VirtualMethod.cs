@@ -17,10 +17,10 @@ namespace Coberec.CSharpGen.TypeSystem
     {
         public VirtualMethod(ITypeDefinition declaringType, Accessibility accessibility, string name, IReadOnlyList<IParameter> parameters, IType returnType, bool isOverride = false, bool isVirtual = false, bool isSealed = false, bool isAbstract = false, bool isStatic = false, bool isHidden = false, ITypeParameter[] typeParameters = null, IEnumerable<IMember> explicitImplementations = null)
         {
-            this.DeclaringTypeDefinition = declaringType;
-            this.ReturnType = returnType;
-            this.Parameters = parameters;
-            this.Name = name;
+            this.DeclaringTypeDefinition = declaringType ?? throw new ArgumentNullException(nameof(declaringType)); ;
+            this.ReturnType = returnType ?? throw new ArgumentNullException(nameof(returnType));
+            this.Parameters = parameters ?? throw new ArgumentNullException(nameof(parameters));
+            this.Name = name ?? throw new ArgumentNullException(nameof(name));
             this.Accessibility = accessibility;
             this.IsHidden = isHidden;
             this.IsOverride = isOverride;
