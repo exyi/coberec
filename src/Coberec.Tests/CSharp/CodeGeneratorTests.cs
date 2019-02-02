@@ -82,6 +82,7 @@ namespace GeneratedProject {
             validators: ImmutableDictionary<string, ValidatorConfig>.Empty
                         .Add("mySpecialStringValidator", new ValidatorConfig("GeneratedProject.Validators.MySpecialStringValidator", new [] { ("param1", 0, JToken.FromObject(0)) }))
                         .Add("notEmpty", new ValidatorConfig("Coberec.CoreLib.BasicValidators.NotEmpty", null))
+                        .Add("notNull", new ValidatorConfig("Coberec.CoreLib.BasicValidators.NotNull", null, acceptsNull: true))
                         .Add("range", new ValidatorConfig("Coberec.CoreLib.BasicValidators.Range", new [] { ("low", 0, (JToken)null), ("high", 1, null) })),
             externalSymbols: new [] {
                 new ExternalSymbolConfig("GeneratedProject", "Validators", ExternalSymbolKind.TypeDefinition),

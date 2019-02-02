@@ -72,10 +72,30 @@ namespace Coberec.CSharpGen.Emit
             }
         }
 
+        static IEnumerable<ValidatorUsage> GetImplicitNullValidators(VirtualType type, TypeDef typeSchema, TypeSymbolNameMapping typeMapping)
+        {
+            if (typeSchema.Core is TypeDefCore.PrimitiveCase)
+            {
+                yield return new ValidatorUsage("notNull", new Dictionary<string, JToken>(), new[] { "value" });
+            }
+            else if (typeSchema.Core is TypeDefCore.CompositeCase comp)
+            {
+                foreach (var f in comp.Fields)
+                {
+                    var realPropName = typeMapping.Fields[f.Name];
+                    var realProp = type.GetProperties(p => p.Name == realPropName).Single();
+                    if (!(f.Type is TypeRef.NullableTypeCase) && realProp.ReturnType.IsReferenceType == true)
+                    {
+                        yield return new ValidatorUsage("notNull", new Dictionary<string, JToken>(), new [] { f.Name });
+                    }
+                }
+            }
+        }
+
         public static IMethod ImplementValidateIfNeeded(this VirtualType type, EmitContext cx, TypeDef typeSchema, TypeSymbolNameMapping typeMapping, IEnumerable<ValidatorUsage> validators)
         {
             var validateCalls = new List<Func<IL.ILVariable, IL.ILInstruction>>();
-            foreach(var v in validators)
+            foreach(var v in Enumerable.Concat(GetImplicitNullValidators(type, typeSchema, typeMapping), validators))
             {
                 var def = cx.Settings.Validators.GetValueOrDefault(v.Name) ?? throw new Exception($"Validator {v.Name} could not be found.");
                 var method = cx.FindMethod(def.ValidationMethodName);
@@ -100,6 +120,8 @@ namespace Coberec.CSharpGen.Emit
 
                 (IL.ILInstruction, IType) unwrapNullable(IL.ILInstruction expr, IType resultType)
                 {
+                    if (def.AcceptsNull) return (expr, resultType);
+
                     if (resultType.GetDefinition().ReflectionName == typeof(Nullable<>).FullName)
                         return (new IL.Call(resultType.GetProperties(p => p.Name == "Value").Single().Getter) { Arguments = { new IL.AddressOf(expr) } }, resultType.TypeArguments.Single());
                     return (expr, resultType);
@@ -130,13 +152,15 @@ namespace Coberec.CSharpGen.Emit
 
                 IL.ILInstruction createFieldNullcheck(IL.ILInstruction expr, string fieldName)
                 {
+                    if (def.AcceptsNull) return null;
+
                     var member = getFieldMember(fieldName);
-                    var fieldType = ((TypeDefCore.CompositeCase)typeSchema.Core).Fields.Single(f => f.Name == fieldName).Type;
+                    // var fieldType = (typeSchema.Core as TypeDefCore.CompositeCase)?.Fields.Single(f => f.Name == fieldName).Type;
                     var fieldExpr = expr.AccessMember(member);
                     if (member.ReturnType.GetDefinition().ReflectionName == typeof(Nullable<>).FullName)
                         return new IL.Call(member.ReturnType.GetProperties(p => p.Name == "HasValue").Single().Getter) { Arguments = { new IL.AddressOf(fieldExpr) } };
-                    else if (fieldType is TypeRef.NullableTypeCase)
-                        return new IL.Comp(IL.ComparisonKind.Inequality, Sign.None, fieldExpr, new IL.LdNull());
+                    else if (member.ReturnType.IsReferenceType == true)
+                        return new IL.Comp(IL.ComparisonKind.Inequality, Sign.None, new IL.IsInst(fieldExpr, cx.Compilation.FindType(KnownTypeCode.Object)), new IL.LdNull());
                     else return null;
                 }
 

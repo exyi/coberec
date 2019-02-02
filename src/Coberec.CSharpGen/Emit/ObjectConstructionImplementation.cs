@@ -28,8 +28,7 @@ namespace Coberec.CSharpGen.Emit
             {
                 var thisParam = new IL.ILVariable(IL.VariableKind.Parameter, type, -1);
                 return EmitExtensions.CreateOneBlockFunction(ctor,
-                    fields.Zip(parameters, (f, p) =>
-                    {
+                    fields.Zip(parameters, (f, p) => {
                         var index = Array.IndexOf(parameters, p);
                         return (IL.ILInstruction)new IL.StObj(new IL.LdFlda(new IL.LdLoc(thisParam), f.field), new IL.LdLoc(new IL.ILVariable(IL.VariableKind.Parameter, f.field.ReturnType, index + indexOffset) { Name = p.Name }), f.field.ReturnType);
                     })

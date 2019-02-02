@@ -39,5 +39,7 @@
     "xmin",
     "xmax",
     "ctid",
-    "Match"
+    "Match",
+    "ValidateObject",
+    "Create"
 ]

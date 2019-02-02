@@ -157,7 +157,9 @@ namespace Coberec.CSharpGen
         private TypeSymbolNameMapping GenerateScalar(VirtualType type, TypeDefCore.PrimitiveCase primitive, TypeDef typeDef)
         {
             var valueProperty = type.AddAutoProperty("Value", cx.FindType<string>());
-            var typeMapping = new TypeSymbolNameMapping(type.Name);
+            var typeMapping = new TypeSymbolNameMapping(type.Name, new Dictionary<string, string> {
+                ["value"] = valueProperty.prop.Name
+            });
 
             var (noValCtor, publicCtor, validateMethod) = type.AddObjectCreationStuff(
                 cx,

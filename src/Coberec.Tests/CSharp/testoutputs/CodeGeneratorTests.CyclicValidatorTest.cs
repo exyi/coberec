@@ -23,7 +23,7 @@ namespace GeneratedProject.ModelNamespace
 
 		private static ValidationErrors ValidateObject(MyType obj)
 		{
-			return ValidationErrors.Join(Validators.CustomValidator(obj), Validators.CustomValidator(obj.F4).Nest("f4"), ((object)obj.F1 != null) ? Validators.CustomValidator(obj.F1).Nest("f1") : null, (obj.F2 != null) ? Validators.MySpecialStringValidator(0, obj.F2).Nest("f2") : null, Validators.MySpecialStringValidator(12, obj.F3).Nest("f3"));
+			return ValidationErrors.Join(BasicValidators.NotNull(obj.F3).Nest("f3"), BasicValidators.NotNull(obj.F4).Nest("f4"), Validators.CustomValidator(obj), (obj.F4 is object) ? Validators.CustomValidator(obj.F4).Nest("f4") : null, (obj.F1 is object) ? Validators.CustomValidator(obj.F1).Nest("f1") : null, (obj.F2 is object) ? Validators.MySpecialStringValidator(0, obj.F2).Nest("f2") : null, (obj.F3 is object) ? Validators.MySpecialStringValidator(12, obj.F3).Nest("f3") : null);
 		}
 
 		private MyType(NoNeedForValidationSentinel _, MyType f1, string f2, string f3, MyType f4)
