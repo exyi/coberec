@@ -161,6 +161,7 @@ namespace Coberec.CSharpGen
 
             var (noValCtor, publicCtor, validateMethod) = type.AddObjectCreationStuff(
                 cx,
+                typeDef,
                 typeMapping,
                 new[] { ("value", valueProperty.field) },
                 this.GetValidators(typeDef),
@@ -191,6 +192,7 @@ namespace Coberec.CSharpGen
 
             var (noValCtor, publicCtor, validateMethod) = type.AddObjectCreationStuff(
                 cx,
+                typeDef,
                 typeMapping,
                 props.Select(k => (k.schema.Name, k.field)).ToArray(),
                 this.GetValidators(typeDef),

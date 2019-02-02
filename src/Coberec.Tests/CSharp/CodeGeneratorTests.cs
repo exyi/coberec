@@ -151,7 +151,7 @@ namespace GeneratedProject {
                     new [] {
                         field543,
                         field2,
-                        new TypeField("abcSS", TypeRef.ActualType("Int"), null, new [] { new Directive("validateRange", JObject.Parse("{low: 1, high: 10}")) }),
+                        new TypeField("abcSS", TypeRef.NullableType(TypeRef.ActualType("Int")), null, new [] { new Directive("validateRange", JObject.Parse("{low: 1, high: 10}")) }),
                     },
                     new TypeRef[] { TypeRef.ActualType("Interface1") }
                 ))
@@ -174,8 +174,8 @@ namespace GeneratedProject {
                 }, TypeDefCore.Composite(new [] {
                     new TypeField("f1", TypeRef.NullableType(TypeRef.ActualType("MyType")), null, new Directive[] { new Directive("validateCustomRule", new JObject()) }),
                     new TypeField("f2", TypeRef.NullableType(TypeRef.ActualType("String")), null, new Directive[] { new Directive("validateMySpecialStringValidator", new JObject()) }),
-                    new TypeField("f3", TypeRef.NullableType(TypeRef.ActualType("String")), null, new Directive[] { new Directive("validateMySpecialStringValidator", new JObject(new JProperty("param1", 12))) }),
-                    new TypeField("f4", TypeRef.NullableType(TypeRef.ActualType("MyType")), null, new Directive[] { }),
+                    new TypeField("f3", TypeRef.ActualType("String"), null, new Directive[] { new Directive("validateMySpecialStringValidator", new JObject(new JProperty("param1", 12))) }),
+                    new TypeField("f4", TypeRef.ActualType("MyType"), null, new Directive[] { }),
                 }, new TypeRef[0]))
             });
             var settings = defaultSettings.With(

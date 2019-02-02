@@ -78,6 +78,12 @@ namespace Coberec.CSharpGen
     {
         public EmitContext(HackedSimpleCompilation hackedSimpleCompilation, EmitSettings settings, DataSchema fullSchema)
         {
+            foreach (var t in Enum.GetValues(typeof(KnownTypeCode)))
+            {
+                var ft = hackedSimpleCompilation.FindType((KnownTypeCode)t);
+                Debug.Assert(!(ft is UnknownType));
+            }
+
             HackedSimpleCompilation = hackedSimpleCompilation;
             Module = (VirtualModule)Compilation.MainModule;
             Settings = settings;

@@ -75,13 +75,14 @@ namespace Coberec.CSharpGen.Emit
         public static (IMethod noValidationConsructor, IMethod contructor, IMethod validationMethod) AddObjectCreationStuff(
             this VirtualType type,
             EmitContext cx,
+            TypeDef typeSchema,
             TypeSymbolNameMapping typeMapping,
             (string name, IField field)[] fields,
             IEnumerable<ValidatorUsage> validators,
             bool needsNoValidationConstructor
         )
         {
-            var validator = type.ImplementValidateIfNeeded(cx, typeMapping, validators);
+            var validator = type.ImplementValidateIfNeeded(cx, typeSchema, typeMapping, validators);
             bool privateNoValidationVersion = needsNoValidationConstructor && validator != null;
             var ctor1 = type.AddCreateConstructor(cx, fields, privateNoValidationVersion, needsNoValidationConstructor ? null : validator);
             var ctor2 = privateNoValidationVersion ?

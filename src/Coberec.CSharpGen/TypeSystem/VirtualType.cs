@@ -153,5 +153,7 @@ namespace Coberec.CSharpGen.TypeSystem
         }
 
         public IType VisitChildren(TypeVisitor visitor) => this;
+
+        public override string ToString() => ReflectionName;
     }
 }
