@@ -27,7 +27,7 @@ namespace Coberec.CSharpGen
     {
         public EmitSettings(
             string @namespace,
-            ImmutableDictionary<string, FullTypeName> primitiveTypeMapping,
+            ImmutableDictionary<string, FullTypeName> primitiveTypeMapping = null,
             ImmutableDictionary<string, ValidatorConfig> validators = null,
             IEnumerable<ExternalSymbolConfig> externalSymbols = null,
             bool emitWithMethod = true,
@@ -36,7 +36,7 @@ namespace Coberec.CSharpGen
             bool withMethodReturnsValidationResult = true)
         {
             Namespace = @namespace;
-            PrimitiveTypeMapping = primitiveTypeMapping;
+            PrimitiveTypeMapping = primitiveTypeMapping ?? ImmutableDictionary<string, FullTypeName>.Empty;
             Validators = validators ?? ImmutableDictionary<string, ValidatorConfig>.Empty;
             ExternalSymbols = externalSymbols?.ToImmutableArray() ?? ImmutableArray<ExternalSymbolConfig>.Empty;
             EmitWithMethods = emitWithMethod;
@@ -56,6 +56,7 @@ namespace Coberec.CSharpGen
         public ImmutableArray<ExternalSymbolConfig> ExternalSymbols { get; }
 
         public EmitSettings With(
+            OptParam<string> @namespace = default,
             OptParam<ImmutableDictionary<string, FullTypeName>> primitiveTypeMapping = default,
             OptParam<ImmutableDictionary<string, ValidatorConfig>> validators = default,
             OptParam<IEnumerable<ExternalSymbolConfig>> externalSymbols = default,
@@ -63,7 +64,7 @@ namespace Coberec.CSharpGen
         )
         {
             return new EmitSettings(
-                this.Namespace,
+                @namespace.ValueOrDefault(this.Namespace),
                 primitiveTypeMapping.ValueOrDefault(this.PrimitiveTypeMapping),
                 validators.ValueOrDefault(this.Validators),
                 externalSymbols.ValueOrDefault(this.ExternalSymbols),

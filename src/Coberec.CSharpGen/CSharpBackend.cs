@@ -362,6 +362,18 @@ namespace Coberec.CSharpGen
 
         public static string Build(DataSchema schema, EmitSettings settings)
         {
+            CSharpEmitter emitter = BuildCore(schema, settings);
+            return emitter.DecompileWholeModuleAsString();
+        }
+
+        public static IEnumerable<string> BuildIntoFolder(DataSchema schema, EmitSettings settings, string targetDir)
+        {
+            CSharpEmitter emitter = BuildCore(schema, settings);
+            return emitter.WriteCodeFilesInProject(targetDir);
+        }
+
+        private static CSharpEmitter BuildCore(DataSchema schema, EmitSettings settings)
+        {
             var cx = new EmitContext(
                 new HackedSimpleCompilation(
                     new VirtualModuleReference(true, "NewEpicModule"),
@@ -387,9 +399,7 @@ namespace Coberec.CSharpGen
             s.CSharpFormattingOptions.PropertyBraceStyle = BraceStyle.DoNotChange;
 
             var emitter = new CSharpEmitter(cx.HackedSimpleCompilation, s);
-            var result = emitter.DecompileWholeModuleAsString();
-
-            return result;
+            return emitter;
         }
 
         public static IEnumerable<string> GetReferencedPaths() =>

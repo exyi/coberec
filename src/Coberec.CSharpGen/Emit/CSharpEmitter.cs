@@ -46,6 +46,7 @@ using System.Reflection.Metadata.Ecma335;
 using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.CSharp;
 using Coberec.CSharpGen.TypeSystem;
+using System.Threading.Tasks;
 
 namespace Coberec.CSharpGen.Emit
 {
@@ -543,6 +544,32 @@ namespace Coberec.CSharpGen.Emit
             return syntaxTree;
         }
 
+        protected virtual bool IncludeTypeWhenDecompilingProject(ITypeDefinition type)
+        {
+            if (type.Name == "<Module>" || type is IHideableMember hideable && hideable.IsHidden)
+                return false;
+            return true;
+        }
+
+        public IEnumerable<string> WriteCodeFilesInProject(string targetDirectory)
+        {
+            var files = this.typeSystem.GetTopLevelTypeDefinitions().Where(IncludeTypeWhenDecompilingProject).GroupBy(type => {
+                    string file = WholeProjectDecompiler.CleanUpFileName(type.Name + ".cs");
+                    return file;
+                }, StringComparer.OrdinalIgnoreCase).ToList();
+            Parallel.ForEach(
+                files,
+                new ParallelOptions {
+                },
+                delegate (IGrouping<string, ITypeDefinition> file) {
+                    using (StreamWriter w = new StreamWriter(Path.Combine(targetDirectory, file.Key))) {
+                        var syntaxTree = DecompileTypes(file.ToArray());
+                        syntaxTree.AcceptVisitor(new CSharpOutputVisitor(w, settings.CSharpFormattingOptions));
+                    }
+                });
+            return files.Select(f => f.Key);
+        }
+
         /// <summary>
         /// Decompile the given types.
         /// </summary>
@@ -972,7 +999,7 @@ namespace Coberec.CSharpGen.Emit
                         Right = new PrimitiveExpression(4)
                     },
                     TrueStatement = new BlockStatement { // 32-bit
-						new ReturnStatement(
+                        new ReturnStatement(
                             new CastExpression(
                                 method.ReturnType.Clone(),
                                 intermediate32
@@ -980,7 +1007,7 @@ namespace Coberec.CSharpGen.Emit
                         )
                     },
                     FalseStatement = new BlockStatement { // 64-bit
-						new ReturnStatement(
+                        new ReturnStatement(
                             new CastExpression(
                                 method.ReturnType.Clone(),
                                 intermediate64

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
 
@@ -77,5 +78,10 @@ namespace Coberec.CSharpGen
         public static IEnumerable<(T, U)> ZipTuples<T, U>(this IEnumerable<T> a, IEnumerable<U> b) => a.Zip(b, MakeTuple);
 
         public static IEnumerable<T> DistinctBy<T, U>(this IEnumerable<T> a, Func<T, U> key) => a.GroupBy(key).Select(Enumerable.First);
+
+        public static ImmutableDictionary<K, V> TryAdd<K, V>(this ImmutableDictionary<K, V> @this, K key, V val) =>
+            @this.ContainsKey(key) ?
+            @this :
+            @this.Add(key, val);
     }
 }
