@@ -8,20 +8,22 @@ namespace Coberec.GraphqlLoader
 {
     public class GraphqlLoader
     {
-        private static GraphQLParser.AST.GraphQLDocument ParseDocument(string name, string source) =>
-            new GraphQLParser.Parser(new GraphQLParser.Lexer())
-            .Parse(new GraphQLParser.Source(source, name));
+        private static GraphQLParser.AST.GraphQLDocument ParseDocument(GraphQLParser.ISource source) =>
+            new GraphQLParser.Parser(new GraphQLParser.Lexer()).Parse(source);
 
-        public static DataSchema LoadFromGraphQL(IEnumerable<(string name, Lazy<string> source)> documents)
+        public static DataSchema LoadFromGraphQL(IEnumerable<(string name, Lazy<string> source)> documents, bool invertNonNull = false)
         {
             var rrs =
                 documents
 #if !DEBUG
                 .AsParallel()
 #endif
-                .Select(a => ParseDocument(a.name, a.source.Value))
-                .SelectMany(doc => doc.Definitions)
-                .Select(TransformDeclaration);
+                .Select(a => new GraphQLParser.Source(a.source.Value, a.name))
+                .SelectMany(source => {
+                    var doc = ParseDocument(source);
+                    var resolver = new GraphqlAstResolver(source, invertNonNull);
+                    return doc.Definitions.Select(x => TransformDeclaration(resolver, x));
+                });
             var c = new CollectedDefinitions();
 
             foreach (var rr in rrs) rr(c);
@@ -32,26 +34,26 @@ namespace Coberec.GraphqlLoader
         private static DataSchema CreateDataSchema(CollectedDefinitions cds) =>
             new DataSchema(cds.Entities, cds.TypeDefinitions);
 
-        private static GqlResolveResult TransformDeclaration(G.AST.ASTNode node)
+        private static GqlResolveResult TransformDeclaration(GraphqlAstResolver resolver, G.AST.ASTNode node)
         {
             if (node is G.AST.GraphQLObjectTypeDefinition obj)
             {
-                var typedef = GraphqlAstResolver.ProcessObjectType(obj);
+                var typedef = resolver.ProcessObjectType(obj);
                 return c => c.TypeDefinitions.Add(typedef);
             }
             else if (node is G.AST.GraphQLInterfaceTypeDefinition ifc)
             {
-                var typedef = GraphqlAstResolver.ProcessInterface(ifc);
+                var typedef = resolver.ProcessInterface(ifc);
                 return c => c.TypeDefinitions.Add(typedef);
             }
             else if (node is G.AST.GraphQLUnionTypeDefinition union)
             {
-                var typedef = GraphqlAstResolver.ProcessUnion(union);
+                var typedef = resolver.ProcessUnion(union);
                 return c => c.TypeDefinitions.Add(typedef);
             }
             else if (node is G.AST.GraphQLScalarTypeDefinition scalar)
             {
-                var typedef = GraphqlAstResolver.ProcessScalarDef(scalar);
+                var typedef = resolver.ProcessScalarDef(scalar);
                 return c => c.TypeDefinitions.Add(typedef);
             }
             else

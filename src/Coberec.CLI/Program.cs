@@ -22,6 +22,7 @@ namespace Coberec.CLI
         public bool OutputDirectory;
         public string OutputNamespace;
         public bool Verbose;
+        public bool InvertNonNullable;
     }
     public static class Program
     {
@@ -59,7 +60,7 @@ namespace Coberec.CLI
                     .TryAdd("range", new ValidatorConfig("Coberec.CoreLib.BasicValidators.Range", new [] { ("low", 0, (JToken)null), ("high", 1, null) }))
             );
 
-            var schema = Coberec.GraphqlLoader.GraphqlLoader.LoadFromGraphQL(x.Inputs.Select(GetInput).ToArray());
+            var schema = Coberec.GraphqlLoader.GraphqlLoader.LoadFromGraphQL(x.Inputs.Select(GetInput).ToArray(), x.InvertNonNullable);
 
             if (x.OutputDirectory)
             {
@@ -118,6 +119,10 @@ namespace Coberec.CLI
                 {
                     x.Verbose = true;
                 }
+                else if (a == "--invertNonNullable")
+                {
+                    x.InvertNonNullable = true;
+                }
                 else if (a.StartsWith("-"))
                 {
                     throw new Exception($"Unknown parameter {a}.");
@@ -160,6 +165,9 @@ Parameters:
 
 --verbose:
     Prints a bit more information sometimes.
+
+--invertNonNullable
+    Makes non-nullable types nullable and vice versa. It's useful hack for the case when almost everything is non-nullable as it's the default with this option.
 ";
 
         public static int Main(string[] args)
@@ -188,7 +196,7 @@ Parameters:
                 }
                 else
                 {
-                    Console.Error.WriteLine($"Error: {error.Message}. For more information (exception stack trace) use --verbose.");
+                    Console.Error.Write($"Error: {error.Message}. For more information (exception stack trace) use --verbose.");
                 }
                 return 1;
             }
