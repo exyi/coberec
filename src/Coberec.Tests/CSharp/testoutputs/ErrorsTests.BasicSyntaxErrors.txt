@@ -1,0 +1,6 @@
+Syntax Error GraphQL (2:19) Expected Name, found {
+1: 
+2: type D implements { }
+                     ^
+3: 
+

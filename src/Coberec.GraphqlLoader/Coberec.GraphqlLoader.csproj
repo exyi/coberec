@@ -5,6 +5,10 @@
     <ProjectReference Include="../Coberec.MetaSchema/Coberec.MetaSchema.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="System.Memory" Version="4.5.2" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>latest</LangVersion>

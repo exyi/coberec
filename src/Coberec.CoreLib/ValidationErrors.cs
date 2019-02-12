@@ -87,6 +87,27 @@ namespace Coberec.CoreLib
     public static class ValidationErrorsExtensionMethods
     {
         public static bool IsValid(this ValidationErrors errors) => errors == null || (errors.ErrorMessages.Length == 0 && errors.FieldErrors.Length == 0);
+        public static IEnumerable<(string[] path, string error)> EnumerateErrors(this ValidationErrors errors, string[] objPath = null)
+        {
+            if (errors.IsValid()) yield break;
+            objPath = objPath ?? Array.Empty<string>();
+
+            foreach (var msg in errors.ErrorMessages)
+            {
+                if (objPath.Length > 0)
+                    yield return (objPath, msg);
+                else
+                    yield return (objPath, msg);
+            }
+            foreach (var nested in errors.FieldErrors)
+            {
+                var path = new string[objPath.Length + 1];
+                Array.Copy(objPath, path, objPath.Length);
+                path[objPath.Length] = nested.FieldName;
+                foreach (var msg in nested.ValidationErrors.EnumerateErrors(path))
+                    yield return msg;
+            }
+        }
         public static IEnumerable<string> ToErrorMessages(this ValidationErrors errors, string objPath = "")
         {
             if (errors.IsValid()) yield break;

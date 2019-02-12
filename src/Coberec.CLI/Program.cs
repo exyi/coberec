@@ -11,6 +11,8 @@ using IO = System.IO;
 using Newtonsoft.Json;
 using System.IO;
 using Newtonsoft.Json.Linq;
+using Coberec.CoreLib;
+using GLoader = Coberec.GraphqlLoader.GraphqlLoader;
 
 namespace Coberec.CLI
 {
@@ -60,20 +62,27 @@ namespace Coberec.CLI
                     .TryAdd("range", new ValidatorConfig("Coberec.CoreLib.BasicValidators.Range", new [] { ("low", 0, (JToken)null), ("high", 1, null) }))
             );
 
-            var schema = Coberec.GraphqlLoader.GraphqlLoader.LoadFromGraphQL(x.Inputs.Select(GetInput).ToArray(), x.InvertNonNullable);
+            var (schema, validationMapper) = GLoader.LoadFromGraphQL(x.Inputs.Select(GetInput).ToArray(), x.InvertNonNullable);
 
-            if (x.OutputDirectory)
+            try
             {
-                Directory.CreateDirectory(x.Output);
-                CSharpBackend.BuildIntoFolder(schema, settings, x.Output);
-            }
-            else
-            {
-                var output = CSharpBackend.Build(schema, settings);
-                if (x.Output == "-")
-                    Console.Out.WriteLine(output);
+                if (x.OutputDirectory)
+                {
+                    Directory.CreateDirectory(x.Output);
+                    CSharpBackend.BuildIntoFolder(schema, settings, x.Output);
+                }
                 else
-                    File.WriteAllText(x.Output, output);
+                {
+                    var output = CSharpBackend.Build(schema, settings);
+                    if (x.Output == "-")
+                        Console.Out.WriteLine(output);
+                    else
+                        File.WriteAllText(x.Output, output);
+                }
+            }
+            catch (ValidationErrorException error)
+            {
+                throw new AggregateException(GLoader.MapErrors(error.Validation, validationMapper));
             }
         }
 
@@ -184,19 +193,24 @@ Parameters:
             }
             catch (Exception error)
             {
+                var message = error is AggregateException multiError ? "Multiple errors occurred:\n * " + string.Join("\n * ", multiError.InnerExceptions.Select(a => a.Message)) : error.Message;
                 var verbose = args.Contains("--verbose") || args.Contains("-v");
                 if (verbose)
                 {
                     Console.Error.Write("Error has occurred: ");
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine(error.Message);
+                    Console.Error.WriteLine(error.Message);
                     Console.ResetColor();
                     Console.Error.WriteLine(error);
                     Console.Error.WriteLine($"If this error does not make sense, it's probably a bug. Try to create a small reproducible example and report it please.");
                 }
                 else
                 {
-                    Console.Error.Write($"Error: {error.Message}. For more information (exception stack trace) use --verbose.");
+                    Console.Error.Write($"Error: ");
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.Error.Write(error.Message);
+                    Console.ResetColor();
+                    Console.Error.WriteLine("For more information (exception stack trace) use --verbose.");
                 }
                 return 1;
             }

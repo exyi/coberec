@@ -15,6 +15,13 @@ namespace Coberec.CoreLib
             return ValueOrDefault;
         }
 
+        public T Expect(Func<ValidationErrors, Exception> makeException)
+        {
+            if (Errors == null) throw new InvalidOperationException("Invalid object created.");
+            if (!Errors.IsValid()) throw makeException(Errors);
+            return ValueOrDefault;
+        }
+
         public ValidationResult<U> Select<U>(Func<T, U> mapping, Func<ValidationErrors, ValidationErrors> errorMapping = null)
         {
             if (!Errors.IsValid())

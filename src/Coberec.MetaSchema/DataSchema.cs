@@ -68,12 +68,12 @@ namespace Coberec.MetaSchema
             Types = types;
         }
 
-        public ValidationResult<DataSchema> Create(
+        public static ValidationResult<DataSchema> Create(
             IEnumerable<Entity> entities,
             IEnumerable<TypeDef> types
         ) => Create(entities.ToImmutableArray(), types.ToImmutableArray());
 
-        public ValidationResult<DataSchema> Create(
+        public static ValidationResult<DataSchema> Create(
             ImmutableArray<Entity> entities,
             ImmutableArray<TypeDef> types
         )

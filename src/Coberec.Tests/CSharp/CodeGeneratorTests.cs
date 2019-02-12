@@ -74,7 +74,7 @@ namespace GeneratedProject {
             Assert.True(result.Success, $"Compilation of generated code failed:\n" + string.Join("\n", result.Diagnostics) + "\n\n" + code);
         }
 
-        public static EmitSettings defaultSettings = new EmitSettings("GeneratedProject.ModelNamespace",
+        public static EmitSettings DefaultSettings = new EmitSettings("GeneratedProject.ModelNamespace",
             ImmutableDictionary.CreateRange<string, FullTypeName>(new Dictionary<string,FullTypeName>{
                 ["Int"] = new FullTypeName("System.Int32"),
                 ["String"] = new FullTypeName("System.String"),
@@ -105,7 +105,7 @@ namespace GeneratedProject {
                 ))
             });
 
-            var result = CSharpBackend.Build(schema, defaultSettings);
+            var result = CSharpBackend.Build(schema, DefaultSettings);
             CheckItCompiles(result);
             check.CheckString(result, fileExtension: "cs");
         }
@@ -129,7 +129,7 @@ namespace GeneratedProject {
                     }))
             });
 
-            var result = CSharpBackend.Build(schema, defaultSettings);
+            var result = CSharpBackend.Build(schema, DefaultSettings);
             CheckItCompiles(result);
             check.CheckString(result, fileExtension: "cs");
         }
@@ -158,7 +158,7 @@ namespace GeneratedProject {
                 ))
             });
 
-            var settings = defaultSettings.With(emitOptionalWithMethod: optionalInterfaceWith);
+            var settings = DefaultSettings.With(emitOptionalWithMethod: optionalInterfaceWith);
 
             var result = CSharpBackend.Build(schema, settings);
             CheckItCompiles(result);
@@ -179,10 +179,10 @@ namespace GeneratedProject {
                     new TypeField("f4", TypeRef.ActualType("MyType"), null, new Directive[] { }),
                 }, new TypeRef[0]))
             });
-            var settings = defaultSettings.With(
-                externalSymbols: defaultSettings.ExternalSymbols.Add(
+            var settings = DefaultSettings.With(
+                externalSymbols: DefaultSettings.ExternalSymbols.Add(
                     new ExternalSymbolConfig("GeneratedProject.Validators", "CustomValidator", ExternalSymbolKind.StaticMethod, typeof(ValidationErrors).FullName, ImmutableArray.Create(new SymbolArgumentConfig("value", "MyType")))),
-                validators: defaultSettings.Validators.Add(
+                validators: DefaultSettings.Validators.Add(
                     "customRule", new ValidatorConfig("GeneratedProject.Validators.CustomValidator", null))
             );
 
@@ -208,7 +208,7 @@ namespace GeneratedProject {
         {
             // var schema = new DataSchema(Enumerable.Empty<Entity>(), new [] { typeDef });
 
-            var result = CSharpBackend.Build(schema, defaultSettings);
+            var result = CSharpBackend.Build(schema, DefaultSettings);
             CheckItCompiles(result);
             // Console.WriteLine(result);
         }

@@ -13,12 +13,12 @@ namespace Coberec.GraphqlLoader
 {
     class GraphqlAstResolver
     {
-        private readonly ISource source;
+        public readonly ISource Source;
         private readonly bool invertNonNull;
 
         public GraphqlAstResolver(ISource source, bool invertNonNull)
         {
-            this.source = source;
+            this.Source = source;
             this.invertNonNull = invertNonNull;
         }
 
@@ -57,9 +57,15 @@ namespace Coberec.GraphqlLoader
             type is TypeRef.NullableTypeCase nullType ? nullType.Type :
             throw Error("Node can not be non-nullable twice.", contextNode);
 
-        public TypeRef ProcessTypeName(G.AST.GraphQLType t)
+        public TypeRef ProcessTypeName(G.AST.GraphQLType t, bool onlyDirect = false)
         {
-            if (this.invertNonNull)
+            if (onlyDirect)
+            {
+                return
+                    t is G.AST.GraphQLNamedType name ? TypeRef.ActualType(name.Name.Value) :
+                    throw Error($"Unexpected type expression {t.Kind}.", t);
+            }
+            else if (this.invertNonNull)
             {
                 return
                     t is G.AST.GraphQLNamedType name ? TypeRef.ActualType(name.Name.Value) :
@@ -67,6 +73,7 @@ namespace Coberec.GraphqlLoader
                     t is G.AST.GraphQLNonNullType nullable ? TypeRef.NullableType(ProcessTypeName(nullable.Type)) :
                     throw Error($"Type of type {t.Kind} is not supported.", t);
             }
+            else
             {
                 return
                     t is G.AST.GraphQLNamedType name ? TypeRef.NullableType(TypeRef.ActualType(name.Name.Value)) :
@@ -81,7 +88,7 @@ namespace Coberec.GraphqlLoader
                 obj.Directives.Select(ProcessDirective),
                 TypeDefCore.Composite(
                     obj.Fields.Select(ProcessTypeField),
-                    obj.Interfaces.Select(ProcessTypeName)
+                    obj.Interfaces.Select(i => ProcessTypeName(i, true))
                 )
             );
         public TypeDef ProcessInterface(G.AST.GraphQLInterfaceTypeDefinition ifc) =>
@@ -97,7 +104,7 @@ namespace Coberec.GraphqlLoader
                 ifc.Name.Value,
                 ifc.Directives.Select(ProcessDirective),
                 TypeDefCore.Union(
-                    ifc.Types.Select(ProcessTypeName)
+                    ifc.Types.Select(t => ProcessTypeName(t, true))
                 )
             );
 
@@ -108,7 +115,7 @@ namespace Coberec.GraphqlLoader
                 TypeDefCore.Primitive()
             );
 
-        GraphQLSyntaxErrorException Error(string message, ASTNode contextNode) =>
-            new GraphQLSyntaxErrorException(message, source, contextNode.Location.Start);
+        internal GraphQLSyntaxErrorException Error(string message, ASTNode contextNode) =>
+            new GraphQLSyntaxErrorException(message, Source, contextNode.Location.Start);
     }
 }

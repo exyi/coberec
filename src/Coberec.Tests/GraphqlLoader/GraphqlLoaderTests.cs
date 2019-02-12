@@ -21,27 +21,27 @@ namespace Coberec.Tests.GraphqlLoader
         }
 
         [Property]
-        public void ParseTypeName(GraphqlName a)
+        public void ParseTypeName(GraphqlName a, bool invertNulls)
         {
-            var normalName = Helpers.ParseTypeRef(a.Name);
+            var normalName = Helpers.ParseTypeRef(invertNulls ? a.Name : a.Name + "!", invertNulls);
             var actualType = normalName as TypeRef.ActualTypeCase;
             Assert.NotNull(actualType);
             Assert.Equal(actualType.TypeName, a.Name);
         }
 
         [Property]
-        public void ParseNullableTypeName(GraphqlName a)
+        public void ParseNullableTypeName(GraphqlName a, bool invertNulls)
         {
-            var normalName = Helpers.ParseTypeRef(a.Name + "!");
+            var normalName = Helpers.ParseTypeRef(invertNulls ? a.Name  + "!" : a.Name, invertNulls);
             var actualType = (normalName as TypeRef.NullableTypeCase)?.Type as TypeRef.ActualTypeCase;
             Assert.NotNull(actualType);
             Assert.Equal(actualType.TypeName, a.Name);
         }
 
         [Property]
-        public void ParseListTypeName(GraphqlName a)
+        public void ParseListTypeName(GraphqlName a, bool invertNulls)
         {
-            var normalName = Helpers.ParseTypeRef($"[{a}]");
+            var normalName = Helpers.ParseTypeRef(invertNulls ? $"[{a}]" : $"[{a}!]!", invertNulls);
             var actualType = (normalName as TypeRef.ListTypeCase)?.Type as TypeRef.ActualTypeCase;
             Assert.NotNull(actualType);
             Assert.Equal(actualType.TypeName, a.Name);
@@ -50,7 +50,7 @@ namespace Coberec.Tests.GraphqlLoader
         [Property]
         public void ParseTypeField(GraphqlName name, GraphqlName type)
         {
-            var f = Helpers.ParseTypeField($"{name}: {type}");
+            var f = Helpers.ParseTypeField($"{name}: {type}!");
             Assert.Equal(f.Name, name.Name);
             var actualType = f.Type as TypeRef.ActualTypeCase;
             Assert.Equal(actualType.TypeName, type.Name);
@@ -59,7 +59,7 @@ namespace Coberec.Tests.GraphqlLoader
         [Property]
         public void ParseTypeFieldWithDirectives(GraphqlName name, GraphqlName type, GraphqlName dir2name, GraphqlName argName)
         {
-            var f = Helpers.ParseTypeField($"{name}: {type} @dir1(lol: \"ahoj\") @{dir2name}({argName}: 12) @dir3");
+            var f = Helpers.ParseTypeField($"{name}: {type} @dir1(lol: \"ahoj\") @{dir2name}({argName}: 12) @dir3", invertNonNull: true);
             Assert.Equal(f.Name, name.Name);
             var actualType = f.Type as TypeRef.ActualTypeCase;
             Assert.Equal(actualType.TypeName, type.Name);
@@ -86,7 +86,7 @@ namespace Coberec.Tests.GraphqlLoader
                       .Select(f => makeField(f.name.Name, f.type.Name, f.directives.Select(n => n.Name)));
             var type = $"type {name} implements {implements} @{directive} {{ {string.Join(",", fff)} }}";
 
-            var typeDef = Helpers.ParseTypeDef(type);
+            var typeDef = Helpers.ParseTypeDef(type, invertNonNull: true);
             // Console.WriteLine(typeDef.ToString());
             Assert.Equal(name.Name, typeDef.Name);
             Assert.Equal(new [] { (directive.Name, "{}") }, typeDef.Directives.Select(d => (d.Name, d.Args.ToString(Formatting.None))));

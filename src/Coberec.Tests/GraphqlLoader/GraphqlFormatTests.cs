@@ -19,21 +19,21 @@ namespace Coberec.Tests.GraphqlLoader
         [Property]
         public void TestTypeRef(TypeRef t)
         {
-            var clone = Helpers.ParseTypeRef(t.ToString());
+            var clone = Helpers.ParseTypeRef(t.ToString(), invertNonNull: true);
             Assert.Equal(t.ToString(), clone.ToString());
         }
 
         [Property(Replay="487817991,296518929")]
         public void TestDirective(Directive directive)
         {
-            var clone = Helpers.ParseDirectives(directive.ToString()).Single();
+            var clone = Helpers.ParseDirectives(directive.ToString(), invertNonNull: true).Single();
             Assert.Equal(directive.ToString(), clone.ToString());
         }
 
         [Property]
         public void TestTypeField(TypeField field)
         {
-            var clone = Helpers.ParseTypeField(field.ToString());
+            var clone = Helpers.ParseTypeField(field.ToString(), invertNonNull: true);
             Assert.Equal(field.ToString(), clone.ToString());
         }
 
@@ -41,14 +41,14 @@ namespace Coberec.Tests.GraphqlLoader
         public void TestTypeDef(TypeDef def)
         {
             // Console.WriteLine(def.ToString());
-            var clone = Helpers.ParseTypeDef(def.ToString());
+            var clone = Helpers.ParseTypeDef(def.ToString(), invertNonNull: true);
             Assert.Equal(def.ToString(), clone.ToString());
         }
 
         [Property]
         public void TestDataSchema(DataSchema schema)
         {
-            var clone = Helpers.ParseSchema(schema.ToString());
+            var clone = Helpers.ParseSchema(schema.ToString(), invertNonNull: true);
             Assert.Equal(clone.ToString(), schema.ToString());
         }
     }

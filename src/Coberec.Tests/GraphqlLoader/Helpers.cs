@@ -9,19 +9,19 @@ namespace Coberec.Tests.GraphqlLoader
 {
     public static class Helpers
     {
-        public static DataSchema ParseSchema(string code) =>
-            Coberec.GraphqlLoader.GraphqlLoader.LoadFromGraphQL(new [] { ("testfile.gql", new Lazy<string>(code)) });
+        public static DataSchema ParseSchema(string code, bool invertNonNull = false) =>
+            Coberec.GraphqlLoader.GraphqlLoader.LoadFromGraphQL(new [] { ("testfile.gql", new Lazy<string>(code)) }, invertNonNull).schema;
 
-        public static TypeDef ParseTypeDef(string code) =>
-            ParseSchema(code).Types.Single();
+        public static TypeDef ParseTypeDef(string code, bool invertNonNull = false) =>
+            ParseSchema(code, invertNonNull).Types.Single();
 
-        public static TypeField ParseTypeField(string code) =>
-            ((TypeDefCore.CompositeCase)ParseTypeDef($"type A {{ {code} }}").Core).Fields.Single();
-        public static TypeRef ParseTypeRef(string code) =>
-            ParseTypeField($"f1: {code}").Type;
-        public static ImmutableArray<Directive> ParseDirectives(string code) =>
-            ParseTypeField($"f1: Int {code}").Directives;
-        public static JToken ParseValueToJson(string code) =>
-            ParseDirectives($"@d1(value1: {code})").Single().Args.Property("value1").Value;
+        public static TypeField ParseTypeField(string code, bool invertNonNull = false) =>
+            ((TypeDefCore.CompositeCase)ParseTypeDef($"type A {{ {code} }}", invertNonNull).Core).Fields.Single();
+        public static TypeRef ParseTypeRef(string code, bool invertNonNull = false) =>
+            ParseTypeField($"f1: {code}", invertNonNull).Type;
+        public static ImmutableArray<Directive> ParseDirectives(string code, bool invertNonNull = false) =>
+            ParseTypeField($"f1: Int {code}", invertNonNull).Directives;
+        public static JToken ParseValueToJson(string code, bool invertNonNull = false) =>
+            ParseDirectives($"@d1(value1: {code})", invertNonNull).Single().Args.Property("value1").Value;
     }
 }
