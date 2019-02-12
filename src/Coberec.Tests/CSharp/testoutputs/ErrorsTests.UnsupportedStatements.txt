@@ -1,5 +1,5 @@
 Syntax Error GraphQL (3:24) Arguments in field definitions are not supported
-2: type Kokot {
+2: type Something {
 3:     parametrizedFields(x: Int): String
                           ^
 4: }

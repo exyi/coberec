@@ -90,7 +90,8 @@ namespace GeneratedProject {
                     new SymbolArgumentConfig("param1", "System.Int32"),
                     new SymbolArgumentConfig("value", "System.String")
                 )),
-            }
+            },
+            fallbackToStringType: true
         );
         [Fact]
         public void SimpleCompositeType()

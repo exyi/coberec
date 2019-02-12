@@ -32,7 +32,7 @@ namespace Coberec.GraphqlLoader
 
             Func<string[], string, G.Exceptions.GraphQLSyntaxErrorException> validationMapper = (path, message) => {
                 var ((p, n), source) = FindSourceLocation(path, c);
-                return new G.Exceptions.GraphQLSyntaxErrorException(message, source, n.Location.Start);
+                return new G.Exceptions.GraphQLSyntaxErrorException(message, source, n?.Location?.Start ?? 0);
             };
 
             var schema = CreateDataSchema(c);
@@ -57,18 +57,20 @@ namespace Coberec.GraphqlLoader
             var field = fieldSyntax.ElementAtOrDefault(int.Parse(path.Span[1]));
             if (field == null) return (path, defaultNode);
             path = path.Slice(2);
-            if (path.Span[0] == "directives")
+            if (path.Span[0] == "directives" && path.Length >= 2)
                 return FindSourceLocation_Directive(field, path);
+            else if (path.Span[0] == "type")
+                return (path.Slice(1), field.Type);
             return (path, field);
         }
 
         static ((ReadOnlyMemory<string> remainingPath, G.AST.ASTNode node), G.ISource source) FindSourceLocation(ReadOnlyMemory<string> path, CollectedDefinitions definitions)
         {
-            if (path.Span[0] == "types")
+            if (path.Span[0] == "types" && path.Length >= 2)
             {
                 var (definition, source, t) = definitions.TypeDefinitions[int.Parse(path.Span[1])];
                 path = path.Slice(2);
-                if (path.Span[0] == "directives")
+                if (path.Span[0] == "directives" && path.Length >= 2)
                     return (FindSourceLocation_Directive(t, path), source);
                 else if (path.Span[0] == "core")
                 {
@@ -76,16 +78,20 @@ namespace Coberec.GraphqlLoader
                     return (definition.Core.Match(
                         primitive: _ => (path, ((G.AST.GraphQLScalarTypeDefinition)t).Name),
                         union: union => {
+                            if (path.Span[0] == "options" && path.Length >= 2)
+                                return (path.Slice(2), ((G.AST.GraphQLUnionTypeDefinition)t).Types.ElementAt(int.Parse(path.Span[1])));
                             return (path, t);
                         },
                         @interface: ifc => {
-                            if (path.Span[0] == "fields")
+                            if (path.Span[0] == "fields" && path.Length >= 2)
                                 return FindSourceLocation_Fields(t, ((G.AST.GraphQLInterfaceTypeDefinition)t).Fields, ifc.Fields, path);
                             return (path, t);
                         },
                         composite: cmp => {
-                            if (path.Span[0] == "fields")
+                            if (path.Span[0] == "fields" && path.Length >= 2)
                                 return FindSourceLocation_Fields(t, ((G.AST.GraphQLObjectTypeDefinition)t).Fields, cmp.Fields, path);
+                            if (path.Span[0] == "implements" && path.Length >= 2)
+                                return (path.Slice(2), ((G.AST.GraphQLObjectTypeDefinition)t).Interfaces.ElementAt(int.Parse(path.Span[1])));
                             return (path, t);
                         }
                     ), source);

@@ -1,0 +1,34 @@
+Syntax Error GraphQL (2:19) Type 'I' is not defined.
+1: 
+2: type A implements I {
+                     ^
+3:     f: B
+
+
+Syntax Error GraphQL (3:8) Type 'B' is not defined.
+2: type A implements I {
+3:     f: B
+          ^
+4:     g: A
+
+
+Syntax Error GraphQL (6:8) Type 'XX' is not defined.
+5:     h: Int
+6:     i: XX
+          ^
+7:     j: Hmm
+
+
+Syntax Error GraphQL (10:11) Type 'XX' is not defined.
+ 9: 
+10: union U = XX | A
+              ^
+11: 
+
+
+Syntax Error GraphQL (15:8) Type 'B' is not defined.
+14: interface J {
+15:     f: B
+           ^
+16:     g: A
+

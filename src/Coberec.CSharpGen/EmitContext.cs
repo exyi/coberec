@@ -33,7 +33,8 @@ namespace Coberec.CSharpGen
             bool emitWithMethod = true,
             bool emitInterfaceWithMethods = true,
             bool emitOptionalWithMethod = true,
-            bool withMethodReturnsValidationResult = true)
+            bool withMethodReturnsValidationResult = true,
+            bool fallbackToStringType = false)
         {
             Namespace = @namespace;
             PrimitiveTypeMapping = primitiveTypeMapping ?? ImmutableDictionary<string, FullTypeName>.Empty;
@@ -43,13 +44,14 @@ namespace Coberec.CSharpGen
             EmitInterfaceWithMethods = emitInterfaceWithMethods;
             EmitOptionalWithMethods = emitOptionalWithMethod;
             WithMethodReturnValidationResult = withMethodReturnsValidationResult;
+            FallbackToStringType = fallbackToStringType;
         }
 
         public bool EmitInterfaceWithMethods { get; } = true;
         public bool EmitOptionalWithMethods { get; } = true;
         public bool EmitWithMethods { get; } = true;
         public bool WithMethodReturnValidationResult { get; } = true;
-
+        public bool FallbackToStringType { get; } = false;
         public string Namespace { get; }
         public ImmutableDictionary<string, FullTypeName> PrimitiveTypeMapping { get; }
         public ImmutableDictionary<string, ValidatorConfig> Validators { get; }
@@ -60,7 +62,8 @@ namespace Coberec.CSharpGen
             OptParam<ImmutableDictionary<string, FullTypeName>> primitiveTypeMapping = default,
             OptParam<ImmutableDictionary<string, ValidatorConfig>> validators = default,
             OptParam<IEnumerable<ExternalSymbolConfig>> externalSymbols = default,
-            OptParam<bool> emitOptionalWithMethod = default
+            OptParam<bool> emitOptionalWithMethod = default,
+            OptParam<bool> fallbackToStringType = default
         )
         {
             return new EmitSettings(
@@ -71,7 +74,8 @@ namespace Coberec.CSharpGen
                 this.EmitWithMethods,
                 this.EmitInterfaceWithMethods,
                 emitOptionalWithMethod.ValueOrDefault(this.EmitOptionalWithMethods),
-                this.WithMethodReturnValidationResult
+                this.WithMethodReturnValidationResult,
+                fallbackToStringType.ValueOrDefault(this.FallbackToStringType)
             );
         }
     }

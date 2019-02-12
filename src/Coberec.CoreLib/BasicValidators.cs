@@ -12,5 +12,9 @@ namespace Coberec.CoreLib
             value >= low && value <= low ? null : ValidationErrors.Create($"Integer value {value} is out of range [{low}, {high}]");
         public static ValidationErrors NotEmpty(IEnumerable<object> value) =>
             value.Any() ? null : ValidationErrors.Create("Object can not be empty.");
+
+        // TODO: cut down allocations
+        public static ValidationErrors ValidateList<T>(this IEnumerable<T> array, Func<T, ValidationErrors> validator) =>
+            ValidationErrors.Join(array.Select((v, i) => validator(v).Nest(i.ToString())).ToArray());
     }
 }

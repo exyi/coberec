@@ -11,6 +11,7 @@ namespace Coberec.Tests.CSharp
     public class ErrorsTests
     {
         CheckTestOutput.CheckTestOutput check = new CheckTestOutput.CheckTestOutput("testoutputs");
+        public static EmitSettings DefaultSettings = CodeGeneratorTests.DefaultSettings.With(fallbackToStringType: false);
 
         public string GetCompilationErrors(string code, EmitSettings settings = null)
         {
@@ -20,7 +21,7 @@ namespace Coberec.Tests.CSharp
 
                 try
                 {
-                    CSharpBackend.Build(schema, settings ?? CodeGeneratorTests.DefaultSettings);
+                    CSharpBackend.Build(schema, settings ?? DefaultSettings);
                     Assert.True(false, "Expected that the build will fail.");
                     return null;
                 }
@@ -51,13 +52,36 @@ type D implements { }
         public void UnsupportedStatements()
         {
             check.CheckString(GetCompilationErrors(@"
-type Kokot {
+type Something {
     parametrizedFields(x: Int): String
 }
 
 input InputTypesDoesNotMakeSense { }
 
 
+"));
+        }
+
+        [Fact]
+        public void UndefinedTypes()
+        {
+                        check.CheckString(GetCompilationErrors(@"
+type A implements I {
+    f: B
+    g: A
+    h: Int
+    i: XX
+    j: Hmm
+}
+
+union U = XX | A
+
+scalar Hmm
+
+interface J {
+    f: B
+    g: A
+}
 "));
         }
     }

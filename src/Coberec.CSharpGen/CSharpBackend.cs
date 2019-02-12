@@ -19,6 +19,7 @@ using System.Text;
 using Coberec.MetaSchema;
 using System.Collections.Immutable;
 using ICSharpCode.Decompiler.CSharp.OutputVisitor;
+using Coberec.CoreLib;
 
 namespace Coberec.CSharpGen
 {
@@ -372,6 +373,11 @@ namespace Coberec.CSharpGen
             return emitter.WriteCodeFilesInProject(targetDir);
         }
 
+        public ValidationErrors ValidateSchema()
+        {
+            return cx.FullSchema.ValidateTypeReferences(predefinedTypes: cx.Settings.PrimitiveTypeMapping.Keys);
+        }
+
         private static CSharpEmitter BuildCore(DataSchema schema, EmitSettings settings)
         {
             var cx = new EmitContext(
@@ -390,6 +396,9 @@ namespace Coberec.CSharpGen
             @this.prebuiltTypes = schema.Types.ToDictionary(t => t.Name, t => @this.AddType(cx, t));
 
             @this.InitializeExternalSymbols();
+
+            if (!cx.Settings.FallbackToStringType)
+                @this.ValidateSchema().ThrowErrors("Schema validation has failed");
 
             foreach (var t in schema.Types)
                 @this.BuildType(t);
