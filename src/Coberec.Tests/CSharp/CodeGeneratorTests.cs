@@ -75,9 +75,9 @@ namespace GeneratedProject {
         }
 
         public static EmitSettings DefaultSettings = new EmitSettings("GeneratedProject.ModelNamespace",
-            ImmutableDictionary.CreateRange<string, FullTypeName>(new Dictionary<string,FullTypeName>{
-                ["Int"] = new FullTypeName("System.Int32"),
-                ["String"] = new FullTypeName("System.String"),
+            ImmutableDictionary.CreateRange<string, string>(new Dictionary<string,string>{
+                ["Int"] = "System.Int32",
+                ["String"] = "System.String",
             }),
             validators: ImmutableDictionary<string, ValidatorConfig>.Empty
                         .Add("mySpecialStringValidator", new ValidatorConfig("GeneratedProject.Validators.MySpecialStringValidator", new [] { ("param1", 0, JToken.FromObject(0)) }))

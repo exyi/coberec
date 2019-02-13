@@ -1,0 +1,6 @@
+{
+    "Namespace": "SampleProject.GeneratedSchema",
+    "PrimitiveTypeMapping": {
+        "Uri": "System.Uri"
+    }
+}

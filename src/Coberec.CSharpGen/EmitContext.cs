@@ -27,24 +27,28 @@ namespace Coberec.CSharpGen
     {
         public EmitSettings(
             string @namespace,
-            ImmutableDictionary<string, FullTypeName> primitiveTypeMapping = null,
+            ImmutableDictionary<string, string> primitiveTypeMapping = null,
             ImmutableDictionary<string, ValidatorConfig> validators = null,
             IEnumerable<ExternalSymbolConfig> externalSymbols = null,
+            IEnumerable<string> additionalReferences = null,
             bool emitWithMethod = true,
             bool emitInterfaceWithMethods = true,
             bool emitOptionalWithMethod = true,
             bool withMethodReturnsValidationResult = true,
-            bool fallbackToStringType = false)
+            bool fallbackToStringType = false,
+            bool addJsonPropertyAttributes = false)
         {
             Namespace = @namespace;
-            PrimitiveTypeMapping = primitiveTypeMapping ?? ImmutableDictionary<string, FullTypeName>.Empty;
+            PrimitiveTypeMapping = primitiveTypeMapping ?? ImmutableDictionary<string, string>.Empty;
             Validators = validators ?? ImmutableDictionary<string, ValidatorConfig>.Empty;
             ExternalSymbols = externalSymbols?.ToImmutableArray() ?? ImmutableArray<ExternalSymbolConfig>.Empty;
+            AdditionalReferences = additionalReferences?.ToImmutableArray() ?? ImmutableArray<string>.Empty;
             EmitWithMethods = emitWithMethod;
             EmitInterfaceWithMethods = emitInterfaceWithMethods;
             EmitOptionalWithMethods = emitOptionalWithMethod;
             WithMethodReturnValidationResult = withMethodReturnsValidationResult;
             FallbackToStringType = fallbackToStringType;
+            AddJsonPropertyAttributes = addJsonPropertyAttributes;
         }
 
         public bool EmitInterfaceWithMethods { get; } = true;
@@ -53,17 +57,21 @@ namespace Coberec.CSharpGen
         public bool WithMethodReturnValidationResult { get; } = true;
         public bool FallbackToStringType { get; } = false;
         public string Namespace { get; }
-        public ImmutableDictionary<string, FullTypeName> PrimitiveTypeMapping { get; }
+        public ImmutableDictionary<string, string> PrimitiveTypeMapping { get; }
         public ImmutableDictionary<string, ValidatorConfig> Validators { get; }
         public ImmutableArray<ExternalSymbolConfig> ExternalSymbols { get; }
+        public ImmutableArray<string> AdditionalReferences { get; }
+        public bool AddJsonPropertyAttributes { get; }
 
         public EmitSettings With(
             OptParam<string> @namespace = default,
-            OptParam<ImmutableDictionary<string, FullTypeName>> primitiveTypeMapping = default,
+            OptParam<ImmutableDictionary<string, string>> primitiveTypeMapping = default,
             OptParam<ImmutableDictionary<string, ValidatorConfig>> validators = default,
             OptParam<IEnumerable<ExternalSymbolConfig>> externalSymbols = default,
+            OptParam<IEnumerable<string>> additionalReferences = default,
             OptParam<bool> emitOptionalWithMethod = default,
-            OptParam<bool> fallbackToStringType = default
+            OptParam<bool> fallbackToStringType = default,
+            OptParam<bool> addJsonPropertyAttributes = default
         )
         {
             return new EmitSettings(
@@ -71,11 +79,13 @@ namespace Coberec.CSharpGen
                 primitiveTypeMapping.ValueOrDefault(this.PrimitiveTypeMapping),
                 validators.ValueOrDefault(this.Validators),
                 externalSymbols.ValueOrDefault(this.ExternalSymbols),
+                additionalReferences.ValueOrDefault(this.AdditionalReferences),
                 this.EmitWithMethods,
                 this.EmitInterfaceWithMethods,
                 emitOptionalWithMethod.ValueOrDefault(this.EmitOptionalWithMethods),
                 this.WithMethodReturnValidationResult,
-                fallbackToStringType.ValueOrDefault(this.FallbackToStringType)
+                fallbackToStringType.ValueOrDefault(this.FallbackToStringType),
+                addJsonPropertyAttributes.ValueOrDefault(this.AddJsonPropertyAttributes)
             );
         }
     }

@@ -160,12 +160,12 @@ namespace Coberec.CSharpGen.Emit
         {
             type.ImplementedInterfaces.Add(new ParameterizedType(type.Compilation.FindType(typeof(IEquatable<>)), new IType[] { type }));
 
-            var eqMethod = new VirtualMethod(type, Accessibility.Public, "Equals", new [] { new DefaultParameter(type, "b") }, type.Compilation.FindType(typeof(bool)), isVirtual: !type.IsSealed);
+            var eqMethod = new VirtualMethod(type, Accessibility.Public, "Equals", new [] { new VirtualParameter(type, "b") }, type.Compilation.FindType(typeof(bool)), isVirtual: !type.IsSealed);
             eqMethod.BodyFactory = () => equalsImplementation(eqMethod);
 
             type.Methods.Add(eqMethod);
 
-            var eqOperator = new VirtualMethod(type, Accessibility.Public, "op_Equality", new [] { new DefaultParameter(type, "a"), new DefaultParameter(type, "b") }, type.Compilation.FindType(typeof(bool)), isStatic: true);
+            var eqOperator = new VirtualMethod(type, Accessibility.Public, "op_Equality", new [] { new VirtualParameter(type, "a"), new VirtualParameter(type, "b") }, type.Compilation.FindType(typeof(bool)), isStatic: true);
             eqOperator.BodyFactory = () => {
                 var aParam = new IL.ILVariable(IL.VariableKind.Parameter, type, 0);
                 var bParam = new IL.ILVariable(IL.VariableKind.Parameter, type, 1);
@@ -189,7 +189,7 @@ namespace Coberec.CSharpGen.Emit
             };
             type.Methods.Add(eqOperator);
 
-            var neqOperator = new VirtualMethod(type, Accessibility.Public, "op_Inequality", new [] { new DefaultParameter(type, "a"), new DefaultParameter(type, "b") }, type.Compilation.FindType(typeof(bool)), isStatic: true);
+            var neqOperator = new VirtualMethod(type, Accessibility.Public, "op_Inequality", new [] { new VirtualParameter(type, "a"), new VirtualParameter(type, "b") }, type.Compilation.FindType(typeof(bool)), isStatic: true);
             neqOperator.BodyFactory = () => {
                 var aParam = new IL.ILVariable(IL.VariableKind.Parameter, type, 0);
                 var bParam = new IL.ILVariable(IL.VariableKind.Parameter, type, 1);
@@ -202,7 +202,7 @@ namespace Coberec.CSharpGen.Emit
             };
             type.Methods.Add(neqOperator);
 
-            var objEquals = new VirtualMethod(type, Accessibility.Public, "Equals", new [] { new DefaultParameter(type.Compilation.FindType(typeof(object)), "b") }, type.Compilation.FindType(typeof(bool)), isOverride: true);
+            var objEquals = new VirtualMethod(type, Accessibility.Public, "Equals", new [] { new VirtualParameter(type.Compilation.FindType(typeof(object)), "b") }, type.Compilation.FindType(typeof(bool)), isOverride: true);
 
             objEquals.BodyFactory = () => {
                 var tmpVar = new IL.ILVariable(IL.VariableKind.StackSlot, type, stackType: IL.StackType.O, 0);
@@ -225,7 +225,7 @@ namespace Coberec.CSharpGen.Emit
         {
             Debug.Assert(type.IsAbstract);
             var methodName = SymbolNamer.NameMethod(type, "EqualsCore", 0, new[] { type });
-            var eqCoreMethod = new VirtualMethod(type, Accessibility.ProtectedAndInternal, methodName, new [] { new DefaultParameter(type, "b") }, type.Compilation.FindType(typeof(bool)), isAbstract: true);
+            var eqCoreMethod = new VirtualMethod(type, Accessibility.ProtectedAndInternal, methodName, new [] { new VirtualParameter(type, "b") }, type.Compilation.FindType(typeof(bool)), isAbstract: true);
             type.Methods.Add(eqCoreMethod);
             return (eqCoreMethod, type.ImplementEqualityCore(eqMethod =>
             {

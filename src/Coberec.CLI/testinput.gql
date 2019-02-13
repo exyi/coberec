@@ -1,0 +1,13 @@
+scalar Email
+
+type User {
+	name: String!
+	email: Email!
+}
+
+type Robot {
+	name: String!
+}
+
+#Comment
+union Entity = Robot | User

@@ -14,7 +14,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
     <StartupObject>Coberec.CLI.Program</StartupObject>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>

@@ -546,27 +546,24 @@ namespace Coberec.CSharpGen.Emit
 
         protected virtual bool IncludeTypeWhenDecompilingProject(ITypeDefinition type)
         {
-            if (type.Name == "<Module>" || type is IHideableMember hideable && hideable.IsHidden)
+            if (type.Name == "<Module>" || type is IHideableMember hideable && hideable.IsHidden || MemberIsHidden(module, type, settings))
                 return false;
             return true;
         }
 
         public IEnumerable<string> WriteCodeFilesInProject(string targetDirectory)
         {
-            var files = this.typeSystem.GetTopLevelTypeDefinitions().Where(IncludeTypeWhenDecompilingProject).GroupBy(type => {
+            var files = this.typeSystem.MainModule.TopLevelTypeDefinitions.Where(IncludeTypeWhenDecompilingProject).GroupBy(type => {
                     string file = WholeProjectDecompiler.CleanUpFileName(type.Name + ".cs");
                     return file;
                 }, StringComparer.OrdinalIgnoreCase).ToList();
-            Parallel.ForEach(
-                files,
-                new ParallelOptions {
-                },
-                delegate (IGrouping<string, ITypeDefinition> file) {
-                    using (StreamWriter w = new StreamWriter(Path.Combine(targetDirectory, file.Key))) {
-                        var syntaxTree = DecompileTypes(file.ToArray());
-                        syntaxTree.AcceptVisitor(new CSharpOutputVisitor(w, settings.CSharpFormattingOptions));
-                    }
-                });
+            foreach (var file in files)
+            {
+                using (StreamWriter w = new StreamWriter(Path.Combine(targetDirectory, file.Key))) {
+                    var syntaxTree = DecompileTypes(file.ToArray());
+                    syntaxTree.AcceptVisitor(new CSharpOutputVisitor(w, settings.CSharpFormattingOptions));
+                }
+            }
             return files.Select(f => f.Key);
         }
 

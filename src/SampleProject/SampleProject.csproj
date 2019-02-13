@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+
+  <ItemGroup>
+    <!-- <ProjectReference Include="../Coberec.CLI/Coberec.CLI.csproj" ReferenceOutputAssembly="false" PrivateAssets="All" /> -->
+    <ProjectReference Include="../Coberec.CoreLib/Coberec.CoreLib.csproj" />
+  </ItemGroup>
+
+  <Target Name="BuildCoberec" BeforeTargets="BeforeCompile" Inputs="schema/**" Outputs="GeneratedSchema/**.cs">
+    <ItemGroup>
+      <Compile Remove="GeneratedSchema/**.cs" />
+    </ItemGroup>
+    <Exec Command="dotnet run --project ../Coberec.CLI/Coberec.CLI.csproj --config schema/config.json --invertNonNullable schema/**.gql --outDir GeneratedSchema --verbose" />
+    <ItemGroup>
+      <Compile Include="GeneratedSchema/**.cs" />
+    </ItemGroup>
+  </Target>
+</Project>

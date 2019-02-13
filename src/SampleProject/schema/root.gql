@@ -1,0 +1,11 @@
+scalar ScalarA
+type TypeA {
+    f: Int
+}
+type TypeB {
+    a: ScalarA
+    photoUrl: Uri
+    num: Int @validateRange(low: 0, high: 100)
+}
+
+union UnionAB = TypeA | TypeB

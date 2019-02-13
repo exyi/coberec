@@ -20,6 +20,7 @@ using Coberec.MetaSchema;
 using System.Collections.Immutable;
 using ICSharpCode.Decompiler.CSharp.OutputVisitor;
 using Coberec.CoreLib;
+using System.Reflection.PortableExecutable;
 
 namespace Coberec.CSharpGen
 {
@@ -85,7 +86,7 @@ namespace Coberec.CSharpGen
 
         IType FindType(string name) =>
             this.prebuiltTypes.TryGetValue(name, out var propType) ? (IType)propType :
-            cx.Settings.PrimitiveTypeMapping.TryGetValue(name, out var fullName) ? cx.FindType(fullName) :
+            cx.Settings.PrimitiveTypeMapping.TryGetValue(name, out var fullName) ? cx.FindType(new FullTypeName(fullName)) :
             // throw new Exception($"Could not resolve type '{name}'");
             cx.FindType<string>();
 
@@ -178,7 +179,7 @@ namespace Coberec.CSharpGen
         private TypeSymbolNameMapping GenerateComposite(VirtualType type, TypeDefCore.CompositeCase composite, TypeDef typeDef)
         {
             var propDictionary = new Dictionary<string, (TypeField schema, IProperty prop, IField field)>();
-            var props = new List<(TypeField schema, IProperty prop, IField field)>();
+            var props = new List<(TypeField schema, VirtualProperty prop, IField field)>();
 
             foreach (var f in composite.Fields)
             {
@@ -200,6 +201,13 @@ namespace Coberec.CSharpGen
                 props.Select(k => (k.schema.Name, k.field)).ToArray(),
                 this.GetValidators(typeDef),
                 needsNoValidationConstructor: true);
+
+            if (cx.Settings.AddJsonPropertyAttributes)
+            {
+                foreach (var (f, p, _) in props)
+                    JsonSerialializationHelpers.AddPropertyAttributes(p, f.Name);
+                JsonSerialializationHelpers.AddParameterAttributes(publicCtor, props.Select(p => p.schema.Name));
+            }
 
             var createFn = type.AddCreateFunction(cx, validateMethod, noValCtor);
 
@@ -307,7 +315,7 @@ namespace Coberec.CSharpGen
 
                 var caseFactory = new VirtualMethod(type, Accessibility.Public,
                     SymbolNamer.NameMethod(type, caseName, 0, new IType[] { valueType }),
-                    new[] { new DefaultParameter(valueType, "item") },
+                    new[] { new VirtualParameter(valueType, "item") },
                     returnType: type,
                     isStatic: true
                 );
@@ -349,7 +357,7 @@ namespace Coberec.CSharpGen
                     }
                     case ExternalSymbolKind.Method:
                     case ExternalSymbolKind.StaticMethod: {
-                        var methodArgs = s.Args.Select(a => new DefaultParameter(findType(a.Type), a.Name)).ToArray();
+                        var methodArgs = s.Args.Select(a => new VirtualParameter(findType(a.Type), a.Name)).ToArray();
                         var declaringType = (VirtualType)findType(s.DeclaredIn);
                         var newMethod = new VirtualMethod(declaringType, Accessibility.Public, s.Name, methodArgs, findType(s.ResultType), isStatic: s.Kind == ExternalSymbolKind.StaticMethod, isHidden: true);
                         declaringType.Methods.Add(newMethod);
@@ -383,7 +391,7 @@ namespace Coberec.CSharpGen
             var cx = new EmitContext(
                 new HackedSimpleCompilation(
                     new VirtualModuleReference(true, "NewEpicModule"),
-                    ReferencedModules.Value
+                    ReferencedModules.Value.Concat(settings.AdditionalReferences.Select(r => new PEFile(r, PEStreamOptions.PrefetchMetadata)))
                 ),
                 settings,
                 schema
@@ -415,7 +423,8 @@ namespace Coberec.CSharpGen
             from r in Enumerable.Concat(typeof(CSharpBackend).Assembly.GetReferencedAssemblies(), new[] {
                 typeof(string).Assembly.GetName(),
                 typeof(System.Collections.StructuralComparisons).Assembly.GetName(),
-                typeof(ValueTuple<int, int>).Assembly.GetName()
+                typeof(ValueTuple<int, int>).Assembly.GetName(),
+                typeof(Uri).Assembly.GetName()
                 // new AssemblyName("netstandard")
             })
             let location = AssemblyLoadContext.Default.LoadFromAssemblyName(r).Location

@@ -92,7 +92,7 @@ namespace Coberec.CSharpGen.Emit
             }
         }
 
-        public static IMethod ImplementValidateIfNeeded(this VirtualType type, EmitContext cx, TypeDef typeSchema, TypeSymbolNameMapping typeMapping, IEnumerable<ValidatorUsage> validators)
+        public static VirtualMethod ImplementValidateIfNeeded(this VirtualType type, EmitContext cx, TypeDef typeSchema, TypeSymbolNameMapping typeMapping, IEnumerable<ValidatorUsage> validators)
         {
             var validateCalls = new List<Func<IL.ILVariable, IL.ILInstruction>>();
             foreach(var v in Enumerable.Concat(GetImplicitNullValidators(type, typeSchema, typeMapping), validators))
@@ -205,7 +205,7 @@ namespace Coberec.CSharpGen.Emit
 
             if (validateCalls.Count == 0) return null;
 
-            var methodParams = new IParameter[] { new DefaultParameter(type, "obj") };
+            var methodParams = new IParameter[] { new VirtualParameter(type, "obj") };
             var methodName = SymbolNamer.NameMethod(type, "ValidateObject", 0, methodParams.Select(p => p.Type).ToArray());
             var validationMethod = new VirtualMethod(type, Accessibility.Private, methodName, methodParams, cx.FindType<ValidationErrors>(), isStatic: true);
             validationMethod.BodyFactory = () => {

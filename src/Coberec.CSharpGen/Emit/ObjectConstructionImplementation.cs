@@ -16,10 +16,10 @@ namespace Coberec.CSharpGen.Emit
 {
     public static class ObjectConstructionImplementation
     {
-        public static IMethod AddCreateConstructor(this VirtualType type, EmitContext cx, (string name, IField field)[] fields, bool privateNoValidationVersion, IMethod validationMethod = null)
+        public static VirtualMethod AddCreateConstructor(this VirtualType type, EmitContext cx, (string name, IField field)[] fields, bool privateNoValidationVersion, IMethod validationMethod = null)
         {
-            var noValidationSentinelParameter = privateNoValidationVersion ? new [] { new DefaultParameter(cx.FindType<NoNeedForValidationSentinel>(), "_") } : new IParameter[0];
-            var parameters = SymbolNamer.NameParameters(noValidationSentinelParameter.Concat(fields.Select(f => (IParameter)new DefaultParameter(f.field.Type, f.name))));
+            var noValidationSentinelParameter = privateNoValidationVersion ? new [] { new VirtualParameter(cx.FindType<NoNeedForValidationSentinel>(), "_") } : new IParameter[0];
+            var parameters = SymbolNamer.NameParameters(noValidationSentinelParameter.Concat(fields.Select(f => (IParameter)new VirtualParameter(f.field.Type, f.name))));
             var accessibility = privateNoValidationVersion ? Accessibility.Private : Accessibility.Public;
             var ctor = new VirtualMethod(type, accessibility, ".ctor", parameters, cx.FindType(typeof(void)));
             var objectCtor = cx.FindMethod(() => new object());
@@ -46,7 +46,7 @@ namespace Coberec.CSharpGen.Emit
             type.Methods.Add(ctor);
             return ctor;
         }
-        public static IMethod AddValidatingConstructor(this VirtualType type, EmitContext cx, IMethod baseConstructor, IMethod validationMethod)
+        public static VirtualMethod AddValidatingConstructor(this VirtualType type, EmitContext cx, IMethod baseConstructor, IMethod validationMethod)
         {
             Debug.Assert(baseConstructor.Parameters[0].Type.FullName == typeof(NoNeedForValidationSentinel).FullName);
             var parameters = baseConstructor.Parameters.Skip(1).ToArray();
@@ -71,7 +71,7 @@ namespace Coberec.CSharpGen.Emit
             return ctor;
         }
 
-        public static (IMethod noValidationConsructor, IMethod contructor, IMethod validationMethod) AddObjectCreationStuff(
+        public static (VirtualMethod noValidationConsructor, VirtualMethod contructor, VirtualMethod validationMethod) AddObjectCreationStuff(
             this VirtualType type,
             EmitContext cx,
             TypeDef typeSchema,

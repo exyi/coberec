@@ -78,7 +78,7 @@ namespace Coberec.CSharpGen.Emit
                 string name2 = name;
                 int i = 2;
                 while(!usedNames.Add(name2)) name2 = name + (i++);
-                return (IParameter)new DefaultParameter(p.Type, name2, p.Owner, p.GetAttributes().ToArray(), p.IsRef, p.IsOut, p.IsIn, p.IsParams, p.IsOptional, p.ConstantValue);
+                return (IParameter)new VirtualParameter(p.Type, name2, p.Owner, p.GetAttributes().ToArray(), p.IsRef, p.IsOut, p.IsIn, p.IsParams, p.IsOptional, p.ConstantValue);
             }).ToArray();
         }
     }

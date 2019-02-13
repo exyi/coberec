@@ -50,7 +50,7 @@ namespace Coberec.CSharpGen.Emit
             return prop;
         }
 
-        public static (IProperty prop, IField field) AddAutoProperty(this VirtualType declaringType, string name, IType propertyType, Accessibility accessibility = Accessibility.Public, bool isReadOnly = true)
+        public static (VirtualProperty prop, IField field) AddAutoProperty(this VirtualType declaringType, string name, IType propertyType, Accessibility accessibility = Accessibility.Public, bool isReadOnly = true)
         {
             name = SymbolNamer.NameMember(declaringType, name, lowerCase: accessibility == Accessibility.Private);
 
@@ -64,7 +64,7 @@ namespace Coberec.CSharpGen.Emit
             );
             getter.Attributes.Add(declaringType.Compilation.CompilerGeneratedAttribute());
             var setter = isReadOnly ? null :
-                         new VirtualMethod(declaringType, accessibility, string.Format(PropertySetter, name), new [] { new DefaultParameter(propertyType, "value") }, declaringType.Compilation.FindType(typeof(void)), isHidden: true);
+                         new VirtualMethod(declaringType, accessibility, string.Format(PropertySetter, name), new [] { new VirtualParameter(propertyType, "value") }, declaringType.Compilation.FindType(typeof(void)), isHidden: true);
 
             var prop = new VirtualProperty(declaringType, accessibility, name, getter, setter);
 
@@ -83,7 +83,7 @@ namespace Coberec.CSharpGen.Emit
 
             var getter = new VirtualMethod(declaringType, Accessibility.Public, string.Format(PropertyGetter, name), Array.Empty<IParameter>(), propertyType, isHidden: true);
             var setter = isReadOnly ? null :
-                         new VirtualMethod(declaringType, Accessibility.Public, string.Format(PropertySetter, name), new [] { new DefaultParameter(propertyType, "value") }, declaringType.Compilation.FindType(typeof(void)), isHidden: true);
+                         new VirtualMethod(declaringType, Accessibility.Public, string.Format(PropertySetter, name), new [] { new VirtualParameter(propertyType, "value") }, declaringType.Compilation.FindType(typeof(void)), isHidden: true);
             var prop = new VirtualProperty(declaringType, Accessibility.Public, name, getter, setter, isVirtual: true);
 
 

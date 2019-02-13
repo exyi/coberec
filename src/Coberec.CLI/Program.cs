@@ -28,16 +28,23 @@ namespace Coberec.CLI
     }
     public static class Program
     {
+        static async Task<string> ReadFile(string path)
+        {
+            using (var rdr = new StreamReader(path))
+            {
+                return await rdr.ReadToEndAsync();
+            }
+        }
         static (string name, Lazy<string> content) GetInput(string inputFile)
         {
             if (inputFile == "-")
             {
                 Console.Error.WriteLine("Reading input GraphQL Schema from standard input.");
-                return ("stdin.gql", new Lazy<string>(Console.In.ReadToEnd()));
+                return ("stdin.gql", new Lazy<string>(() => Console.In.ReadToEnd()));
             }
             else
             {
-                var f = File.ReadAllTextAsync(inputFile);
+                var f = ReadFile(inputFile);
                 return (inputFile, new Lazy<string>(() => f.GetAwaiter().GetResult()));
             }
         }
@@ -51,11 +58,11 @@ namespace Coberec.CLI
                 @namespace: x.OutputNamespace ?? settings.Namespace,
                 primitiveTypeMapping:
                     settings.PrimitiveTypeMapping
-                    .TryAdd("Int", new FullTypeName("System.Int32"))
-                    .TryAdd("String", new FullTypeName("System.String"))
-                    .TryAdd("ID", new FullTypeName("System.Guid"))
-                    .TryAdd("Float", new FullTypeName("System.Double"))
-                    .TryAdd("Boolean", new FullTypeName("System.Boolean")),
+                    .TryAdd("Int", "System.Int32")
+                    .TryAdd("String", "System.String")
+                    .TryAdd("ID", "System.Guid")
+                    .TryAdd("Float", "System.Double")
+                    .TryAdd("Boolean", "System.Boolean"),
                 validators: settings.Validators
                     .TryAdd("notEmpty", new ValidatorConfig("Coberec.CoreLib.BasicValidators.NotEmpty", null))
                     .TryAdd("notNull", new ValidatorConfig("Coberec.CoreLib.BasicValidators.NotNull", null, acceptsNull: true))
@@ -68,6 +75,8 @@ namespace Coberec.CLI
             {
                 if (x.OutputDirectory)
                 {
+                    foreach (var f in Directory.EnumerateFiles(x.Output, "*.cs", SearchOption.AllDirectories))
+                        File.Delete(f);
                     Directory.CreateDirectory(x.Output);
                     CSharpBackend.BuildIntoFolder(schema, settings, x.Output);
                 }
@@ -202,7 +211,7 @@ Parameters:
                     Console.Error.WriteLine(error.Message);
                     Console.ResetColor();
                     Console.Error.WriteLine(error);
-                    Console.Error.WriteLine($"If this error does not make sense, it's probably a bug. Try to create a small reproducible example and report it please.");
+                    Console.Error.WriteLine($"If this error does not make sense, it's probably a bug. Please, try to create a small reproducible example and report it.");
                 }
                 else
                 {
