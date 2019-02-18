@@ -1,0 +1,6 @@
+Syntax Error GraphQL (3:13) Validator thisValidatorDoesNotExist could not be found
+2: type A {
+3:     f: Int @validateThisValidatorDoesNotExist
+               ^
+4: }
+

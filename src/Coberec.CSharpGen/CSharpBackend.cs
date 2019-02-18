@@ -111,13 +111,21 @@ namespace Coberec.CSharpGen
 
             var type = this.prebuiltTypes[def.Name];
 
-            var mapping = def.Core.Match(
-                composite: composite => GenerateComposite(type, composite, def),
-                primitive: primitive => GenerateScalar(type, primitive, def),
-                union: union => GenerateUnion(type, union, def),
-                @interface: ifc => GenerateInterface(type, ifc, def));
+            try
+            {
+                var mapping = def.Core.Match(
+                    composite: composite => GenerateComposite(type, composite, def),
+                    primitive: primitive => GenerateScalar(type, primitive, def),
+                    union: union => GenerateUnion(type, union, def),
+                    @interface: ifc => GenerateInterface(type, ifc, def));
+                result = (type, mapping);
+            }
+            catch (ValidationErrorException ex)
+            {
+                var typeIndex = cx.FullSchema.Types.IndexOf(def);
+                throw ex.Nest("core").Nest(typeIndex.ToString()).Nest("types");
+            }
 
-            result = (type, mapping);
             this.realizedTypes.Add(def.Name, result);
             return result;
         }
@@ -408,8 +416,13 @@ namespace Coberec.CSharpGen
             if (!cx.Settings.FallbackToStringType)
                 @this.ValidateSchema().ThrowErrors("Schema validation has failed");
 
+            var symbolNameMapping = new Dictionary<string, TypeSymbolNameMapping>();
+
             foreach (var t in schema.Types)
-                @this.BuildType(t);
+            {
+                var (type, mapping) = @this.BuildType(t);
+                symbolNameMapping.Add(t.Name, mapping);
+            }
 
             var s = new DecompilerSettings(LanguageVersion.Latest);
             s.CSharpFormattingOptions.AutoPropertyFormatting = PropertyFormatting.ForceOneLine;

@@ -1,0 +1,6 @@
+Syntax Error GraphQL (3:27) Required parameter low is missing
+2: type A {
+3:     f: Int @validateRange(idk: 12)
+                             ^
+4: }
+

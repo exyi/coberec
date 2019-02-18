@@ -84,5 +84,25 @@ interface J {
 }
 "));
         }
+
+        [Fact]
+        public void InvalidValidatorUsage()
+        {
+            check.CheckString(GetCompilationErrors(@"
+type A {
+    f: Int @validateRange(idk: 12)
+}
+"));
+        }
+
+        [Fact]
+        public void NonExistentValidator()
+        {
+            check.CheckString(GetCompilationErrors(@"
+type A {
+    f: Int @validateThisValidatorDoesNotExist
+}
+"));
+        }
     }
 }

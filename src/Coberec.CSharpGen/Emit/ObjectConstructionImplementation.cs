@@ -82,7 +82,7 @@ namespace Coberec.CSharpGen.Emit
         )
         {
             var validator = type.ImplementValidateIfNeeded(cx, typeSchema, typeMapping, validators);
-            bool privateNoValidationVersion = needsNoValidationConstructor && validator != null;
+            var privateNoValidationVersion = needsNoValidationConstructor && validator != null;
             var ctor1 = type.AddCreateConstructor(cx, fields, privateNoValidationVersion, needsNoValidationConstructor ? null : validator);
             var ctor2 = privateNoValidationVersion ?
                         type.AddValidatingConstructor(cx, ctor1, validator) :

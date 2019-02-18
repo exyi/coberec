@@ -133,14 +133,15 @@ namespace Coberec.CSharpGen
             var t = FindType(methodInfo.DeclaringType);
             var parameters = methodInfo.GetParameters();
             // TODO: also check arg types
-            var method = t.GetDefinition().Methods.Where(m => m.Name == methodInfo.Name && m.Parameters.Count == parameters.Length).Single();
+            var method = t.GetDefinition().Methods.Where(m => m.Name == methodInfo.Name && m.Parameters.Select(p => p.Type.ReflectionName).SequenceEqual(parameters.Select(p => p.ParameterType.FullName))).SingleOrDefault() ??
+                throw new Exception($"Could not find method {methodInfo}.");
 
             var methodGenericArgs = methodInfo.IsGenericMethod ?
                                     methodInfo.GetGenericArguments().Select(FindType).ToArray() :
                                     null;
             var typeGenericArgs = methodInfo.DeclaringType.IsGenericType ?
-                                    methodInfo.DeclaringType.GetGenericArguments().Select(FindType).ToArray() :
-                                    null;
+                                  methodInfo.DeclaringType.GetGenericArguments().Select(FindType).ToArray() :
+                                  null;
 
 
             if (typeGenericArgs != null || methodGenericArgs != null)

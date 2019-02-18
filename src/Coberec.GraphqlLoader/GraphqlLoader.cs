@@ -48,7 +48,20 @@ namespace Coberec.GraphqlLoader
             Debug.Assert(path.Span[0] == "directives");
             var syntaxDirective = (nodeWithDirectives as G.AST.IGraphQLNodeWithDirecives)?.Directives.ElementAtOrDefault(int.Parse(path.Span[1]));
             if (syntaxDirective == null) return (path, nodeWithDirectives);
-            return (path.Slice(2), syntaxDirective);
+            path = path.Slice(2);
+            if (path.Span[0] == "args")
+            {
+                if (path.Span.Length == 1)
+                    return (path.Slice(1), (G.AST.ASTNode)syntaxDirective.Arguments.FirstOrDefault() ?? syntaxDirective);
+                else
+                {
+                    var index = int.Parse(path.Span[1]);
+                    return (path.Slice(2), syntaxDirective.Arguments.ElementAt(index));
+                }
+            }
+            else if (path.Span[0] == "name")
+                return (path.Slice(1), syntaxDirective.Name);
+            else return (path, syntaxDirective);
         }
 
         static (ReadOnlyMemory<string> readOnlyMemory, G.AST.ASTNode node) FindSourceLocation_Fields(G.AST.ASTNode defaultNode, IEnumerable<G.AST.GraphQLFieldDefinition> fieldSyntax, IEnumerable<TypeField> fields, ReadOnlyMemory<string> path)

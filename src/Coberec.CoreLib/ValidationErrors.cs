@@ -74,14 +74,17 @@ namespace Coberec.CoreLib
     public class ValidationErrorException : Exception
     {
         public ValidationErrors Validation { get; }
-        public ValidationErrorException(ValidationErrors validation, string message) : base(validation.ToErrorMessage(message))
+        public string ValidationMessage { get; }
+        public ValidationErrorException(ValidationErrors validation, string message = "Validation error") : base(validation.ToErrorMessage(message))
         {
             this.Validation = validation ?? throw new ArgumentNullException(nameof(validation));
+            this.ValidationMessage = message;
         }
 
         public ValidationErrorException(ValidationErrors validation, string message, Exception innerException) : base(validation.ToErrorMessage(message), innerException)
         {
             this.Validation = validation ?? throw new ArgumentNullException(nameof(validation));
+            this.ValidationMessage = message;
         }
     }
     public static class ValidationErrorsExtensionMethods
@@ -165,6 +168,9 @@ namespace Coberec.CoreLib
                 fieldErrors: ImmutableArray.Create(new FieldValidationError(field, errors))
             );
         }
+
+        public static ValidationErrorException Nest(this ValidationErrorException ex, string field) =>
+            new ValidationErrorException(ex.Validation.Nest(field), message: ex.ValidationMessage, ex.StackTrace == null ? ex.InnerException : ex);
     }
 
 }
