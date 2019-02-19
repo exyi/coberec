@@ -1,0 +1,6 @@
+Syntax Error GraphQL (3:15) Validator 'range' of type 'System.Int32' can not be applied on field of type 'System.String'
+2: type A {
+3:     f: String @validateRange(low: 0, high: 10)
+                 ^
+4: }
+

@@ -134,8 +134,15 @@ namespace Coberec.CSharpGen.Emit
                 return unwrapNullable(expr.AccessMember(p), p.ReturnType);
             }
 
-            Func<IL.ILVariable, IL.ILInstruction> makeField(string[] field, IType expectedType) =>
-                @this => {
+            Func<IL.ILVariable, IL.ILInstruction> makeField(string[] field, IType expectedType)
+            {
+                var (_, resultType) = unwrapNullable(new IL.LdNull(), (field.Select(getFieldMember).LastOrDefault()?.ReturnType ?? expectedType));
+                // check type of the parameter
+                var conversion = CSharpConversions.Get(cx.Compilation).ImplicitConversion(resultType, expectedType);
+                // TODO: correctness - this check does not have to enough
+                if (!conversion.IsValid)
+                        throw new ValidationErrorException(ValidationErrors.Create($"Validator '{v.Name}' of type '{expectedType.ReflectionName}' can not be applied on field of type '{resultType.ReflectionName}'"));
+                return @this => {
                     if (field.Length > 1)
                         throw new ValidationErrorException(ValidationErrors.Create($"Field paths like '{string.Join(".", field)}' are not supported."));
 
@@ -143,13 +150,9 @@ namespace Coberec.CSharpGen.Emit
                     foreach (var f in field)
                         x = accessNullableField(x.instruction, f);
 
-                    // check type of the parameter
-                    var conversion = CSharpConversions.Get(cx.Compilation).ImplicitConversion(x.resultType, expectedType);
-                    // TODO: correctness - this check does not have to enough
-                    if (!conversion.IsValid)
-                        throw new ValidationErrorException(ValidationErrors.Create($"Validator '{v.Name}' of type '{expectedType}' can not be applied on field of type '{x.resultType}'"));
                     return x.instruction;
                 };
+            }
 
             IL.ILInstruction createFieldNullcheck(IL.ILInstruction expr, string fieldName)
             {

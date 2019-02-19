@@ -127,5 +127,15 @@ type A {
 }
 "));
         }
+
+        [Fact]
+        public void InvalidValidatorFieldType()
+        {
+            check.CheckString(GetCompilationErrors(@"
+type A {
+    f: String @validateRange(low: 0, high: 10)
+}
+"));
+        }
     }
 }
