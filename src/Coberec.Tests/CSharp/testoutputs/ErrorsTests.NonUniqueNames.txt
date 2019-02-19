@@ -1,0 +1,27 @@
+Syntax Error GraphQL (2:6) Name of this type is not unique.
+1: 
+2: type A {
+        ^
+3:     f: Int
+
+
+Syntax Error GraphQL (7:6) Name of this type is not unique.
+6: type X { f: String }
+7: type A { a: String }
+        ^
+8: 
+
+
+Syntax Error GraphQL (3:5) Non-unique field name: f
+2: type A {
+3:     f: Int
+       ^
+4:     f: String
+
+
+Syntax Error GraphQL (4:5) Non-unique field name: f
+3:     f: Int
+4:     f: String
+       ^
+5: }
+

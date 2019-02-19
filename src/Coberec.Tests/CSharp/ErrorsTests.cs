@@ -86,11 +86,34 @@ interface J {
         }
 
         [Fact]
+        public void NonUniqueNames()
+        {
+            check.CheckString(GetCompilationErrors(@"
+type A {
+    f: Int
+    f: String
+}
+type X { f: String }
+type A { a: String }
+"));
+        }
+
+        [Fact]
         public void InvalidValidatorUsage()
         {
             check.CheckString(GetCompilationErrors(@"
 type A {
     f: Int @validateRange(idk: 12)
+}
+"));
+        }
+
+        [Fact]
+        public void InvalidValidatorParameterType()
+        {
+            check.CheckString(GetCompilationErrors(@"
+type A {
+    f: Int @validateRange(low: ""a"", high: ""b"")
 }
 "));
         }

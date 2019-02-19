@@ -55,7 +55,8 @@ namespace Coberec.CSharpGen.Emit
                     {
                         if (!p.HasConstantValueInSignature)
                             throw new Exception($"Required value parameter {p.Name} was not filled");
-                        result.Add(p, _ => JsonToObjectInitialization.InitializeObject(p.Type, JToken.FromObject(p.ConstantValue)));
+                        var a = JsonToObjectInitialization.InitializeObject(p.Type, JToken.FromObject(p.ConstantValue));
+                        result.Add(p, _ => a());
                     }
                 }
             }
@@ -65,7 +66,10 @@ namespace Coberec.CSharpGen.Emit
                 if (!result.ContainsKey(p))
                 {
                     if (p.HasConstantValueInSignature)
-                        result.Add(p, _ => JsonToObjectInitialization.InitializeObject(p.Type, JToken.FromObject(p.ConstantValue)));
+                    {
+                        var a = JsonToObjectInitialization.InitializeObject(p.Type, JToken.FromObject(p.ConstantValue));
+                        result.Add(p, _ => a());
+                    }
                     else
                         throw new Exception($"Method '{method}' registred as validator '{validatorName}' has an unexpected parameter '{p.Name}'.");
                 }
@@ -181,7 +185,8 @@ namespace Coberec.CSharpGen.Emit
             var parameters = new Dictionary<IParameter, Func<IL.ILVariable, IL.ILInstruction>>();
             foreach (var (value, p) in argParameters)
             {
-                parameters.Add(p, _ => JsonToObjectInitialization.InitializeObject(p.Type, value));
+                var obj = JsonToObjectInitialization.InitializeObject(p.Type, value);
+                parameters.Add(p, _ => obj());
             }
 
             CollectValueArgs(parameters, def, v.Name, method, (fieldIndex, expectedType) => {

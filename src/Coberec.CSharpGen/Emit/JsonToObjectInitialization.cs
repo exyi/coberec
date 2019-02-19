@@ -17,24 +17,36 @@ namespace Coberec.CSharpGen.Emit
 {
     public static class JsonToObjectInitialization
     {
-        public static IL.ILInstruction InitializeObject(IType expectedType, JToken json)
+        public static Func<IL.ILInstruction> InitializeObject(IType expectedType, JToken json)
         {
             switch (json.Type)
             {
                 case JTokenType.Integer:
-                    return new IL.LdcI4(json.Value<int>());
+                    if (expectedType.IsKnownType(KnownTypeCode.Int32))
+                        return () => new IL.LdcI4(json.Value<int>());
+                    else
+                        goto default;
                 case JTokenType.Float:
                     if (expectedType.IsKnownType(KnownTypeCode.Single))
-                        return new IL.LdcF4(json.Value<float>());
+                        return () => new IL.LdcF4(json.Value<float>());
                     else if (expectedType.IsKnownType(KnownTypeCode.Double))
-                        return new IL.LdcF8(json.Value<double>());
+                        return () => new IL.LdcF8(json.Value<double>());
                     else goto default;
                 case JTokenType.String:
-                    return new IL.LdStr(json.Value<string>());
+                    if (expectedType.IsKnownType(KnownTypeCode.String))
+                        return () => new IL.LdStr(json.Value<string>());
+                    else
+                        goto default;
                 case JTokenType.Boolean:
-                    return new IL.LdcI4(json.Value<bool>() ? 1 : 0);
+                    if (expectedType.IsKnownType(KnownTypeCode.Boolean))
+                        return () => new IL.LdcI4(json.Value<bool>() ? 1 : 0);
+                    else
+                        goto default;
                 case JTokenType.Null:
-                    return new IL.LdNull();
+                    if (expectedType.IsReferenceType == true || expectedType.GetDefinition().IsKnownType(KnownTypeCode.NullableOfT))
+                        return () => new IL.LdNull();
+                    else
+                        goto default;
                 case JTokenType.Undefined:
                 case JTokenType.Date:
                 case JTokenType.Raw:
@@ -49,7 +61,7 @@ namespace Coberec.CSharpGen.Emit
                 case JTokenType.Property:
                 case JTokenType.Comment:
                 default:
-                    throw new NotSupportedException($"Json token of type {json.Type} is not supported");
+                    throw new ValidationErrorException(ValidationErrors.Create($"Json token of type {json.Type} is not supported when type {expectedType.FullName} is expected."));
             }
         }
     }

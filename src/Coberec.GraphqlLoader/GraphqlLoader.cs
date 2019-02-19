@@ -49,7 +49,7 @@ namespace Coberec.GraphqlLoader
             var syntaxDirective = (nodeWithDirectives as G.AST.IGraphQLNodeWithDirecives)?.Directives.ElementAtOrDefault(int.Parse(path.Span[1]));
             if (syntaxDirective == null) return (path, nodeWithDirectives);
             path = path.Slice(2);
-            if (path.Span[0] == "args")
+            if (path.Length > 0 && path.Span[0] == "args")
             {
                 if (path.Span.Length == 1)
                     return (path.Slice(1), (G.AST.ASTNode)syntaxDirective.Arguments.FirstOrDefault() ?? syntaxDirective);
@@ -59,7 +59,7 @@ namespace Coberec.GraphqlLoader
                     return (path.Slice(2), syntaxDirective.Arguments.ElementAt(index));
                 }
             }
-            else if (path.Span[0] == "name")
+            else if (path.Length > 0 && path.Span[0] == "name")
                 return (path.Slice(1), syntaxDirective.Name);
             else return (path, syntaxDirective);
         }
@@ -79,12 +79,14 @@ namespace Coberec.GraphqlLoader
 
         static ((ReadOnlyMemory<string> remainingPath, G.AST.ASTNode node), G.ISource source) FindSourceLocation(ReadOnlyMemory<string> path, CollectedDefinitions definitions)
         {
-            if (path.Span[0] == "types" && path.Length >= 2)
+            if (path.Length >= 2 && path.Span[0] == "types")
             {
                 var (definition, source, t) = definitions.TypeDefinitions[int.Parse(path.Span[1])];
                 path = path.Slice(2);
                 if (path.Span[0] == "directives" && path.Length >= 2)
                     return (FindSourceLocation_Directive(t, path), source);
+                else if (path.Span[0] == "name")
+                    return ((path.Slice(1), ((G.AST.IGraphQLNamedNode)t).Name), source);
                 else if (path.Span[0] == "core")
                 {
                     path = path.Slice(1);
@@ -111,7 +113,7 @@ namespace Coberec.GraphqlLoader
                 }
                 return ((path, t), source);
             }
-            return ((path, null), null);
+            else throw new NotSupportedException($"Could not map path {string.Join(".", path.ToArray())}");
         }
 
         private static ValidationResult<DataSchema> CreateDataSchema(CollectedDefinitions cds) =>
