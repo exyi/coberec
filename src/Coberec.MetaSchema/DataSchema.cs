@@ -8,6 +8,25 @@ namespace Coberec.MetaSchema
 {
     public sealed class DataSchema
     {
+        static ValidationErrors ValidateName(string name)
+        {
+            if (name.Length == 0)
+                return ValidationErrors.Create("Name can't be empty.");
+            else if (!char.IsLetter(name[0]))
+                return ValidationErrors.Create("Name must start with a letter");
+            else if (!name.All(c => char.IsLetterOrDigit(c) || c == '_'))
+                return ValidationErrors.Create("Name must consist only of letters, digits and underscores");
+            else if (!name.All(c => c < 128))
+                return ValidationErrors.Create("Name must consist only of ASCII characters");
+            else
+                return null;
+        }
+        static ValidationErrors ValidateDirectives(ImmutableArray<Directive> directives)
+        {
+            return ValidationErrors.Join(
+                directives.Select((d, i) => ValidateName(d.Name).Nest("name").Nest(i.ToString())).ToArray()
+            ).Nest("directives");
+        }
         static ValidationErrors ValidateFields(ImmutableArray<TypeField> fields)
         {
             return ValidationErrors.Join(
@@ -16,8 +35,16 @@ namespace Coberec.MetaSchema
                 .Where(g => g.Count() > 1)
                 .SelectMany(g => g)
                 .Select(field =>
-                    ValidationErrors.CreateField(new [] { "fields", fields.IndexOf(field).ToString(), "name" }, $"Non-unique field name: {field.Name}")
-                ).ToArray());
+                    ValidationErrors.CreateField(new [] { fields.IndexOf(field).ToString(), "name" }, $"Non-unique field name: {field.Name}")
+                )
+                .Concat(fields.Select((f, i) =>
+                    ValidationErrors.Join(
+                        ValidateName(f.Name).Nest("name"),
+                        ValidateDirectives(f.Directives)
+                    ).Nest(i.ToString())
+                ))
+                .ToArray())
+                .Nest("fields");
         }
         public static ValidationErrors Validate(ImmutableArray<Entity> entities, ImmutableArray<TypeDef> types)
         {
@@ -51,6 +78,7 @@ namespace Coberec.MetaSchema
 
             foreach (var (index, type) in types.Select((a, i) => (i, a)))
             {
+                result.Add(ValidateName(type.Name).Nest("name").Nest(index.ToString()).Nest("types"));
                 if (type.Core is TypeDefCore.CompositeCase composite)
                 {
                     result.Add(ValidateFields(composite.Fields).Nest("core").Nest(index.ToString()).Nest("types"));
@@ -58,6 +86,18 @@ namespace Coberec.MetaSchema
                 else if (type.Core is TypeDefCore.InterfaceCase ifc)
                 {
                     result.Add(ValidateFields(ifc.Fields).Nest("core").Nest(index.ToString()).Nest("types"));
+                }
+                else if (type.Core is TypeDefCore.UnionCase union)
+                {
+                    result.Add(ValidationErrors.Join(
+                        union.Options.Select((o, i) =>
+                            (o is TypeRef.ActualTypeCase actO ?
+                            ValidateName(actO.TypeName) :
+                            ValidationErrors.Create("Union case can't have any modifiers (list, non-null)."))
+                            .Nest(i.ToString()).Nest("options").Nest("core").Nest(index.ToString()).Nest("types")
+                        )
+                        .ToArray()
+                    ));
                 }
             }
 
