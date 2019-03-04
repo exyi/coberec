@@ -13,12 +13,12 @@ namespace Coberec.CSharpGen
             string name,
             ExternalSymbolKind kind,
             string resultType = null,
-            OptParam<ImmutableArray<SymbolArgumentConfig>> args = default)
+            ImmutableArray<SymbolArgumentConfig> args = default)
         {
             DeclaredIn = declaredIn;
             Name = name;
             Kind = kind;
-            Args = args.ValueOrDefault(ImmutableArray<SymbolArgumentConfig>.Empty);
+            Args = args.IsDefault ? ImmutableArray<SymbolArgumentConfig>.Empty : args;
             ResultType = resultType;
         }
 
