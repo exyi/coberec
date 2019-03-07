@@ -1,8 +1,9 @@
 scalar ScalarA
 type TypeA {
     f: Int
+    string: String 
 }
-type TypeB {
+type TypeB @validateLengthDivisibleBy(num: 3) {
     a: ScalarA
     photoUrl: Uri
     num: Int @validateRange(low: 0, high: 100)
