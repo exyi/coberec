@@ -4,3 +4,6 @@
 [submodule "deps/big-list-of-naughty-strings"]
 	path = deps/big-list-of-naughty-strings
 	url = git@github.com:minimaxir/big-list-of-naughty-strings.git
+[submodule "deps/parser"]
+	path = deps/parser
+	url = git@github.com:graphql-dotnet/parser.git
