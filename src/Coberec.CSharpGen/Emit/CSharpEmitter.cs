@@ -99,9 +99,11 @@ namespace Coberec.CSharpGen.Emit
             get { return astTransforms; }
         }
 
+        private readonly bool usePartialClasses;
 
-        public CSharpEmitter(IDecompilerTypeSystem typeSystem, DecompilerSettings settings)
+        public CSharpEmitter(IDecompilerTypeSystem typeSystem, DecompilerSettings settings, bool usePartialClasses)
         {
+            this.usePartialClasses = usePartialClasses;
             this.typeSystem = typeSystem ?? throw new ArgumentNullException(nameof(typeSystem));
             this.settings = settings;
             this.module = (typeSystem as ICompilation).MainModule;
@@ -554,9 +556,9 @@ namespace Coberec.CSharpGen.Emit
         public IEnumerable<string> WriteCodeFilesInProject(string targetDirectory)
         {
             var files = this.typeSystem.MainModule.TopLevelTypeDefinitions.Where(IncludeTypeWhenDecompilingProject).GroupBy(type => {
-                    string file = WholeProjectDecompiler.CleanUpFileName(type.Name + ".cs");
-                    return file;
-                }, StringComparer.OrdinalIgnoreCase).ToList();
+                string file = WholeProjectDecompiler.CleanUpFileName(type.Name + ".cs");
+                return file;
+            }, StringComparer.OrdinalIgnoreCase).ToList();
             foreach (var file in files)
             {
                 using (StreamWriter w = new StreamWriter(Path.Combine(targetDirectory, file.Key))) {
@@ -848,6 +850,8 @@ namespace Coberec.CSharpGen.Emit
             Debug.Assert(decompilationContext.CurrentTypeDefinition == typeDef);
             var typeSystemAstBuilder = CreateAstBuilder(decompilationContext);
             var entityDecl = typeSystemAstBuilder.ConvertEntity(typeDef);
+            if (this.usePartialClasses)
+                entityDecl.Modifiers |= Modifiers.Partial;
             var typeDecl = entityDecl as TypeDeclaration;
             if (typeDecl == null)
             {

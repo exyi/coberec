@@ -36,7 +36,8 @@ namespace Coberec.CSharpGen
             bool emitOptionalWithMethod = true,
             bool withMethodReturnsValidationResult = true,
             bool fallbackToStringType = false,
-            bool addJsonPropertyAttributes = false)
+            bool addJsonPropertyAttributes = false,
+            bool emitPartialClasses = false)
         {
             Namespace = @namespace;
             PrimitiveTypeMapping = primitiveTypeMapping ?? ImmutableDictionary<string, string>.Empty;
@@ -49,6 +50,7 @@ namespace Coberec.CSharpGen
             WithMethodReturnValidationResult = withMethodReturnsValidationResult;
             FallbackToStringType = fallbackToStringType;
             AddJsonPropertyAttributes = addJsonPropertyAttributes;
+            EmitPartialClasses = emitPartialClasses;
         }
 
         public bool EmitInterfaceWithMethods { get; } = true;
@@ -62,6 +64,7 @@ namespace Coberec.CSharpGen
         public ImmutableArray<ExternalSymbolConfig> ExternalSymbols { get; }
         public ImmutableArray<string> AdditionalReferences { get; }
         public bool AddJsonPropertyAttributes { get; }
+        public bool EmitPartialClasses { get; }
 
         public EmitSettings With(
             OptParam<string> @namespace = default,
@@ -71,7 +74,8 @@ namespace Coberec.CSharpGen
             OptParam<IEnumerable<string>> additionalReferences = default,
             OptParam<bool> emitOptionalWithMethod = default,
             OptParam<bool> fallbackToStringType = default,
-            OptParam<bool> addJsonPropertyAttributes = default
+            OptParam<bool> addJsonPropertyAttributes = default,
+            OptParam<bool> emitPartialClasses = default
         )
         {
             return new EmitSettings(
@@ -85,7 +89,8 @@ namespace Coberec.CSharpGen
                 emitOptionalWithMethod.ValueOrDefault(this.EmitOptionalWithMethods),
                 this.WithMethodReturnValidationResult,
                 fallbackToStringType.ValueOrDefault(this.FallbackToStringType),
-                addJsonPropertyAttributes.ValueOrDefault(this.AddJsonPropertyAttributes)
+                addJsonPropertyAttributes.ValueOrDefault(this.AddJsonPropertyAttributes),
+                emitPartialClasses.ValueOrDefault(this.EmitPartialClasses)
             );
         }
     }

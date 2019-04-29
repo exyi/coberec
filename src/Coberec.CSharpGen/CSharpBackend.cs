@@ -428,7 +428,7 @@ namespace Coberec.CSharpGen
             s.CSharpFormattingOptions.AutoPropertyFormatting = PropertyFormatting.ForceOneLine;
             s.CSharpFormattingOptions.PropertyBraceStyle = BraceStyle.DoNotChange;
 
-            var emitter = new CSharpEmitter(cx.HackedSimpleCompilation, s);
+            var emitter = new CSharpEmitter(cx.HackedSimpleCompilation, s, cx.Settings.EmitPartialClasses);
             return emitter;
         }
 
