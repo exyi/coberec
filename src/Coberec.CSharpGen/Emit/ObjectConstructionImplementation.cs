@@ -105,7 +105,7 @@ namespace Coberec.CSharpGen.Emit
                              constructor.Parameters.Skip(1).ToArray() :
                              constructor.Parameters.ToArray();
 
-            var methodName = SymbolNamer.NameMethod(type, "Create", 0, parameters.Select(p => p.Type).ToArray());
+            var methodName = SymbolNamer.NameMethod(type, "Create", 0, parameters);
             var method = new VirtualMethod(type, Accessibility.Public, methodName, parameters, returnType, isStatic: true);
 
             method.BodyFactory = () => {

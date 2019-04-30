@@ -287,7 +287,8 @@ namespace Coberec.CSharpGen
             {
                 string name(TypeRef t) =>
                     t.Match(
-                        actual: x => x.TypeName,
+                        actual: x => x.TypeName.EndsWith(typeDef.Name) ? x.TypeName.Remove(x.TypeName.Length - typeDef.Name.Length) :
+                                     x.TypeName, // TODO: document behavior
                         nullable: x => name(x.Type),
                         list: x => name(x.Type) + "List"
                     );
@@ -307,6 +308,8 @@ namespace Coberec.CSharpGen
 
             var baseMatch = type.ImplementMatchBase(cases.Select(c => ((IType)c.caseType, c.caseName)).ToArray());
 
+            var caseCtors = new List<IMethod>();
+
             foreach (var (index, schema, caseName, caseType) in cases)
             {
                 var valueType = FindType(schema);
@@ -317,22 +320,16 @@ namespace Coberec.CSharpGen
 
                 var valueProperty = caseType.AddAutoProperty("Item", valueType);
                 var caseCtor = caseType.AddCreateConstructor(cx, new[] { ("item", valueProperty.field) }, false);
+                caseCtors.Add(caseCtor);
 
                 caseType.ImplementEqualityForCase(abstractEqCore, valueProperty.prop);
                 caseType.ImplementMatchCase(baseMatch, index);
 
-                var caseFactory = new VirtualMethod(type, Accessibility.Public,
-                    SymbolNamer.NameMethod(type, caseName, 0, new IType[] { valueType }),
-                    new[] { new VirtualParameter(valueType, "item") },
-                    returnType: type,
-                    isStatic: true
-                );
-                caseFactory.BodyFactory = () =>
-                    EmitExtensions.CreateExpressionFunction(caseFactory,
-                        new IL.NewObj(caseCtor) { Arguments = { new IL.LdLoc(new IL.ILVariable(VariableKind.Parameter, valueType, 0)) } }
-                    );
-                type.Methods.Add(caseFactory);
+                type.ImplementBasicCaseFactory(caseName, caseCtor);
+                type.TryImplementForwardingCaseFactory(caseName, caseCtor); // TODO: configurable
             }
+
+            type.ImplementAllIntoCaseConversions(caseCtors.ToArray()); // TODO: configurable (if, if implicit)
 
             return new TypeSymbolNameMapping(
                 type.Name,

@@ -18,7 +18,7 @@ namespace Coberec.CSharpGen.Emit
             IType optParamType(IType t) => isOptional ? new ParameterizedType(type.Compilation.FindType(typeof(OptParam<>)), new [] { t }) : t;
 
             var parameters = SymbolNamer.NameParameters(properties.Select((p) => new VirtualParameter(optParamType(p.type), p.desiredName, isOptional: isOptional)));
-            var withName = SymbolNamer.NameMethod(type, "With", 0, parameters.Select(p => p.Type).ToArray());
+            var withName = SymbolNamer.NameMethod(type, "With", 0, parameters);
             var returnType = returnValidationResult ?
                              new ParameterizedType(type.Compilation.FindType(typeof(ValidationResult<>)), new [] { type }) :
                              (IType)type;

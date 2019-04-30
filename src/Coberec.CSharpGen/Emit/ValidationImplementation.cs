@@ -229,7 +229,7 @@ namespace Coberec.CSharpGen.Emit
             if (validateCalls.Count == 0) return null;
 
             var methodParams = new IParameter[] { new VirtualParameter(type, "obj") };
-            var methodName = SymbolNamer.NameMethod(type, "ValidateObject", 0, methodParams.Select(p => p.Type).ToArray());
+            var methodName = SymbolNamer.NameMethod(type, "ValidateObject", 0, methodParams);
             var validationMethod = new VirtualMethod(type, Accessibility.Private, methodName, methodParams, cx.FindType<ValidationErrors>(), isStatic: true);
             validationMethod.BodyFactory = () => {
                 var thisParam = new IL.ILVariable(IL.VariableKind.Parameter, type, 0);

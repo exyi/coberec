@@ -5,7 +5,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using ICSharpCode.Decompiler.TypeSystem;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.MSBuild;
 using Coberec.CSharpGen;
 using IO = System.IO;
 using Newtonsoft.Json;

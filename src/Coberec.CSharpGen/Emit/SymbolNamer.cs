@@ -43,6 +43,8 @@ namespace Coberec.CSharpGen.Emit
             throw new Exception("wtf");
         }
 
+        public static string NameMethod(ITypeDefinition type, string desiredName, int typeArgCount, IEnumerable<IParameter> signature, bool? lowerCase = false) =>
+            NameMethod(type, desiredName, typeArgCount, signature.Select(a => a.Type).ToArray(), lowerCase);
         public static string NameMethod(ITypeDefinition type, string desiredName, int typeArgCount, IType[] signature, bool? lowerCase = false)
         {
             desiredName = NameSanitizer.SanitizeMemberName(desiredName, lowerCase);

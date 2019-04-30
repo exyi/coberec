@@ -12,7 +12,7 @@ using ICSharpCode.Decompiler.Util;
 namespace Coberec.CSharpGen.TypeSystem
 {
 
-    public class VirtualType : ITypeDefinition, IHideableMember
+    public sealed class VirtualType : ITypeDefinition, IHideableMember
     {
         public VirtualType(TypeKind kind, Accessibility accessibility, FullTypeName name, bool isStatic, bool isSealed, bool isAbstract, ITypeDefinition declaringType = null, IModule parentModule = null, bool isHidden = false)
         {

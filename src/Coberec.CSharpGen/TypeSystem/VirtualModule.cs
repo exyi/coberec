@@ -12,7 +12,7 @@ using ICSharpCode.Decompiler.TypeSystem.Implementation;
 namespace Coberec.CSharpGen.TypeSystem
 {
 
-    public class VirtualModuleReference : IModuleReference
+    public sealed class VirtualModuleReference : IModuleReference
     {
         private readonly bool isMainModule;
         private readonly string assemblyName;
@@ -33,7 +33,7 @@ namespace Coberec.CSharpGen.TypeSystem
         IModule IModuleReference.Resolve(ITypeResolveContext context) => Resolve(context.Compilation);
     }
 
-    public class VirtualModule : IModule
+    public sealed class VirtualModule : IModule
     {
         public PEFile PEFile => null;
 

@@ -10,7 +10,7 @@ using ICSharpCode.Decompiler.TypeSystem.Implementation;
 
 namespace Coberec.CSharpGen.TypeSystem
 {
-    public class VirtualNamespace : INamespace
+    public sealed class VirtualNamespace : INamespace
     {
         private readonly Dictionary<(string name, int typeParameterCount), ITypeDefinition> types;
         private readonly Dictionary<string, VirtualNamespace> namespaces;

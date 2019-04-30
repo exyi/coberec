@@ -22,7 +22,7 @@ namespace Coberec.CSharpGen.Emit
             IType makeArgType(IType caseType) => new ParameterizedType(func, new [] { caseType, genericParameter });
 
             var parameters = SymbolNamer.NameParameters(cases.Select(c => new VirtualParameter(makeArgType(c.caseType), c.caseName)));
-            var methodName = SymbolNamer.NameMethod(type, "Match", 1, parameters.Select(p => p.Type).ToArray());
+            var methodName = SymbolNamer.NameMethod(type, "Match", 1, parameters);
             var method = new VirtualMethod(type, Accessibility.Public, methodName, parameters, genericParameter, isVirtual: true, isAbstract: true, typeParameters: new [] { genericParameter });
 
             type.Methods.Add(method);

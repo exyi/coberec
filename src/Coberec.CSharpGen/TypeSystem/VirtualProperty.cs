@@ -6,7 +6,7 @@ using ICSharpCode.Decompiler.TypeSystem;
 
 namespace Coberec.CSharpGen.TypeSystem
 {
-    public class VirtualProperty : IProperty, IHideableMember
+    public sealed class VirtualProperty : IProperty, IHideableMember
     {
         public VirtualProperty(ITypeDefinition declaringTypeDefinition, Accessibility accessibility, string name, IMethod getter, IMethod setter = null, bool isIndexer = false, bool isVirtual = false, bool isOverride = false, bool isStatic = false, bool isAbstract = false, bool isSealed = false, IReadOnlyList<IParameter> parameters = null, bool isHidden = false, IEnumerable<IMember> explicitImplementations = null)
         {

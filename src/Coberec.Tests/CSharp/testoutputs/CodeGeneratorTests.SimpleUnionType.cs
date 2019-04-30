@@ -166,6 +166,16 @@ namespace GeneratedProject.ModelNamespace
 		{
 			return new StringCase(item);
 		}
+
+		public static implicit operator Union123(Test123 item)
+		{
+			return new Test123Case(item);
+		}
+
+		public static implicit operator Union123(string item)
+		{
+			return new StringCase(item);
+		}
 	}
 }
 

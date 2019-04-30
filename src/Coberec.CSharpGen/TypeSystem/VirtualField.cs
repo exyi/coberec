@@ -6,7 +6,7 @@ using ICSharpCode.Decompiler.TypeSystem;
 
 namespace Coberec.CSharpGen.TypeSystem
 {
-    public class VirtualField : IField, IHideableMember
+    public sealed class VirtualField : IField, IHideableMember
     {
         public VirtualField(ITypeDefinition declaringTypeDefinition, Accessibility accessibility, string name, IType returnType, bool isReadOnly = true, bool isVolatile = false, bool isStatic = false, bool isHidden = false)
         {

@@ -13,7 +13,7 @@ using ICSharpCode.Decompiler.Util;
 namespace Coberec.CSharpGen.TypeSystem
 {
 
-    public class VirtualMethod : IMethod, IMethodWithDefinition, IHideableMember
+    public sealed class VirtualMethod : IMethod, IMethodWithDefinition, IHideableMember
     {
         public VirtualMethod(ITypeDefinition declaringType, Accessibility accessibility, string name, IReadOnlyList<IParameter> parameters, IType returnType, bool isOverride = false, bool isVirtual = false, bool isSealed = false, bool isAbstract = false, bool isStatic = false, bool isHidden = false, ITypeParameter[] typeParameters = null, IEnumerable<IMember> explicitImplementations = null)
         {
