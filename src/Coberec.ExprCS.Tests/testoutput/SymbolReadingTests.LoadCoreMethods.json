@@ -1,0 +1,56 @@
+{
+	"toUpperInvariantM": {
+		"DeclaringType": {
+			"Name": "String",
+			"Parent": {
+				"Item": {
+					"Name": "System",
+					"Parent": null
+				}
+			},
+			"IsSealed": true,
+			"IsAbstract": false,
+			"Accessibility": {
+				"Public": true,
+				"DerivedVisible": true,
+				"InternalVisible": true
+			},
+			"GenericArgCount": 0
+		},
+		"Args": [],
+		"Name": "ToUpperInvariant",
+		"ResultType": {
+			"Item": {
+				"Type": {
+					"Name": "String",
+					"Parent": {
+						"Item": {
+							"Name": "System",
+							"Parent": null
+						}
+					},
+					"IsSealed": true,
+					"IsAbstract": false,
+					"Accessibility": {
+						"Public": true,
+						"DerivedVisible": true,
+						"InternalVisible": true
+					},
+					"GenericArgCount": 0
+				},
+				"GenericParameters": []
+			}
+		},
+		"IsStatic": false,
+		"Accessibility": {
+			"Public": true,
+			"DerivedVisible": true,
+			"InternalVisible": true
+		},
+		"IsVirtual": false,
+		"IsOverride": false,
+		"IsAbstract": false,
+		"HasSpecialName": false,
+		"TypeParameters": []
+	}
+}

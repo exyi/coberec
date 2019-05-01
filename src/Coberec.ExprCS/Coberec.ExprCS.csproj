@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- <ProjectReference Include="../Coberec.CLI/Coberec.CLI.csproj" ReferenceOutputAssembly="false" PrivateAssets="All" /> -->
+    <ProjectReference Include="../Coberec.CoreLib/Coberec.CoreLib.csproj" />
+    <ProjectReference Include="..\..\deps\ILSpy\ICSharpCode.Decompiler\ICSharpCode.Decompiler.csproj" />
+
+    <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
+  </ItemGroup>
+
+  <ItemGroup><!-- <Compile Include="../Coberec.CSharpGen/TypeSystem/**.cs" />
+    <Compile Include="../Coberec.CSharpGen/TupleComparer.cs" /> -->
+  
+    <ProjectReference Include="..\Coberec.CSharpGenHelpers\Coberec.CSharpGenHelpers.csproj" />
+  </ItemGroup>
+
+  <!-- <Target Name="BuildCoberec" BeforeTargets="BeforeCompile" Inputs="schema/**" Outputs="Generated/**.cs">
+    <ItemGroup>
+      <Compile Remove="Generated/**.cs" />
+    </ItemGroup>
+    <ItemGroup>
+      <Compile Include="Generated/**.cs" />
+    </ItemGroup>
+  </Target> -->
+</Project>

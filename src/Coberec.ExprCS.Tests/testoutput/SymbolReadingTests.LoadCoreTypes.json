@@ -1,0 +1,59 @@
+{
+	"stringT": {
+		"Name": "String",
+		"Parent": {
+			"Item": {
+				"Name": "System",
+				"Parent": null
+			}
+		},
+		"IsSealed": true,
+		"IsAbstract": false,
+		"Accessibility": {
+			"Public": true,
+			"DerivedVisible": true,
+			"InternalVisible": true
+		},
+		"GenericArgCount": 0
+	},
+	"dateTimeT": {
+		"Name": "DateTime",
+		"Parent": {
+			"Item": {
+				"Name": "System",
+				"Parent": null
+			}
+		},
+		"IsSealed": true,
+		"IsAbstract": false,
+		"Accessibility": {
+			"Public": true,
+			"DerivedVisible": true,
+			"InternalVisible": true
+		},
+		"GenericArgCount": 0
+	},
+	"enumerableT": {
+		"Name": "IEnumerable",
+		"Parent": {
+			"Item": {
+				"Name": "Generic",
+				"Parent": {
+					"Name": "Collections",
+					"Parent": {
+						"Name": "System",
+						"Parent": null
+					}
+				}
+			}
+		},
+		"IsSealed": false,
+		"IsAbstract": true,
+		"Accessibility": {
+			"Public": true,
+			"DerivedVisible": true,
+			"InternalVisible": true
+		},
+		"GenericArgCount": 1
+	}
+}

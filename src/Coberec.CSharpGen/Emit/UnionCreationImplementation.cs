@@ -73,7 +73,7 @@ namespace Coberec.CSharpGen.Emit
             var valueType = caseCtor.Parameters.Single().Type;
 
             // allowed only for "our" types
-            if (!(valueType is VirtualMethod))
+            if (!(valueType is VirtualType))
                 return ImmutableArray<IMethod>.Empty;
 
             return

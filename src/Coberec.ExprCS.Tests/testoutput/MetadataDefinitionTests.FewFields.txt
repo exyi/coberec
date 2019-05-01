@@ -1,0 +1,14 @@
+namespace MyNamespace
+{
+	public class MyType
+	{
+		public readonly string F1;
+
+		private readonly string[] F2;
+
+		internal readonly string[] F3;
+
+		protected internal static string[] F4;
+	}
+}
+

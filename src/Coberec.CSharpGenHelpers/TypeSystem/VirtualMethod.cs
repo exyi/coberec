@@ -198,7 +198,7 @@ namespace Coberec.CSharpGen.TypeSystem
         IMember IMember.Specialize(TypeParameterSubstitution substitution) => this.Specialize(substitution);
     }
 
-    interface IHideableMember
+    public interface IHideableMember
     {
         bool IsHidden { get; }
     }

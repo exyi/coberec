@@ -1,0 +1,30 @@
+{
+    "Namespace": "Coberec.ExprCS",
+    "PrimitiveTypeMapping": {
+        "Any": "System.Object"
+    },
+    "EmitPartialClasses": true
+    // "Validators": {
+    //     "lengthDivisibleBy": {
+    //         "ValidationMethodName": "SampleProject.Validators.LengthDivisibleBy",
+    //         "ValidatorParameters": [ {"Item1": "num", "Item2": 1, "Item3": 12} ]
+    //     }
+    // },
+    // "ExternalSymbols": [
+    //     {
+    //         "DeclaredIn": "SampleProject",
+    //         "Name": "Validators",
+    //         "Kind": "TypeDefinition"
+    //     },
+    //     {
+    //         "DeclaredIn": "SampleProject.Validators",
+    //         "Name": "LengthDivisibleBy",
+    //         "Kind": "StaticMethod",
+    //         "ResultType": "Coberec.CoreLib.ValidationErrors",
+    //         "Args": [
+    //             { "Name": "value", "Type": "TypeB" },
+    //             { "Name": "num", "Type": "System.Int32" }
+    //         ]
+    //     }
+    // ]
+}

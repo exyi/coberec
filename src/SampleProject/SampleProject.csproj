@@ -15,7 +15,7 @@
     <ItemGroup>
       <Compile Remove="GeneratedSchema/**.cs" />
     </ItemGroup>
-    <Exec Command="dotnet run --project ../Coberec.CLI/Coberec.CLI.csproj --config schema/config.json --invertNonNullable schema/**.gql --outDir GeneratedSchema --verbose" />
+    <Exec Command="dotnet run --project ../Coberec.CLI/Coberec.CLI.csproj --config schema/config.json --invertNonNullable schema/**.gql --outDir GeneratedSchema --verbose" Condition="'true' == 'false'" />
     <ItemGroup>
       <Compile Include="GeneratedSchema/**.cs" />
     </ItemGroup>

@@ -1,0 +1,83 @@
+type ModuleSignature {
+    name: String
+}
+
+type NamespaceSignature {
+    name: String
+    parent: NamespaceSignature!
+}
+
+type Accessibility {
+    public: Boolean
+    derivedVisible: Boolean
+    internalVisible: Boolean
+}
+
+union TypeOrNamespace = NamespaceSignature | TypeSignature
+
+type GenericParameter {
+    id: ID
+    name: String
+}
+
+interface MemberSignature {
+    name: String
+    accessibility: Accessibility
+}
+
+type TypeSignature implements MemberSignature {
+    name: String
+    parent: TypeOrNamespace
+    isSealed: Boolean
+    isAbstract: Boolean
+    accessibility: Accessibility
+    genericArgCount: Int
+}
+
+type SpecializedType {
+    type: TypeSignature
+    genericParameters: [TypeReference]
+}
+
+type ArrayType {
+    type: TypeReference
+    dimensions: Int
+}
+
+type ByReferenceType {
+    type: TypeReference
+}
+
+type PointerType {
+    type: TypeReference
+}
+
+union TypeReference = SpecializedType | ArrayType | ByReferenceType | PointerType | GenericParameter
+
+type MethodArgument {
+    type: TypeReference
+    name: String
+}
+
+type MethodSignature implements MemberSignature {
+    declaringType: TypeSignature
+    args: [MethodArgument]
+    name: String
+    resultType: TypeReference
+    isStatic: Boolean
+    accessibility: Accessibility
+    isVirtual: Boolean
+    isOverride: Boolean
+    isAbstract: Boolean
+    hasSpecialName: Boolean
+    typeParameters: [GenericParameter]
+}
+
+type FieldSignature implements MemberSignature {
+    declaringType: TypeSignature
+    name: String
+    accessibility: Accessibility
+    resultType: TypeReference
+    isStatic: Boolean
+    isReadonly: Boolean
+}

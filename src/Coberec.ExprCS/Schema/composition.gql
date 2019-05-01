@@ -1,0 +1,22 @@
+interface MemberDef {
+    signature: MemberSignature
+}
+
+type MethodDef implements MemberDef {
+    signature: MethodSignature
+    argumentParams: [ParameterExpression]
+    body: Expression
+}
+
+type FieldDef implements MemberDef {
+    signature: FieldSignature
+}
+
+type TypeDef implements MemberDef {
+    signature: TypeSignature
+    members: [MemberDef]
+}
+
+type ModuleDef {
+    topLevelTypes: [TypeDef]
+}

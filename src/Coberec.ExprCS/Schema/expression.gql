@@ -1,0 +1,146 @@
+type BinaryExpression {
+    operator: String
+    left: Expression
+    right: Expression
+}
+
+type MethodCallExpression {
+    method: MethodSignature
+    args: [Expression]
+    target: Expression!
+}
+
+type NewObjectExpression {
+    ctor: MethodSignature
+    args: [Expression]
+}
+
+type FieldAccessExpression {
+    field: FieldSignature
+    target: Expression!
+}
+
+# nebo zavést LValue?
+type FieldAssignExpression {
+    field: FieldSignature
+    target: Expression!
+    value: Expression
+}
+
+type NumericConversionExpression {
+    value: Expression
+    type: Expression
+}
+
+type ReferenceConversionExpression {
+    value: Expression
+    type: Expression
+}
+
+type ConstantExpression {
+    value: Any
+    type: Expression
+}
+
+type DefaultExpression {
+    type: Expression
+}
+
+type ParameterExpression {
+    id: ID
+    name: String!
+    type: Expression
+    mutable: Boolean
+}
+
+type LetInExpression {
+    variable: ParameterExpression
+    value: Expression
+    target: Expression
+}
+
+type ConditionalExpression {
+    condition: Expression
+    ifTrue: Expression
+    ifFalse: Expression
+}
+
+type FunctionExpression {
+    args: [ParameterExpression]
+    resultType: TypeReference
+    delegateType: TypeReference!
+}
+
+type FunctionReference {
+    method: MethodSignature
+    target: Expression!
+    delegateType: TypeReference!
+}
+
+type InvokeExpression {
+    function: Expression
+    args: [ParameterExpression]
+}
+
+type LabelTarget {
+    id: ID
+    name: String!
+    type: TypeReference
+}
+
+#type LabelExpression {
+#    target: LabelTarget
+#    defaultValue: Expression
+#}
+
+#type GotoExpression {
+#    value: Expression
+#    target: LabelTarget
+#}
+
+type BreakExpression {
+    value: Expression
+    target: LabelTarget
+}
+
+type BreakableExpression {
+    expression: Expression
+    label: LabelTarget
+}
+
+type LoopExpression {
+    body: Expression
+}
+
+type BlockExpression {
+    expressions: [Expression]
+    result: Expression
+}
+
+interface LowerableExpression {
+    type: TypeReference
+    lowered: Expression
+}
+
+union Expression =
+      BinaryExpression
+    | MethodCallExpression
+    | NewObjectExpression
+    | FieldAccessExpression
+    | FieldAssignExpression
+    | NumericConversionExpression
+    | ReferenceConversionExpression
+    | ConstantExpression
+    | DefaultExpression
+    | ParameterExpression
+    | ConditionalExpression
+    | FunctionExpression
+    | InvokeExpression
+    #| LabelExpression
+    #| GotoExpression
+    | BreakExpression
+    | BreakableExpression
+    | LoopExpression
+    | LetInExpression
+    | BlockExpression
+    | LowerableExpression
