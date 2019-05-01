@@ -53,7 +53,7 @@ namespace GeneratedProject.ModelNamespace
 
 		public bool Equals(MyType b)
 		{
-			return (object)this == b || (F1 == b.F1 && F2 == b.F2 && F3 == b.F3 && F4 == b.F4);
+			return (object)this == b || ((object)b != null && F1 == b.F1 && F2 == b.F2 && F3 == b.F3 && F4 == b.F4);
 		}
 
 		public static bool operator ==(MyType a, MyType b)
@@ -68,8 +68,7 @@ namespace GeneratedProject.ModelNamespace
 
 		public override bool Equals(object b)
 		{
-			MyType b2;
-			return (object)(b2 = (b as MyType)) != null && Equals(b2);
+			return Equals(b as MyType);
 		}
 
 		public ValidationResult<MyType> With(MyType f1, string f2, string f3, MyType f4)

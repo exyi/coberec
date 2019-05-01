@@ -62,7 +62,7 @@ namespace GeneratedProject.ModelNamespace
 
 		public bool Equals(Test123 b)
 		{
-			return (object)this == b || (StructuralComparisons.StructuralEqualityComparer.Equals(Field543, b.Field543) && StructuralComparisons.StructuralEqualityComparer.Equals(SomeName, b.SomeName) && AbcSS == b.AbcSS);
+			return (object)this == b || ((object)b != null && StructuralComparisons.StructuralEqualityComparer.Equals(Field543, b.Field543) && StructuralComparisons.StructuralEqualityComparer.Equals(SomeName, b.SomeName) && AbcSS == b.AbcSS);
 		}
 
 		public static bool operator ==(Test123 a, Test123 b)
@@ -77,8 +77,7 @@ namespace GeneratedProject.ModelNamespace
 
 		public override bool Equals(object b)
 		{
-			Test123 b2;
-			return (object)(b2 = (b as Test123)) != null && Equals(b2);
+			return Equals(b as Test123);
 		}
 
 		public ValidationResult<Test123> With(ImmutableArray<string> field543, ImmutableArray<int> someName, int? abcSS)

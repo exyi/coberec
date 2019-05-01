@@ -57,7 +57,7 @@ namespace Coberec.CSharpGen.Emit
                     other
                 );
             }
-            else if (propertyType.Kind == TypeKind.Interface)
+            else if (propertyType.Kind == TypeKind.Interface || true)
             {
                 Debug.Assert(!needsBoxing); // interface should not be in Nullable<_>
                 // if the type is a interface, let's compare it using the object.Equals method and hope that it will be implemented correctly in the implementation
@@ -109,7 +109,10 @@ namespace Coberec.CSharpGen.Emit
                     body = new IL.IfInstruction(
                         new IL.Comp(IL.ComparisonKind.Equality, Sign.None, new IL.LdLoc(thisParam), new IL.LdLoc(otherParam)),
                         new IL.LdcI4(1),
-                        body
+                        AndAlso(
+                            new IL.Comp(IL.ComparisonKind.Inequality, Sign.None, new IL.LdLoc(otherParam), new IL.LdNull()),
+                            body
+                        )
                     );
                 return CreateExpressionFunction(eqMethod, body);
             });
@@ -155,7 +158,7 @@ namespace Coberec.CSharpGen.Emit
             return getHashCode;
         }
 
-                /// Implements IEquatable, Object.Equals, ==, != using the specified Self.Equals(Self) method. Does not implement GetHashCode.
+        /// Implements IEquatable, Object.Equals, ==, != using the specified Self.Equals(Self) method. Does not implement GetHashCode.
         static IMethod ImplementEqualityCore(this VirtualType type, Func<IMethod, IL.ILFunction> equalsImplementation)
         {
             type.ImplementedInterfaces.Add(new ParameterizedType(type.Compilation.FindType(typeof(IEquatable<>)), new IType[] { type }));
@@ -205,15 +208,18 @@ namespace Coberec.CSharpGen.Emit
             var objEquals = new VirtualMethod(type, Accessibility.Public, "Equals", new [] { new VirtualParameter(type.Compilation.FindType(typeof(object)), "b") }, type.Compilation.FindType(typeof(bool)), isOverride: true);
 
             objEquals.BodyFactory = () => {
-                var tmpVar = new IL.ILVariable(IL.VariableKind.StackSlot, type, stackType: IL.StackType.O, 0);
                 var otherParam = new IL.ILVariable(IL.VariableKind.Parameter, type.Compilation.FindType(typeof(object)), 0);
                 var thisParam = new IL.ILVariable(IL.VariableKind.Parameter, type, -1);
+                // var tmpVar = new IL.ILVariable(IL.VariableKind.StackSlot, type, stackType: IL.StackType.O, 0);
+                // return CreateExpressionFunction(objEquals,
+                //     new IL.IfInstruction(
+                //         new IL.Comp(IL.ComparisonKind.Inequality, Sign.None, new IL.StLoc(tmpVar, new IL.IsInst(new IL.LdLoc(otherParam), type)), new IL.LdNull()),
+                //         new IL.Call(eqMethod) { Arguments = { new IL.LdLoc(thisParam), new IL.LdLoc(tmpVar) } },
+                //         new IL.LdcI4(0)
+                //     )
+                // );
                 return CreateExpressionFunction(objEquals,
-                    new IL.IfInstruction(
-                        new IL.Comp(IL.ComparisonKind.Inequality, Sign.None, new IL.StLoc(tmpVar, new IL.IsInst(new IL.LdLoc(otherParam), type)), new IL.LdNull()),
-                        new IL.Call(eqMethod) { Arguments = { new IL.LdLoc(thisParam), new IL.LdLoc(tmpVar) } },
-                        new IL.LdcI4(0)
-                    )
+                    new IL.Call(eqMethod) { Arguments = { new IL.LdLoc(thisParam), new IL.IsInst(new IL.LdLoc(otherParam), type) } }
                 );
             };
             type.Methods.Add(objEquals);

@@ -6,7 +6,7 @@ using ICSharpCode.Decompiler.TypeSystem.Implementation;
 
 namespace Coberec.CSharpGen.TypeSystem
 {
-    public class HackedSimpleCompilation : SimpleCompilation, IDecompilerTypeSystem
+    public sealed class HackedSimpleCompilation : SimpleCompilation, IDecompilerTypeSystem
     {
         public HackedSimpleCompilation(IModuleReference mainAssembly, params IModuleReference[] assemblyReferences) : base(mainAssembly, assemblyReferences)
         {
