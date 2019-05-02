@@ -37,6 +37,7 @@ namespace Coberec.ExprCS.Tests
 
             var stringT = cx.FindType(typeof(string));
             var stringArr = cx.FindType(typeof(string[]));
+            var someTuple = cx.FindType(typeof((List<int>, System.Threading.Tasks.Task)));
 
             var ns = new NamespaceSignature("MyNamespace", parent: null);
             var type = new TypeSignature(
@@ -50,7 +51,7 @@ namespace Coberec.ExprCS.Tests
             var typeDef = new TypeDef(type, ImmutableArray.Create<MemberDef>(
                 new FieldDef(new FieldSignature(type, "F1", Accessibility.APublic, stringT, false, true)),
                 new FieldDef(new FieldSignature(type, "F2", Accessibility.APrivate, stringArr, false, true)),
-                new FieldDef(new FieldSignature(type, "F3", Accessibility.AInternal, stringArr, false, true)),
+                new FieldDef(new FieldSignature(type, "F3", Accessibility.AInternal, someTuple, false, true)),
                 new FieldDef(new FieldSignature(type, "F4", Accessibility.AProtectedInternal, stringArr, true, false))
             ));
 

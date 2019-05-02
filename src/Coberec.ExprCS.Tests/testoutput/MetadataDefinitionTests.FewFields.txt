@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
 namespace MyNamespace
 {
 	public class MyType
@@ -6,7 +10,7 @@ namespace MyNamespace
 
 		private readonly string[] F2;
 
-		internal readonly string[] F3;
+		internal readonly ValueTuple<List<int>, Task> F3;
 
 		protected internal static string[] F4;
 	}
