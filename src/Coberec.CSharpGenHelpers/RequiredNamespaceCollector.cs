@@ -19,7 +19,7 @@ using static ICSharpCode.Decompiler.Metadata.ILOpCodeExtensions;
 
 namespace Coberec.CSharpGen.Emit
 {
-	public class RequiredNamespaceCollector
+	public class RequiredNamespaceCollector_Hacked
 	{
 		public static void CollectNamespaces(IModule module, HashSet<string> namespaces)
 		{

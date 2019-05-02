@@ -237,6 +237,7 @@ namespace Coberec.CSharpGen.Emit
         {
             var typeSystemAstBuilder = CreateAstBuilder(decompilationContext);
             var context = new TransformContext((IDecompilerTypeSystem)typeSystem, decompileRun, decompilationContext, typeSystemAstBuilder);
+            Debug.Assert(context.RequiredNamespacesSuperset.Count > 0);
             foreach (var transform in astTransforms)
             {
                 CancellationToken.ThrowIfCancellationRequested();
@@ -264,7 +265,7 @@ namespace Coberec.CSharpGen.Emit
                 CancellationToken = CancellationToken
             };
             syntaxTree = new SyntaxTree();
-            RequiredNamespaceCollector.CollectAttributeNamespaces(module, decompileRun.Namespaces);
+            RequiredNamespaceCollector_Hacked.CollectAttributeNamespaces(module, decompileRun.Namespaces);
             DoDecompileModuleAndAssemblyAttributes(decompileRun, decompilationContext, syntaxTree);
             RunTransforms(syntaxTree, decompileRun, decompilationContext);
             return syntaxTree;
@@ -337,7 +338,7 @@ namespace Coberec.CSharpGen.Emit
                 CancellationToken = CancellationToken
             };
             syntaxTree = new SyntaxTree();
-            RequiredNamespaceCollector.CollectNamespaces(module, decompileRun.Namespaces);
+            RequiredNamespaceCollector_Hacked.CollectNamespaces(module, decompileRun.Namespaces);
             DoDecompileModuleAndAssemblyAttributes(decompileRun, decompilationContext, syntaxTree);
             DoDecompileTypes(module.TopLevelTypeDefinitions, decompileRun, decompilationContext, syntaxTree);
             RunTransforms(syntaxTree, decompileRun, decompilationContext);
@@ -351,7 +352,7 @@ namespace Coberec.CSharpGen.Emit
                 DocumentationProvider = DocumentationProvider,
                 CancellationToken = CancellationToken
             };
-            RequiredNamespaceCollector.CollectNamespaces(function.Method, module, decompileRun.Namespaces);
+            RequiredNamespaceCollector_Hacked.CollectNamespaces(function.Method, module, decompileRun.Namespaces);
             return new ILTransformContext(function, (IDecompilerTypeSystem)typeSystem, DebugInfoProvider, settings)
             {
                 CancellationToken = CancellationToken,
@@ -538,7 +539,7 @@ namespace Coberec.CSharpGen.Emit
 
             foreach (var type in types)
             {
-                RequiredNamespaceCollector.CollectNamespaces(type, module, decompileRun.Namespaces);
+                RequiredNamespaceCollector_Hacked.CollectNamespaces(type, module, decompileRun.Namespaces);
             }
 
             DoDecompileTypes(types, decompileRun, decompilationContext, syntaxTree);
@@ -598,7 +599,7 @@ namespace Coberec.CSharpGen.Emit
                 CancellationToken = CancellationToken
             };
             syntaxTree = new SyntaxTree();
-            RequiredNamespaceCollector.CollectNamespaces(type, module, decompileRun.Namespaces);
+            RequiredNamespaceCollector_Hacked.CollectNamespaces(type, module, decompileRun.Namespaces);
             DoDecompileTypes(new[] { type }, decompileRun, decompilationContext, syntaxTree);
             RunTransforms(syntaxTree, decompileRun, decompilationContext);
             return syntaxTree;
@@ -638,7 +639,7 @@ namespace Coberec.CSharpGen.Emit
             };
             foreach (var entity in definitions)
             {
-                RequiredNamespaceCollector.CollectNamespaces(entity, module, decompileRun.Namespaces);
+                RequiredNamespaceCollector_Hacked.CollectNamespaces(entity, module, decompileRun.Namespaces);
             }
 
             bool first = true;
