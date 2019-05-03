@@ -213,7 +213,7 @@ namespace Coberec.CSharpGen.Emit
                     if (i.Index == -1)
                         i.Name = "this";
                     else
-                        i.Name = method.Parameters[i.Index].Name;
+                        i.Name = method.Parameters[i.Index.Value].Name;
                 }
             }
 

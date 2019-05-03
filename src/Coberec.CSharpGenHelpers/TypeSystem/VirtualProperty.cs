@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Reflection.Metadata;
 using ICSharpCode.Decompiler.TypeSystem;
 
@@ -22,8 +23,8 @@ namespace Coberec.CSharpGen.TypeSystem
             if (setter != null && !getter.Parameters.Select(p => p.Type).SequenceEqual(parameters.Select(p => p.Type).Append(returnType)))
                 throw new Exception($"Setter has an unexpected signature.");
 
-            if (getter is VirtualMethod getterM) getterM.AccessorOwner = this;
-            if (setter is VirtualMethod setterM) setterM.AccessorOwner = this;
+            if (getter is VirtualMethod getterM) getterM.SetAccessorOwner(this, MethodSemanticsAttributes.Getter);
+            if (setter is VirtualMethod setterM) setterM.SetAccessorOwner(this, MethodSemanticsAttributes.Setter);
 
             this.Getter = getter;
             this.Setter = setter;

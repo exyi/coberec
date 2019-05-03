@@ -101,7 +101,7 @@ namespace Coberec.CSharpGen
             foreach (var t in Enum.GetValues(typeof(KnownTypeCode)))
             {
                 var ft = hackedSimpleCompilation.FindType((KnownTypeCode)t);
-                Debug.Assert(!(ft is UnknownType));
+                Debug.Assert(!(ft is UnknownType) || KnownTypeCode.Unsafe.Equals(t));
             }
 
             HackedSimpleCompilation = hackedSimpleCompilation;

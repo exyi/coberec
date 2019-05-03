@@ -189,6 +189,9 @@ Parameters:
 
         public static int Main(string[] args)
         {
+            // Console.Write("attach debugger...");
+            // while (!System.Diagnostics.Debugger.IsAttached) System.Threading.Thread.Sleep(200);
+            // Console.WriteLine("  OK");
             if (args.Contains("--help"))
             {
                 Console.Error.WriteLine(Help);

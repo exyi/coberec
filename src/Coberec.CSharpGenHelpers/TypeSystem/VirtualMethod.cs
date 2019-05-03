@@ -48,7 +48,14 @@ namespace Coberec.CSharpGen.TypeSystem
 
         public bool IsAccessor => AccessorOwner != null;
 
-        public IMember AccessorOwner { get; set; }
+        public IMember AccessorOwner { get; private set; }
+        public MethodSemanticsAttributes AccessorKind { get; private set; }
+
+        public void SetAccessorOwner(IMember owner, MethodSemanticsAttributes accKind)
+        {
+            this.AccessorOwner = owner ?? throw new ArgumentNullException(nameof(owner));
+            this.AccessorKind = accKind;
+        }
 
         public IMethod ReducedFrom => null;
 
@@ -114,6 +121,8 @@ namespace Coberec.CSharpGen.TypeSystem
         public Func<ILFunction> BodyFactory { get; set; }
 
         public bool IsHidden { get; }
+
+        public bool ReturnTypeIsRefReadOnly => GetReturnTypeAttributes().Any(a => a.AttributeType.IsKnownType(KnownAttribute.IsReadOnly));
 
         public ILFunction GetBody()
         {

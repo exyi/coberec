@@ -961,7 +961,7 @@ namespace Coberec.CSharpGen.Emit
             foreach (var field in typeDef.Fields)
             {
                 if (MemberIsHidden(module, field, settings)) continue;
-                long currentValue = (long)CSharpPrimitiveCast.Cast(TypeCode.Int64, field.ConstantValue, false);
+                long currentValue = (long)CSharpPrimitiveCast.Cast(TypeCode.Int64, field.GetConstantValue(), false);
                 if (first)
                 {
                     firstValue = currentValue;
@@ -1205,11 +1205,11 @@ namespace Coberec.CSharpGen.Emit
         {
             Debug.Assert(decompilationContext.CurrentMember == field);
             var typeSystemAstBuilder = CreateAstBuilder(decompilationContext);
-            if (decompilationContext.CurrentTypeDefinition.Kind == TypeKind.Enum && field.ConstantValue != null)
+            if (decompilationContext.CurrentTypeDefinition.Kind == TypeKind.Enum && field.GetConstantValue() != null)
             {
                 var enumDec = new EnumMemberDeclaration { Name = field.Name };
-                long initValue = (long)CSharpPrimitiveCast.Cast(TypeCode.Int64, field.ConstantValue, false);
-                enumDec.Initializer = typeSystemAstBuilder.ConvertConstantValue(decompilationContext.CurrentTypeDefinition.EnumUnderlyingType, field.ConstantValue);
+                long initValue = (long)CSharpPrimitiveCast.Cast(TypeCode.Int64, field.GetConstantValue(), false);
+                enumDec.Initializer = typeSystemAstBuilder.ConvertConstantValue(decompilationContext.CurrentTypeDefinition.EnumUnderlyingType, field.GetConstantValue());
                 if (enumDec.Initializer is PrimitiveExpression primitive
                     && initValue >= 0 && (decompilationContext.CurrentTypeDefinition.HasAttribute(KnownAttribute.Flags)
                         || (initValue > 9 && (unchecked(initValue & (initValue - 1)) == 0 || unchecked(initValue & (initValue + 1)) == 0))))

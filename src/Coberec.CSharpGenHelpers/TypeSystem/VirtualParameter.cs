@@ -118,12 +118,14 @@ namespace Coberec.CSharpGen.TypeSystem
 			b.Append(parameter.Type.ReflectionName);
 			if (parameter.IsOptional && parameter.HasConstantValueInSignature) {
 				b.Append(" = ");
-				if (parameter.ConstantValue != null)
-					b.Append(parameter.ConstantValue.ToString());
+				if (parameter.GetConstantValue() is object c)
+					b.Append(c.ToString());
 				else
 					b.Append("null");
 			}
 			return b.ToString();
 		}
-	}
+
+        public object GetConstantValue(bool throwOnInvalidMetadata = false) => this.ConstantValue;
+    }
 }

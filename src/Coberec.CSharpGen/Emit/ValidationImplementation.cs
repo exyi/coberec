@@ -55,7 +55,7 @@ namespace Coberec.CSharpGen.Emit
                     {
                         if (!p.HasConstantValueInSignature)
                             throw new Exception($"Required value parameter {p.Name} was not filled");
-                        var a = JsonToObjectInitialization.InitializeObject(p.Type, JToken.FromObject(p.ConstantValue));
+                        var a = JsonToObjectInitialization.InitializeObject(p.Type, JToken.FromObject(p.GetConstantValue()));
                         result.Add(p, _ => a());
                     }
                 }
@@ -67,7 +67,7 @@ namespace Coberec.CSharpGen.Emit
                 {
                     if (p.HasConstantValueInSignature)
                     {
-                        var a = JsonToObjectInitialization.InitializeObject(p.Type, JToken.FromObject(p.ConstantValue));
+                        var a = JsonToObjectInitialization.InitializeObject(p.Type, JToken.FromObject(p.GetConstantValue()));
                         result.Add(p, _ => a());
                     }
                     else
@@ -107,7 +107,7 @@ namespace Coberec.CSharpGen.Emit
                 var parameter = method.Parameters[p.parameterIndex];
                 return (
                     value: v.Arguments.GetValueOrDefault(p.name) ?? p.defaultValue ?? (parameter.HasConstantValueInSignature ?
-                                                                                       JToken.FromObject(parameter.ConstantValue) :
+                                                                                       JToken.FromObject(parameter.GetConstantValue()) :
                                                                                        throw new ValidationErrorException(ValidationErrors.CreateField(new [] { "args" }, $"Required parameter {p.name} is missing"))),
                     parameter
                 );

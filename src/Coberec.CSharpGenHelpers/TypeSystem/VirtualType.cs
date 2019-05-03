@@ -100,6 +100,8 @@ namespace Coberec.CSharpGen.TypeSystem
 
         public bool IsHidden { get; }
 
+        public Nullability Nullability => Nullability.Oblivious;
+
         public IType AcceptVisitor(TypeVisitor visitor)
         {
             return visitor.VisitTypeDefinition(this);
@@ -155,5 +157,13 @@ namespace Coberec.CSharpGen.TypeSystem
         public IType VisitChildren(TypeVisitor visitor) => this;
 
         public override string ToString() => ReflectionName;
+
+        public IType ChangeNullability(Nullability nullability)
+        {
+            if (nullability == this.Nullability)
+                return this;
+            else
+                return new ICSharpCode.Decompiler.TypeSystem.Implementation.NullabilityAnnotatedType(this, nullability);
+        }
     }
 }

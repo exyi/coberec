@@ -160,6 +160,11 @@ namespace GeneratedProject.ModelNamespace
 			return new Test123Case(item);
 		}
 
+		public static Union123 Test123(ImmutableArray<string> field543, int abcSS)
+		{
+			return new Test123Case(new Test123(field543, abcSS));
+		}
+
 		public static Union123 String(string item)
 		{
 			return new StringCase(item);

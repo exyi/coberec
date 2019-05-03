@@ -104,5 +104,10 @@ namespace Coberec.CSharpGen.TypeSystem
         {
             throw new NotImplementedException();
         }
+
+        public object GetConstantValue(bool throwOnInvalidMetadata = false)
+        {
+            return ConstantValue;
+        }
     }
 }
