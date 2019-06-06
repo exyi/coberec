@@ -106,8 +106,9 @@ namespace Coberec.CSharpGen.Emit
 
             method.BodyFactory = () => {
                 var thisParam = new IL.ILVariable(IL.VariableKind.Parameter, type, -1);
+                var parameters = properties.Select((p, i) => new IL.ILVariable(IL.VariableKind.Parameter, p.ReturnType, i)).ToArray();
                 var factoryCall = factory.IsConstructor ? new IL.NewObj(factory) : (IL.CallInstruction)new IL.Call(factory);
-                factoryCall.Arguments.AddRange(properties.Select(p => new IL.LdLoc(thisParam).AccessMember(p)));
+                factoryCall.Arguments.AddRange(parameters.Select(v => new IL.LdLoc(v)));
                 var noChangeExpression = returnValidationResult ?
                                new IL.Call(type.Compilation.FindType(typeof(ValidationResult)).GetMethods(m => m.Name == "Create" && m.Parameters.Count == 1).Single().Specialize(new TypeParameterSubstitution(null, new [] { type }))) {
                                    // cast Type into ValidationResult<Interface>
@@ -118,7 +119,7 @@ namespace Coberec.CSharpGen.Emit
                     new IL.IfInstruction(
                         EmitExtensions.AndAlso(
                             properties
-                            .Select((mem, parIndex) => EqualityImplementation.EqualsExpression(mem.ReturnType, new IL.LdLoc(thisParam).AccessMember(mem), new IL.LdLoc(new IL.ILVariable(IL.VariableKind.Parameter, mem.ReturnType, parIndex))))),
+                            .Zip(parameters, (mem, var) => EqualityImplementation.EqualsExpression(mem.ReturnType, new IL.LdLoc(thisParam).AccessMember(mem), new IL.LdLoc(var)))),
                     noChangeExpression,
                     factoryCall
                 ));

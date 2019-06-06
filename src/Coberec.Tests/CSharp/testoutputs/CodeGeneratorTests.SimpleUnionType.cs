@@ -65,7 +65,7 @@ namespace GeneratedProject.ModelNamespace
 
 		public ValidationResult<Test123> With(ImmutableArray<string> field543, int abcSS)
 		{
-			return (StructuralComparisons.StructuralEqualityComparer.Equals(Field543, field543) && AbcSS == abcSS) ? ValidationResult.Create(this) : Create(Field543, AbcSS);
+			return (StructuralComparisons.StructuralEqualityComparer.Equals(Field543, field543) && AbcSS == abcSS) ? ValidationResult.Create(this) : Create(field543, abcSS);
 		}
 
 		public ValidationResult<Test123> With(OptParam<ImmutableArray<string>> field543 = default(OptParam<ImmutableArray<string>>), OptParam<int> abcSS = default(OptParam<int>))

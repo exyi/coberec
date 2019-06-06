@@ -73,7 +73,7 @@ namespace GeneratedProject.ModelNamespace
 
 		public ValidationResult<MyType> With(MyType f1, string f2, string f3, MyType f4)
 		{
-			return (F1 == f1 && F2 == f2 && F3 == f3 && F4 == f4) ? ValidationResult.Create(this) : Create(F1, F2, F3, F4);
+			return (F1 == f1 && F2 == f2 && F3 == f3 && F4 == f4) ? ValidationResult.Create(this) : Create(f1, f2, f3, f4);
 		}
 
 		public ValidationResult<MyType> With(OptParam<MyType> f1 = default(OptParam<MyType>), OptParam<string> f2 = default(OptParam<string>), OptParam<string> f3 = default(OptParam<string>), OptParam<MyType> f4 = default(OptParam<MyType>))

@@ -82,7 +82,7 @@ namespace GeneratedProject.ModelNamespace
 
 		public ValidationResult<Test123> With(ImmutableArray<string> field543, ImmutableArray<int> someName, int? abcSS)
 		{
-			return (StructuralComparisons.StructuralEqualityComparer.Equals(Field543, field543) && StructuralComparisons.StructuralEqualityComparer.Equals(SomeName, someName) && AbcSS == abcSS) ? ValidationResult.Create(this) : Create(Field543, SomeName, AbcSS);
+			return (StructuralComparisons.StructuralEqualityComparer.Equals(Field543, field543) && StructuralComparisons.StructuralEqualityComparer.Equals(SomeName, someName) && AbcSS == abcSS) ? ValidationResult.Create(this) : Create(field543, someName, abcSS);
 		}
 
 		ValidationResult<Interface1> Interface1.With(ImmutableArray<string> field543, ImmutableArray<int> someName)

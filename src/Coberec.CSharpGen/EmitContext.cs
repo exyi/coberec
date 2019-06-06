@@ -31,9 +31,9 @@ namespace Coberec.CSharpGen
             ImmutableDictionary<string, ValidatorConfig> validators = null,
             IEnumerable<ExternalSymbolConfig> externalSymbols = null,
             IEnumerable<string> additionalReferences = null,
-            bool emitWithMethod = true,
+            bool emitWithMethods = true,
             bool emitInterfaceWithMethods = true,
-            bool emitOptionalWithMethod = true,
+            bool emitOptionalWithMethods = true,
             bool withMethodReturnsValidationResult = true,
             bool fallbackToStringType = false,
             bool addJsonPropertyAttributes = false,
@@ -44,9 +44,9 @@ namespace Coberec.CSharpGen
             Validators = validators ?? ImmutableDictionary<string, ValidatorConfig>.Empty;
             ExternalSymbols = externalSymbols?.ToImmutableArray() ?? ImmutableArray<ExternalSymbolConfig>.Empty;
             AdditionalReferences = additionalReferences?.ToImmutableArray() ?? ImmutableArray<string>.Empty;
-            EmitWithMethods = emitWithMethod;
+            EmitWithMethods = emitWithMethods;
             EmitInterfaceWithMethods = emitInterfaceWithMethods;
-            EmitOptionalWithMethods = emitOptionalWithMethod;
+            EmitOptionalWithMethods = emitOptionalWithMethods;
             WithMethodReturnValidationResult = withMethodReturnsValidationResult;
             FallbackToStringType = fallbackToStringType;
             AddJsonPropertyAttributes = addJsonPropertyAttributes;
