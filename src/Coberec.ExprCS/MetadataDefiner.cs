@@ -47,7 +47,7 @@ namespace Coberec.ExprCS
                 TypeKind.Class, // TODO
                 GetAccessibility(sgn.Accessibility),
                 sgn.GetFullTypeName(),
-                false, // TODO
+                isStatic: false, // TODO
                 sgn.IsSealed,
                 sgn.IsAbstract,
                 sgn.Parent is TypeOrNamespace.TypeSignatureCase tt ? c.GetTypeDef(tt.Item) : null,
@@ -92,13 +92,20 @@ namespace Coberec.ExprCS
 
         public static void DefineTypeMembers(VirtualType type, MetadataContext c, TypeDef definition)
         {
+            if (definition.Extends is object)
+            {
+                type.DirectBaseType = GetTypeReference(c, definition.Extends);
+            }
+            foreach (var implements in definition.Implements)
+            {
+                type.ImplementedInterfaces.Add(GetTypeReference(c, implements));
+            }
             foreach (var member in definition.Members)
             {
                 if (member is MethodDef method)
                 {
                     var d = CreateMethodDefinition(c, method);
                     type.Methods.Add(d);
-                    // TODO: create body
                 }
                 else if (member is TypeDef typeMember)
                 {

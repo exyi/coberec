@@ -3,7 +3,9 @@
     "PrimitiveTypeMapping": {
         "Any": "System.Object"
     },
-    "EmitPartialClasses": true
+    "EmitPartialClasses": true,
+    "EmitWithMethods": true,
+    "EmitOptionalWithMethods": true
     // "Validators": {
     //     "lengthDivisibleBy": {
     //         "ValidationMethodName": "SampleProject.Validators.LengthDivisibleBy",
