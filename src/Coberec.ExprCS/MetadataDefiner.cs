@@ -5,10 +5,11 @@ using Coberec.CSharpGen.TypeSystem;
 using ICSharpCode.Decompiler.TypeSystem;
 using ICSharpCode.Decompiler.TypeSystem.Implementation;
 using TS=ICSharpCode.Decompiler.TypeSystem;
+using IL=ICSharpCode.Decompiler.IL;
 
 namespace Coberec.ExprCS
 {
-    static class MetadataDefiner
+    internal static class MetadataDefiner
     {
         public static FullTypeName GetFullTypeName(this TypeSignature t) =>
             t.Parent.Match(
@@ -25,10 +26,10 @@ namespace Coberec.ExprCS
             a == Accessibility.APublic ? TS.Accessibility.Public :
             throw new NotImplementedException();
 
-        public static TS.ITypeDefinition GetTypeDefinition(MetadataContext c, TypeSignature t) =>
+        public static TS.ITypeDefinition GetTypeDefinition(this MetadataContext c, TypeSignature t) =>
             c.Compilation.FindType(t.GetFullTypeName()).GetDefinition();
 
-        public static TS.IType GetTypeReference(MetadataContext c, TypeReference tref) =>
+        public static TS.IType GetTypeReference(this MetadataContext c, TypeReference tref) =>
             tref.Match(
                 specializedType =>
                     specializedType.Item.GenericParameters.IsEmpty ? (IType)GetTypeDefinition(c, specializedType.Item.Type) :
@@ -90,32 +91,38 @@ namespace Coberec.ExprCS
             );
         }
 
-        public static void DefineTypeMembers(VirtualType type, MetadataContext c, TypeDef definition)
+        static Func<IL.ILFunction> CreateBodyFactory(VirtualMethod resultMethod, MethodDef method, MetadataContext cx)
+        {
+            return () => CodeTranslation.CodeTranslator.CreateBody(method, resultMethod, cx);
+        }
+
+        public static void DefineTypeMembers(VirtualType type, MetadataContext cx, TypeDef definition)
         {
             if (definition.Extends is object)
             {
-                type.DirectBaseType = GetTypeReference(c, definition.Extends);
+                type.DirectBaseType = GetTypeReference(cx, definition.Extends);
             }
             foreach (var implements in definition.Implements)
             {
-                type.ImplementedInterfaces.Add(GetTypeReference(c, implements));
+                type.ImplementedInterfaces.Add(GetTypeReference(cx, implements));
             }
             foreach (var member in definition.Members)
             {
                 if (member is MethodDef method)
                 {
-                    var d = CreateMethodDefinition(c, method);
+                    var d = CreateMethodDefinition(cx, method);
                     type.Methods.Add(d);
+                    d.BodyFactory = CreateBodyFactory(d, method, cx);
                 }
                 else if (member is TypeDef typeMember)
                 {
-                    var d = CreateTypeDefinition(c, typeMember);
+                    var d = CreateTypeDefinition(cx, typeMember);
                     type.NestedTypes.Add(d);
-                    DefineTypeMembers(d, c, typeMember);
+                    DefineTypeMembers(d, cx, typeMember);
                 }
                 else if (member is FieldDef field)
                 {
-                    var d = CreateFieldDefinition(c, field);
+                    var d = CreateFieldDefinition(cx, field);
                     type.Fields.Add(d);
                 }
                 else throw new NotImplementedException($"Member '{member}' of type '{member.GetType().Name}'");

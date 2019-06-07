@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <!-- <ProjectReference Include="../Coberec.CLI/Coberec.CLI.csproj" ReferenceOutputAssembly="false" PrivateAssets="All" /> -->
+    <PackageReference Include="XUnit.Assert" Version="2.4.1" />
     <ProjectReference Include="../Coberec.CoreLib/Coberec.CoreLib.csproj" />
     <ProjectReference Include="..\..\deps\ILSpy\ICSharpCode.Decompiler\ICSharpCode.Decompiler.csproj" />
 

@@ -65,6 +65,33 @@ namespace Coberec.ExprCS.Tests
         }
 
         [Fact]
+        public void IEquatableImplementation()
+        {
+            var ns = new NamespaceSignature("MyNamespace", parent: null);
+            var type = new TypeSignature(
+                "MyType",
+                ns,
+                isSealed: false,
+                isAbstract: false,
+                Accessibility.APublic,
+                0
+            );
+            var cx = MkContext();
+            var iequatableT = cx.FindTypeDef(typeof(IEquatable<>));
+            var method = new MethodSignature(type, ImmutableArray.Create(new MethodArgument(type, "obj")), "Equals", cx.FindType(typeof(bool)), false, Accessibility.APublic, false, false, false, false, ImmutableArray<GenericParameter>.Empty);
+            var parameter = new ParameterExpression(Guid.NewGuid(), "obj", type, false);
+            var methodDef = new MethodDef(method, ImmutableArray.Create(parameter), new ConstantExpression(true, cx.FindType(typeof(bool))));
+            var typeDef = TypeDef.Empty(type).With(
+                implements: ImmutableArray.Create(new SpecializedType(iequatableT, ImmutableArray.Create<TypeReference>(type))),
+                members: ImmutableArray.Create<MemberDef>(methodDef));
+
+            cx.AddType(typeDef);
+
+
+            check.CheckOutput(cx);
+        }
+
+        [Fact]
         public void FewFields()
         {
             var cx = MkContext();

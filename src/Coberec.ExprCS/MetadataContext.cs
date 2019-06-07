@@ -139,6 +139,7 @@ namespace Coberec.ExprCS
                                                          TranslateType(paramType.GenericType.GetDefinition()),
                                                          paramType.TypeArguments.Select(TranslateTypeReference).ToImmutableArray()) :
             type is TS.ITypeParameter typeParam ? TypeReference.GenericParameter(TranslateGenericParameter(typeParam)) :
+            type is TS.Implementation.NullabilityAnnotatedType decoratedType ? TranslateTypeReference(decoratedType.TypeWithoutAnnotation) :
             throw new NotImplementedException($"Type reference '{type}' of type '{type.GetType().Name}' is not supported.");
 
         internal IModule GetModule(ModuleSignature module) =>
@@ -188,6 +189,8 @@ namespace Coberec.ExprCS
             GetMemberMethods(type).AsEnumerable<MemberSignature>()
             .Concat(GetMemberFields(type));
 
+        private List<TypeDef> definedTypes = new List<TypeDef>();
+        public IReadOnlyList<TypeDef> DefinedTypes => definedTypes.AsReadOnly();
 
         public void AddType(TypeDef type)
         {

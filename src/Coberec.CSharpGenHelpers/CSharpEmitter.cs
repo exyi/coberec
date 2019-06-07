@@ -246,7 +246,7 @@ namespace Coberec.CSharpGen.Emit
         {
             var typeSystemAstBuilder = CreateAstBuilder(decompilationContext);
             var context = new TransformContext((IDecompilerTypeSystem)typeSystem, decompileRun, decompilationContext, typeSystemAstBuilder);
-            Debug.Assert(context.RequiredNamespacesSuperset.Count > 0);
+            // Debug.Assert(context.RequiredNamespacesSuperset.Count > 0);
             foreach (var transform in astTransforms)
             {
                 CancellationToken.ThrowIfCancellationRequested();

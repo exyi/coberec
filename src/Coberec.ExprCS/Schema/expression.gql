@@ -29,27 +29,27 @@ type FieldAssignExpression {
 
 type NumericConversionExpression {
     value: Expression
-    type: Expression
+    type: TypeReference
 }
 
 type ReferenceConversionExpression {
     value: Expression
-    type: Expression
+    type: TypeReference
 }
 
 type ConstantExpression {
     value: Any
-    type: Expression
+    type: TypeReference
 }
 
 type DefaultExpression {
-    type: Expression
+    type: TypeReference
 }
 
 type ParameterExpression {
     id: ID
     name: String!
-    type: Expression
+    type: TypeReference
     mutable: Boolean
 }
 
