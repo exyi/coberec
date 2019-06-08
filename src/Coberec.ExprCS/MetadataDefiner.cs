@@ -41,6 +41,22 @@ namespace Coberec.ExprCS
                 gParam => throw new NotSupportedException()
             );
 
+        public static IMethod GetMethod(this MetadataContext cx, MethodSignature method)
+        {
+            var t = cx.GetTypeReference(method.DeclaringType); // TODO: generic methos
+            // TODO: constructors, accessors and stuff
+            var candidates =
+                t.GetMethods(filter: m => m.Name == method.Name &&
+                                          m.Parameters.Count == method.Args.Length &&
+                                          m.Parameters.Select(p => cx.TranslateTypeReference(p.Type)).SequenceEqual(method.Args.Select(a => a.Type)),
+                             GetMemberOptions.None).ToArray();
+            if (candidates.Length == 0)
+                throw new Exception($"Method {method.Name} was not found on type {method.DeclaringType}. Method signature is {method}");
+
+            return candidates.OrderByDescending(m => m.DeclaringType.GetAllBaseTypes().Count())
+                             .First();
+        }
+
         public static VirtualType CreateTypeDefinition(MetadataContext c, TypeDef t)
         {
             var sgn = t.Signature;

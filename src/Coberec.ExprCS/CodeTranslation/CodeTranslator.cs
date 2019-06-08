@@ -6,6 +6,7 @@ using System.Linq;
 using Coberec.CSharpGen;
 using ICSharpCode.Decompiler.IL;
 using ICSharpCode.Decompiler.TypeSystem;
+using ICSharpCode.Decompiler.Util;
 using Xunit;
 using IL=ICSharpCode.Decompiler.IL;
 
@@ -30,42 +31,100 @@ namespace Coberec.ExprCS.CodeTranslation
                     arg.Id,
                     new ILVariable(VariableKind.Parameter, cx.GetTypeReference(param.Type), i) { Name = arg.Name });
             }
+            var verificationVarCopy = methodCx.Parameters.Keys.ToHashSet();
+
             var statements = TranslateExpression(method.Body, methodCx);
+
+            Assert.Empty(methodCx.BreakTargets);
+            Assert.Equal(verificationVarCopy, methodCx.Parameters.Keys.ToHashSet());
+
             return BuildTheFunction(statements, methodCx);
+        }
+
+        static void AddLeaveInstruction(this Block b, Block nextBlock)
+        {
+            if (b.HasReachableEndpoint())
+                b.Instructions.Add(new Branch(nextBlock));
+        }
+
+        static bool HasReachableEndpoint(this Block b)
+        {
+            return b.Instructions.LastOrDefault()?.HasFlag(InstructionFlags.EndPointUnreachable) != true;
+        }
+
+        static BlockContainer BuildBContainer(Result r, MethodContext cx)
+        {
+            var isVoid = r.Output == null;
+            var container = new IL.BlockContainer(expectedResultType: isVoid ? IL.StackType.Void : r.Output.StackType);
+            var block = new IL.Block();
+
+            foreach (var stmt in r.Statements)
+            {
+                if (stmt is ExpressionStatement e)
+                {
+                    var instruction = e.Output == null ? e.Instruction : new StLoc(e.Output, e.Instruction);
+                    block.Instructions.Add(instruction);
+                }
+                else if (stmt is BasicBlockStatement bb)
+                {
+                    block.AddLeaveInstruction(bb.Block);
+                    container.Blocks.Add(block);
+
+                    var nextBlock = new Block();
+                    bb.Block.AddLeaveInstruction(nextBlock);
+                    container.Blocks.Add(bb.Block);
+
+                    block = nextBlock;
+                }
+                else throw new NotSupportedException($"Statement {stmt} of type {stmt.GetType()}");
+            }
+
+            if (block.HasReachableEndpoint())
+            {
+                if (isVoid) block.Instructions.Add(new IL.Leave(container));
+                else        block.Instructions.Add(new IL.Leave(container, value: new LdLoc(r.Output)));
+            }
+
+            container.Blocks.Add(block);
+
+
+            // compute fake IL ranges, just to have some IDs of the Blocks
+            var index = 0;
+            foreach (var b in container.Blocks)
+            {
+                var length = b.Instructions.Count;
+                b.SetILRange(new Interval(index, index + length));
+                index += length;
+            }
+
+            container.SetILRange(new Interval(0, index));
+
+            // this computes the flags of the container. hopefully it does not break anything...
+            container.AddRef();
+
+            return container;
         }
 
         static ILFunction BuildTheFunction(Result r, MethodContext cx)
         {
             var isVoid = cx.GeneratedMethod.ReturnType.FullName == "System.Void";
 
-            Assert.Equal(isVoid, (r.Output == null));
+            Assert.Equal(isVoid, r.Output == null);
 
-            var instructions = r.Statements.Cast<ExpressionStatement>()
-                               .Where(e => e.Instruction != null) // ignore variable reads
-                               .Select(e => e.Output == null ? e.Instruction : new StLoc(e.Output, e.Instruction))
-                               .ToArray();
+            var functionContainer = BuildBContainer(r, cx);
 
-            var functionContainer = new IL.BlockContainer(expectedResultType: isVoid ? IL.StackType.Void : r.Output.StackType);
-            var block = new IL.Block();
             var variables = new VariableCollectingVisitor();
             r.Output?.Apply(variables.Variables.Add);
-            foreach (var i in instructions)
-            {
-                i.AcceptVisitor(variables);
-                block.Instructions.Add(i);
-            }
-            if (isVoid) block.Instructions.Add(new IL.Leave(functionContainer));
-            else block.Instructions.Add(new IL.Leave(functionContainer, value: new LdLoc(r.Output)));
+            foreach (var p in cx.Parameters)
+                variables.Variables.Add(p.Value);
 
-            functionContainer.Blocks.Add(block);
+            functionContainer.AcceptVisitor(variables);
 
             var ilFunc = new IL.ILFunction(cx.GeneratedMethod, 10000, new ICSharpCode.Decompiler.TypeSystem.GenericContext(), functionContainer);
 
             foreach (var i in variables.Variables)
-            {
                 if (i.Function == null)
                     ilFunc.Variables.Add(i);
-            }
 
             ilFunc.AddRef(); // whatever, somehow initializes the freaking tree
             ilFunc.CheckInvariantPublic(IL.ILPhase.Normal);
@@ -78,8 +137,8 @@ namespace Coberec.ExprCS.CodeTranslation
 
             protected override void Default(IL.ILInstruction inst)
             {
-                if (inst is IL.IInstructionWithVariableOperand lfslfd)
-                    Variables.Add(lfslfd.Variable);
+                if (inst is IL.IInstructionWithVariableOperand a)
+                    Variables.Add(a.Variable);
 
                 foreach(var c in inst.Children)
                     c.AcceptVisitor(this);
@@ -120,7 +179,7 @@ namespace Coberec.ExprCS.CodeTranslation
         {
             var value = TranslateExpression(e.Value, cx);
 
-            Assert.NotNull(value.Output != null);
+            Assert.NotNull(value.Output);
             Assert.Equal(value.Output.Type, cx.Metadata.GetTypeReference(e.Variable.Type));
 
             var ilVar = new ILVariable(VariableKind.Local, value.Output.Type);
@@ -130,23 +189,77 @@ namespace Coberec.ExprCS.CodeTranslation
             cx.Parameters.Remove(e.Variable.Id);
             return Result.Concat(
                 value,
-                new Result(ImmutableList.Create<Statement>(new ExpressionStatement { Instruction = new StLoc(ilVar, new LdLoc(value.Output)) })),
+                new Result(ImmutableList.Create<Statement>(new ExpressionStatement(new StLoc(ilVar, new LdLoc(value.Output))))),
                 target);
         }
 
-        private static Result TranslateLoop(LoopExpression item, MethodContext cx)
+        private static Result TranslateLoop(LoopExpression e, MethodContext cx)
         {
-            throw new NotImplementedException();
+            var startBlock = new Block();
+            var expr = TranslateExpression(e.Body, cx);
+
+            var bc = BuildBContainer(
+                Result.Concat(
+                    new Result(
+                        new BasicBlockStatement(startBlock)
+                    ),
+                    expr,
+                    new Result(
+                        new ExpressionStatement(new Branch(startBlock))
+                    )
+                ),
+                cx);
+            return new Result(new ExpressionStatement(bc));
         }
 
-        private static Result TranslateBreakable(BreakableExpression item, MethodContext cx)
+        private static Result TranslateBreakable(BreakableExpression e, MethodContext cx)
         {
-            throw new NotImplementedException();
+            var endBlock = new Block();
+            var resultVariable = e.Label.Type == TypeSignature.Void ?
+                                 null :
+                                 new ILVariable(VariableKind.Local, cx.Metadata.GetTypeReference(e.Label.Type));
+            var expr = TranslateExpression(e.Expression, cx);
+
+            return
+                Result.Concat(
+                    expr,
+                    new Result(
+                        resultVariable,
+                        new BasicBlockStatement(endBlock)
+                    )
+                );
         }
 
-        private static Result TranslateBreak(BreakExpression item, MethodContext cx)
+        private static Result TranslateBreak(BreakExpression e, MethodContext cx)
         {
-            throw new NotImplementedException();
+            var (endBlock, resultVar) = cx.BreakTargets[e.Target];
+            var breakStmt = new ExpressionStatement(new IL.Branch(endBlock));
+            Assert.Equal(e.Target.Type, e.Value.Type());
+            if (e.Target.Type == TypeSignature.Void)
+            {
+                Assert.Null(resultVar);
+                var value = TranslateExpression(e.Value, cx);
+                Assert.Null(value.Output);
+                return Result.Concat(
+                    value,
+                    new Result(ImmutableList.Create(breakStmt))
+                );
+            }
+            else
+            {
+                var value = TranslateExpression(e.Value, cx);
+
+                Assert.NotNull(value.Output);
+                Assert.NotNull(resultVar);
+
+                return Result.Concat(
+                    value,
+                    new Result(ImmutableList.Create(
+                        new ExpressionStatement(output: resultVar, instruction: new LdLoc(value.Output)),
+                        breakStmt
+                    ))
+                );
+            };
         }
 
         private static Result TranslateInvoke(InvokeExpression item, MethodContext cx)
@@ -161,18 +274,74 @@ namespace Coberec.ExprCS.CodeTranslation
 
         private static Result TranslateConditional(ConditionalExpression item, MethodContext cx)
         {
-            throw new NotImplementedException();
+            // TODO: shortcut for simplest expressions
+            Assert.Equal(item.IfTrue.Type(), item.IfFalse.Type());
+
+            var condition = TranslateExpression(item.Condition, cx);
+            Assert.NotNull(condition.Output);
+            var ifTrue = TranslateExpression(item.IfTrue, cx);
+            var ifFalse = TranslateExpression(item.IfFalse, cx);
+
+            var resultVar = new ILVariable(VariableKind.Local, cx.Metadata.GetTypeReference(item.IfTrue.Type()));
+
+            Result copyOutput(ILVariable output) => output == null ? Result.Nop : new Result(new ExpressionStatement(new StLoc(resultVar, new LdLoc(ifTrue.Output))));
+
+            var ifTrueC = BuildBContainer(
+                Result.Concat(ifTrue, copyOutput(ifTrue.Output)),
+                cx);
+            var ifFalseC = BuildBContainer(
+                Result.Concat(ifFalse, copyOutput(ifFalse.Output)),
+                cx);
+
+            return Result.Concat(
+                condition,
+                new Result(
+                    output: resultVar,
+                    new ExpressionStatement(new IfInstruction(new LdLoc(condition.Output), ifTrueC, ifFalseC)))
+            );
+
+            // var elseBlock = new Block();
+            // var endBlock = new Block();
+            // var condInstruction = new IfInstruction(new LdLoc(condition.Output), new Nop(), new Branch(elseBlock));
+
+            // var isVoid = ifTrue.Output == null;
+            // Assert.Equal(isVoid, ifFalse == null);
+            // Assert.Equal(isVoid, item.IfFalse.Type() == TypeSignature.Void);
+
+            // var outputVar = isVoid ? null : new ILVariable(VariableKind.StackSlot, cx.Metadata.GetTypeReference(item.IfTrue.Type()));
+
+            // return Result.Concat(
+            //     condition,
+            //     new Result(new ExpressionStatement(condInstruction)),
+
+            //     ifTrue,
+            //     isVoid ? Result.Nop : new Result(new ExpressionStatement(new LdLoc(ifTrue.Output), outputVar)),
+            //     new Result(new BasicBlockStatement(new Block { Instructions = { new Branch(endBlock) } })),
+
+            //     new Result(new BasicBlockStatement(elseBlock)),
+            //     ifFalse,
+            //     isVoid ? Result.Nop : new Result(new ExpressionStatement(new LdLoc(ifFalse.Output), outputVar)),
+
+            //     new Result(new BasicBlockStatement(endBlock)),
+            //     isVoid ? Result.Nop : new Result(outputVar)
+            // );
         }
 
         private static Result TranslateParameter(ParameterExpression pe, MethodContext cx)
         {
             var v = cx.Parameters[pe.Id];
-            return new Result(ImmutableList<Statement>.Empty, v);
+            return new Result(v);
         }
 
-        private static Result TranslateDefault(DefaultExpression item, MethodContext cx)
+        private static Result TranslateDefault(DefaultExpression e, MethodContext cx)
         {
-            throw new NotImplementedException();
+            if (e.Type == TypeSignature.Void)
+                return new Result();
+            else
+            {
+                var type = cx.Metadata.GetTypeReference(e.Type);
+                return Result.Expression(type, new IL.DefaultValue(type));
+            }
         }
 
         private static Result TranslateReferenceConversion(ReferenceConversionExpression item, MethodContext cx)
@@ -200,9 +369,28 @@ namespace Coberec.ExprCS.CodeTranslation
             throw new NotImplementedException();
         }
 
-        private static Result TranslateMethodCall(MethodCallExpression item, MethodContext cx)
+        private static Result TranslateMethodCall(MethodCallExpression e, MethodContext cx)
         {
-            throw new NotImplementedException();
+            Assert.Equal(e.Method.IsStatic, e.Target == null);
+            Assert.Equal(e.Method.Args.Length, e.Args.Length);
+
+            var method = cx.Metadata.GetMethod(e.Method);
+
+            var args = e.Args.Select(a => TranslateExpression(a, cx)).ToArray();
+            var target = e.Target?.Apply(t => TranslateExpression(t, cx));
+
+            var result = new List<Result>();
+            target?.ApplyAction(result.Add);
+            result.AddRange(args);
+
+            var call = method.IsStatic ? new Call(method) : (CallInstruction)new CallVirt(method) { Arguments = { new LdLoc(target.Output) } };
+            call.Arguments.AddRange(args.Select(a => new LdLoc(a.Output)));
+            var isVoid = e.Method.ResultType == TypeSignature.Void;
+            result.Add(isVoid ?
+                       new Result(new ExpressionStatement(call)) :
+                       Result.Expression(method.ReturnType, call));
+
+            return Result.Concat(result);
         }
 
         private static Result TranslateBinary(BinaryExpression item, MethodContext cx)
@@ -213,23 +401,15 @@ namespace Coberec.ExprCS.CodeTranslation
         private static Result TranslateConstant(ConstantExpression e, MethodContext cx)
         {
             var type = cx.Metadata.GetTypeReference(e.Type);
-            var outVar = new ILVariable(VariableKind.StackSlot, type);
-            return new Result(
-                statements: ImmutableList.Create<Statement>(
-                    new ExpressionStatement {
-                        Output = outVar,
-                        Instruction = TranslateConstant(e.Value, type)
-                    }),
-                output: outVar
-            );
+            return Result.Expression(type, TranslateConstant(e.Value, type));
         }
 
         private static ILInstruction TranslateConstant(object constant, IType type)
         {
             if (constant == null)
             {
-                if (type.IsReferenceType == true) return new LdNull();
-                else return new IL.DefaultValue(type);
+                Assert.True(type.IsReferenceType);
+                return new LdNull();
             }
             else if (constant is bool boolC)
             {
@@ -266,6 +446,7 @@ namespace Coberec.ExprCS.CodeTranslation
             public MethodDef Method;
             internal IMethod GeneratedMethod;
             public Dictionary<Guid, ILVariable> Parameters = new Dictionary<Guid, ILVariable>();
+            public Dictionary<LabelTarget, (Block nextBlock, ILVariable resultVariable)> BreakTargets = new Dictionary<LabelTarget, (Block nextBlock, ILVariable resultVariable)>();
         }
 
 
@@ -274,10 +455,25 @@ namespace Coberec.ExprCS.CodeTranslation
         {
         }
 
+        class BasicBlockStatement : Statement
+        {
+            public Block Block;
+            public BasicBlockStatement(Block b)
+            {
+                this.Block = b ?? throw new ArgumentNullException(nameof(b));
+            }
+        }
+
         class ExpressionStatement : Statement
         {
-            public ILVariable Output;
-            public ILInstruction Instruction;
+            public readonly ILVariable Output;
+            public readonly ILInstruction Instruction;
+
+            public ExpressionStatement(ILInstruction instruction, ILVariable output = null)
+            {
+                Output = output;
+                Instruction = instruction ?? throw new ArgumentNullException(nameof(instruction));
+            }
         }
 
         class Result
@@ -285,9 +481,22 @@ namespace Coberec.ExprCS.CodeTranslation
             public readonly ImmutableList<Statement> Statements;
             public readonly ILVariable Output;
 
-            public Result(IEnumerable<Statement> statements, ILVariable output = null)
+            public static Result Nop = new Result();
+
+            public static Result Expression(IType type, ILInstruction i)
+            {
+                var resultVar = new ILVariable(VariableKind.StackSlot, type);
+                return new Result(output: resultVar, new ExpressionStatement(i, resultVar));
+            }
+
+            public Result(params Statement[] statements) : this(null, statements) { }
+            public Result(IEnumerable<Statement> statements) : this(null, statements) { }
+            public Result(ILVariable output, params Statement[] statements) : this(output, statements.AsEnumerable()) { }
+            public Result(ILVariable output, IEnumerable<Statement> statements)
             {
                 this.Statements = statements.ToImmutableList();
+                this.Statements.ForEach(Assert.NotNull);
+                Assert.NotEqual(StackType.Void, output?.StackType);
                 this.Output = output;
             }
 
@@ -301,7 +510,7 @@ namespace Coberec.ExprCS.CodeTranslation
                     if (r.Statements != null) s = s.AddRange(r.Statements);
                     output = r.Output;
                 }
-                return new Result(s, output);
+                return new Result(output, s);
             }
         }
     }

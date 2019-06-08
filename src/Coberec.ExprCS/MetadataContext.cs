@@ -56,7 +56,7 @@ namespace Coberec.ExprCS
         readonly VirtualModule mutableModule;
         private readonly Dictionary<ModuleSignature, IModule> moduleMap;
         readonly ConcurrentDictionary<ITypeDefinition, TypeSignature> typeSignatureCache = new ConcurrentDictionary<ITypeDefinition, TypeSignature>();
-        TypeSignature TranslateType(ITypeDefinition t) =>
+        internal TypeSignature TranslateType(ITypeDefinition t) =>
             typeSignatureCache.GetOrAdd(t, type => {
                 var parent = type.DeclaringTypeDefinition != null ?
                              TypeOrNamespace.TypeSignature(TranslateType(type.DeclaringTypeDefinition)) :
@@ -130,7 +130,7 @@ namespace Coberec.ExprCS
                 parameter.Name
             );
 
-        TypeReference TranslateTypeReference(IType type) =>
+        internal TypeReference TranslateTypeReference(IType type) =>
             type is ITypeDefinition td ? TypeReference.SpecializedType(TranslateType(td), ImmutableArray<TypeReference>.Empty) :
             type is TS.ByReferenceType refType ? TypeReference.ByReferenceType(TranslateTypeReference(refType.ElementType)) :
             type is TS.PointerType ptrType ? TypeReference.PointerType(TranslateTypeReference(ptrType.ElementType)) :
@@ -197,6 +197,7 @@ namespace Coberec.ExprCS
             var xx = MetadataDefiner.CreateTypeDefinition(this, type);
             mutableModule.AddType(xx);
             MetadataDefiner.DefineTypeMembers(xx, this, type);
+            definedTypes.Add(type);
         }
 
         private CSharpEmitter BuildCore()

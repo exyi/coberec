@@ -83,5 +83,9 @@ namespace Coberec.CSharpGen
             @this.ContainsKey(key) ?
             @this :
             @this.Add(key, val);
+
+
+        public static HashSet<T> ToHashSet<T>(this IEnumerable<T> xs, IEqualityComparer<T> eq) => new HashSet<T>(xs, eq);
+        public static HashSet<T> ToHashSet<T>(this IEnumerable<T> xs) => new HashSet<T>(xs);
     }
 }

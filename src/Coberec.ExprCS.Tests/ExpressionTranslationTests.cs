@@ -31,6 +31,8 @@ namespace Coberec.ExprCS.Tests
 
         ParameterExpression p1 = ParameterExpression.Create(TypeSignature.Int32, "p1");
         ParameterExpression p2 = ParameterExpression.Create(TypeSignature.Int32, "p2");
+        ParameterExpression pBool1 = ParameterExpression.Create(TypeSignature.Boolean, "pBool1");
+        ParameterExpression pString1 = ParameterExpression.Create(TypeSignature.String, "pString1");
 
         public ExpressionTranslationTests()
         {
@@ -51,6 +53,49 @@ namespace Coberec.ExprCS.Tests
         {
             var cx = MkContext();
             cx.AddTestExpr(Expression.LetIn(p2, p1, p2), p1);
+            check.CheckOutput(cx);
+        }
+
+        [Fact]
+        public void MethodInvocation()
+        {
+            var cx = MkContext();
+
+            var intParse = cx.GetMemberMethods(TypeSignature.Int32).Single(m => m.Name == "Parse" && m.Args.Length == 1 && m.Args[0].Type == TypeSignature.String);
+            var stringConcat = cx.GetMemberMethods(TypeSignature.String).Single(m => m.Name == "Concat" && m.Args.Length == 2 && m.Args[0].Type == TypeSignature.String);
+
+            var concatCall = Expression.MethodCall(stringConcat, ImmutableArray.Create(Expression.Constant("123456789", TypeSignature.String), pString1), null);
+            var intMethod = Expression.MethodCall(intParse, ImmutableArray.Create(concatCall), null);
+            var voidMethod = Expression.Block(ImmutableArray.Create(intMethod), Expression.Default(TypeSignature.Void));
+
+            cx.AddTestExpr(intMethod, pString1);
+            cx.AddTestExpr(Expression.LetIn(pString1, Expression.Constant("5", TypeSignature.String), intMethod));
+            cx.AddTestExpr(voidMethod, pString1);
+            cx.AddTestExpr(Expression.Block(ImmutableArray.Create(concatCall), Expression.Default(TypeSignature.Void)), pString1);
+
+            check.CheckOutput(cx);
+        }
+
+        [Fact]
+        public void SimplestIfCondition()
+        {
+            var cx = MkContext();
+            var e = Expression.Conditional(pBool1, p1, p2);
+            cx.AddTestExpr(e, pBool1, p1, p2);
+            check.CheckOutput(cx);
+        }
+
+        [Fact]
+        public void InfiniteLoop()
+        {
+            var cx = MkContext();
+
+            var intParse = cx.GetMemberMethods(TypeSignature.Int32).Single(m => m.Name == "Parse" && m.Args.Length == 1 && m.Args[0].Type == TypeSignature.String);
+            var call = Expression.MethodCall(intParse, ImmutableArray.Create(Expression.Constant("123456789", TypeSignature.String)), null);
+
+            var loop = Expression.Loop(call);
+
+            cx.AddTestExpr(loop);
             check.CheckOutput(cx);
         }
     }

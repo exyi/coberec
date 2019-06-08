@@ -24,7 +24,7 @@ namespace Coberec.ExprCS
                 e => TypeSignature.Void,
                 e => e.Item.Expression.Type(),
                 e => TypeSignature.Void,
-                e => e.Item.Value.Type(),
+                e => e.Item.Target.Type(),
                 e => e.Item.Result.Type(),
                 e => e.Item.Type);
     }
