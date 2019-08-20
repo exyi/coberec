@@ -180,6 +180,7 @@ namespace Coberec.ExprCS.CodeTranslation
             var value = TranslateExpression(e.Value, cx);
 
             Assert.NotNull(value.Output);
+            Assert.NotEqual(TypeSignature.Void, e.Variable.Type); // TODO: add support for voids?
             Assert.Equal(value.Output.Type, cx.Metadata.GetTypeReference(e.Variable.Type));
 
             var ilVar = new ILVariable(VariableKind.Local, value.Output.Type);
@@ -215,10 +216,10 @@ namespace Coberec.ExprCS.CodeTranslation
         private static Result TranslateBreakable(BreakableExpression e, MethodContext cx)
         {
             var endBlock = new Block();
-            var resultVariable = e.Label.Type == TypeSignature.Void ?
-                                 null :
-                                 new ILVariable(VariableKind.Local, cx.Metadata.GetTypeReference(e.Label.Type));
+            var resultVariable = CreateOutputVar(e.Label.Type, cx);
+            cx.BreakTargets.Add(e.Label, (endBlock, resultVariable));
             var expr = TranslateExpression(e.Expression, cx);
+            Debug.Assert(cx.BreakTargets.Remove(e.Label));
 
             return
                 Result.Concat(
@@ -229,6 +230,11 @@ namespace Coberec.ExprCS.CodeTranslation
                     )
                 );
         }
+
+        private static ILVariable CreateOutputVar(TypeReference type, MethodContext cx) =>
+            type == TypeSignature.Void ?
+                null :
+                new ILVariable(VariableKind.Local, cx.Metadata.GetTypeReference(type));
 
         private static Result TranslateBreak(BreakExpression e, MethodContext cx)
         {
@@ -282,14 +288,26 @@ namespace Coberec.ExprCS.CodeTranslation
             var ifTrue = TranslateExpression(item.IfTrue, cx);
             var ifFalse = TranslateExpression(item.IfFalse, cx);
 
-            var resultVar = new ILVariable(VariableKind.Local, cx.Metadata.GetTypeReference(item.IfTrue.Type()));
+            var resultVar = CreateOutputVar(item.IfTrue.Type(), cx);
 
-            Result copyOutput(ILVariable output) => output == null ? Result.Nop : new Result(new ExpressionStatement(new StLoc(resultVar, new LdLoc(ifTrue.Output))));
+            Result copyOutput(ILVariable output)
+            {
+                if (output == null)
+                {
+                    Assert.Null(resultVar);
+                    return Result.Nop;
+                }
+                else
+                {
+                    Assert.NotNull(resultVar);
+                    return new Result(new ExpressionStatement(new StLoc(resultVar, new LdLoc(ifTrue.Output))));
+                }
+            }
 
             var ifTrueC = BuildBContainer(
                 Result.Concat(ifTrue, copyOutput(ifTrue.Output)),
                 cx);
-            var ifFalseC = BuildBContainer(
+            var ifFalseC = ifFalse.IsNop ? null : BuildBContainer(
                 Result.Concat(ifFalse, copyOutput(ifFalse.Output)),
                 cx);
 
@@ -482,6 +500,7 @@ namespace Coberec.ExprCS.CodeTranslation
             public readonly ILVariable Output;
 
             public static Result Nop = new Result();
+            public bool IsNop => this.Statements.Count == 0 && Output is null;
 
             public static Result Expression(IType type, ILInstruction i)
             {

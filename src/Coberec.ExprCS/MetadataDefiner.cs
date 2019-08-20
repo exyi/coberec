@@ -45,12 +45,19 @@ namespace Coberec.ExprCS
         {
             var t = cx.GetTypeReference(method.DeclaringType); // TODO: generic methos
             // TODO: constructors, accessors and stuff
+            bool filter(IMethod m) => m.Name == method.Name &&
+                                      m.Parameters.Count == method.Args.Length &&
+                                      m.Parameters.Select(p => cx.TranslateTypeReference(p.Type)).SequenceEqual(method.Args.Select(a => a.Type));
+
             var candidates =
-                t.GetMethods(filter: m => m.Name == method.Name &&
-                                          m.Parameters.Count == method.Args.Length &&
-                                          m.Parameters.Select(p => cx.TranslateTypeReference(p.Type)).SequenceEqual(method.Args.Select(a => a.Type)),
-                             GetMemberOptions.None).ToArray();
-            if (candidates.Length == 0)
+               (!method.HasSpecialName ? t.GetMethods(filter, GetMemberOptions.None) :
+                method.Name == ".ctor" ? t.GetConstructors(filter, GetMemberOptions.None) :
+                method.Name.StartsWith("get_") ? t.GetProperties(p => filter(p.Getter)).Select(p => p.Getter) :
+                method.Name.StartsWith("set_") ? t.GetProperties(p => filter(p.Setter)).Select(p => p.Setter) :
+                throw new NotSupportedException($"Special name {method.Name} is not supported"))
+               .ToList();
+
+            if (candidates.Count == 0)
                 throw new Exception($"Method {method.Name} was not found on type {method.DeclaringType}. Method signature is {method}");
 
             return candidates.OrderByDescending(m => m.DeclaringType.GetAllBaseTypes().Count())

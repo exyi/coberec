@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Coberec.CoreLib;
 
 namespace Coberec.ExprCS
 {
@@ -27,5 +28,13 @@ namespace Coberec.ExprCS
                 e => e.Item.Target.Type(),
                 e => e.Item.Result.Type(),
                 e => e.Item.Type);
+
+        public static Expression IfThen(Expression condition, Expression block)
+        {
+            if (block.Type() != TypeSignature.Void)
+                throw new ValidationErrorException(ValidationErrors.Create("Block of a IfThen expression must be void.").Nest("ifTrue"));
+
+            return Expression.Conditional(condition, block, Expression.Default(TypeSignature.Void));
+        }
     }
 }

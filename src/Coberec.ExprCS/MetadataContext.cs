@@ -14,6 +14,7 @@ using Coberec.CSharpGen.Emit;
 using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.CSharp;
 using ICSharpCode.Decompiler.CSharp.OutputVisitor;
+using Coberec.CSharpGen;
 
 namespace Coberec.ExprCS
 {
@@ -77,7 +78,7 @@ namespace Coberec.ExprCS
                     m.IsVirtual,
                     m.IsOverride,
                     m.IsAbstract,
-                    m.Name.Contains("."), // TODO: fix this heuristic
+                    m.IsConstructor || m.IsAccessor || m.IsOperator || m.IsDestructor,
                     m.TypeParameters.Select(TranslateGenericParameter).ToImmutableArray()
                 )
             );
@@ -92,6 +93,20 @@ namespace Coberec.ExprCS
                     TranslateTypeReference(f.ReturnType),
                     f.IsStatic,
                     f.IsReadOnly
+                )
+            );
+
+        readonly ConcurrentDictionary<IProperty, PropertySignature> propSignatureCache = new ConcurrentDictionary<IProperty, PropertySignature>();
+        PropertySignature TranslateProperty(IProperty property) =>
+            propSignatureCache.GetOrAdd(property, p =>
+                new PropertySignature(
+                    TranslateType(p.DeclaringType.GetDefinition()),
+                    TranslateTypeReference(p.ReturnType),
+                    p.Name,
+                    TranslateAccessibility(p.Accessibility),
+                    p.IsStatic,
+                    p.Getter?.Apply(TranslateMethod),
+                    p.Setter?.Apply(TranslateMethod)
                 )
             );
 
@@ -180,13 +195,17 @@ namespace Coberec.ExprCS
         }
 
         public IEnumerable<MethodSignature> GetMemberMethods(TypeSignature type) =>
-            GetTypeDef(type).GetMethods().Select(TranslateMethod);
+            GetTypeDef(type).GetMethods(null, GetMemberOptions.IgnoreInheritedMembers).Select(TranslateMethod);
 
         public IEnumerable<FieldSignature> GetMemberFields(TypeSignature type) =>
-            GetTypeDef(type).GetFields().Select(TranslateField);
+            GetTypeDef(type).GetFields(null, GetMemberOptions.IgnoreInheritedMembers).Select(TranslateField);
+
+        public IEnumerable<PropertySignature> GetMemberProperties(TypeSignature type) =>
+            GetTypeDef(type).GetProperties(null, GetMemberOptions.IgnoreInheritedMembers).Select(TranslateProperty);
 
         public IEnumerable<MemberSignature> GetMembers(TypeSignature type) =>
             GetMemberMethods(type).AsEnumerable<MemberSignature>()
+            .Concat(GetMemberProperties(type))
             .Concat(GetMemberFields(type));
 
         private List<TypeDef> definedTypes = new List<TypeDef>();

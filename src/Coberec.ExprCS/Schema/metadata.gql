@@ -81,3 +81,13 @@ type FieldSignature implements MemberSignature {
     isStatic: Boolean
     isReadonly: Boolean
 }
+
+type PropertySignature implements MemberSignature {
+    declaringType: TypeSignature
+    type: TypeReference
+    name: String
+    accessibility: Accessibility
+    isStatic: Boolean
+    getter: MethodSignature!
+    setter: MethodSignature!
+}

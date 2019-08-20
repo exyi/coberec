@@ -89,13 +89,67 @@ namespace Coberec.ExprCS.Tests
         public void InfiniteLoop()
         {
             var cx = MkContext();
-
-            var intParse = cx.GetMemberMethods(TypeSignature.Int32).Single(m => m.Name == "Parse" && m.Args.Length == 1 && m.Args[0].Type == TypeSignature.String);
-            var call = Expression.MethodCall(intParse, ImmutableArray.Create(Expression.Constant("123456789", TypeSignature.String)), null);
+            var call = ExampleMethodCall(cx);
 
             var loop = Expression.Loop(call);
 
             cx.AddTestExpr(loop);
+            check.CheckOutput(cx);
+        }
+
+        private static Expression ExampleMethodCall(MetadataContext cx)
+        {
+            var intParse = cx.GetMemberMethods(TypeSignature.Int32).Single(m => m.Name == "Parse" && m.Args.Length == 1 && m.Args[0].Type == TypeSignature.String);
+            return Expression.MethodCall(intParse, ImmutableArray.Create(Expression.Constant("123456789", TypeSignature.String)), null);
+        }
+
+        private static Expression MakeExampleBreak(MetadataContext cx, LabelTarget label)
+        {
+            var call = ExampleMethodCall(cx);
+
+            var thread = cx.FindTypeDef(typeof(System.Threading.Thread));
+            var currentThread = cx.GetMemberProperties(thread).Single(m => m.Name == "CurrentThread").Getter;
+            var isBackground = cx.GetMemberProperties(((TypeReference.SpecializedTypeCase)currentThread.ResultType).Item.Type).Single(m => m.Name == "IsBackground").Getter;
+            var condition = Expression.MethodCall(isBackground, ImmutableArray<Expression>.Empty, Expression.MethodCall(currentThread, ImmutableArray<Expression>.Empty, null));
+
+            var ifBlock = Expression.IfThen(
+                condition,
+                Expression.Break(Expression.Default(TypeSignature.Void), label));
+
+            return Expression.Block(ImmutableArray.Create<Expression>(
+                call,
+                ifBlock,
+                call
+            ), Expression.Default(TypeSignature.Void));
+        }
+
+        [Fact]
+        public void Breakable()
+        {
+            var cx = MkContext();
+            LabelTarget label = LabelTarget.New("l");
+            Expression @break = MakeExampleBreak(cx, label);
+
+            var b = Expression.Breakable(@break, label);
+            cx.AddTestExpr(b);
+            check.CheckOutput(cx);
+        }
+
+        [Fact]
+        public void BreakableInsideBlock()
+        {
+            var cx = MkContext();
+            LabelTarget label = LabelTarget.New("l");
+            Expression @break = MakeExampleBreak(cx, label);
+
+            var bb = Expression.Breakable(@break, label);
+            var call = ExampleMethodCall(cx);
+
+            var block = Expression.Block(ImmutableArray.Create<Expression>(
+                bb,
+                call
+            ), Expression.Constant(12, TypeSignature.Int32));
+            cx.AddTestExpr(block);
             check.CheckOutput(cx);
         }
     }
