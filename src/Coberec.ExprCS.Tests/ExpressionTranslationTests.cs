@@ -97,20 +97,16 @@ namespace Coberec.ExprCS.Tests
             check.CheckOutput(cx);
         }
 
-        private static Expression ExampleMethodCall(MetadataContext cx)
+        static Expression ExampleMethodCall(MetadataContext cx)
         {
             var intParse = cx.GetMemberMethods(TypeSignature.Int32).Single(m => m.Name == "Parse" && m.Args.Length == 1 && m.Args[0].Type == TypeSignature.String);
             return Expression.MethodCall(intParse, ImmutableArray.Create(Expression.Constant("123456789", TypeSignature.String)), null);
         }
 
-        private static Expression MakeExampleBreak(MetadataContext cx, LabelTarget label)
+        static Expression MakeExampleBreak(MetadataContext cx, LabelTarget label)
         {
             var call = ExampleMethodCall(cx);
-
-            var thread = cx.FindTypeDef(typeof(System.Threading.Thread));
-            var currentThread = cx.GetMemberProperties(thread).Single(m => m.Name == "CurrentThread").Getter;
-            var isBackground = cx.GetMemberProperties(((TypeReference.SpecializedTypeCase)currentThread.ResultType).Item.Type).Single(m => m.Name == "IsBackground").Getter;
-            var condition = Expression.MethodCall(isBackground, ImmutableArray<Expression>.Empty, Expression.MethodCall(currentThread, ImmutableArray<Expression>.Empty, null));
+            var condition = ExampleCondition(cx);
 
             var ifBlock = Expression.IfThen(
                 condition,
@@ -121,6 +117,15 @@ namespace Coberec.ExprCS.Tests
                 ifBlock,
                 call
             ), Expression.Default(TypeSignature.Void));
+        }
+
+        static Expression ExampleCondition(MetadataContext cx)
+        {
+            var thread = cx.FindTypeDef(typeof(System.Threading.Thread));
+            var currentThread = cx.GetMemberProperties(thread).Single(m => m.Name == "CurrentThread").Getter;
+            var isBackground = cx.GetMemberProperties(((TypeReference.SpecializedTypeCase)currentThread.ResultType).Item.Type).Single(m => m.Name == "IsBackground").Getter;
+            var condition = Expression.MethodCall(isBackground, ImmutableArray<Expression>.Empty, Expression.MethodCall(currentThread, ImmutableArray<Expression>.Empty, null));
+            return condition;
         }
 
         [Fact]
@@ -150,6 +155,15 @@ namespace Coberec.ExprCS.Tests
                 call
             ), Expression.Constant(12, TypeSignature.Int32));
             cx.AddTestExpr(block);
+            check.CheckOutput(cx);
+        }
+
+        [Fact]
+        public void WhileLoop()
+        {
+            var cx = MkContext();
+            var e = Expression.While(ExampleCondition(cx), ExampleMethodCall(cx));
+            cx.AddTestExpr(e);
             check.CheckOutput(cx);
         }
     }

@@ -52,6 +52,34 @@ namespace Coberec.ExprCS.CodeTranslation
             return b.Instructions.LastOrDefault()?.HasFlag(InstructionFlags.EndPointUnreachable) != true;
         }
 
+        static ILInstruction ToILInstruction(Result r, MethodContext cx, ILVariable resultVar)
+        {
+            Result copyOutput(ILVariable output)
+            {
+                if (output == null)
+                {
+                    Assert.Null(resultVar);
+                    return Result.Nop;
+                }
+                else
+                {
+                    Assert.NotNull(resultVar);
+                    return new Result(new ExpressionStatement(new StLoc(resultVar, new LdLoc(output))));
+                }
+            }
+
+            if (r.Output == null && r.Statements.Count == 1 && r.Statements[0] is ExpressionStatement expr)
+            {
+                Assert.Null(expr.Output);
+                Assert.Null(resultVar);
+                return expr.Instruction;
+            }
+
+            return BuildBContainer(
+                Result.Concat(r, copyOutput(r.Output)),
+                cx);
+        }
+
         static BlockContainer BuildBContainer(Result r, MethodContext cx)
         {
             var isVoid = r.Output == null;
@@ -148,6 +176,7 @@ namespace Coberec.ExprCS.CodeTranslation
         static Result TranslateExpression(Expression expr, MethodContext cx) =>
             expr.Match(
                 e => TranslateBinary(e.Item, cx),
+                e => TranslateNot(e.Item, cx),
                 e => TranslateMethodCall(e.Item, cx),
                 e => TranslateNewObject(e.Item, cx),
                 e => TranslateFieldAccess(e.Item, cx),
@@ -166,6 +195,17 @@ namespace Coberec.ExprCS.CodeTranslation
                 e => TranslateLetIn(e.Item, cx),
                 e => TranslateBlock(e.Item, cx),
                 e => TranslateLowerable(e.Item, cx));
+
+        private static Result TranslateNot(NotExpression item, MethodContext cx)
+        {
+            var r = TranslateExpression(item.Expr, cx);
+            Assert.NotNull(r.Output);
+            var expr = Comp.LogicNot(new LdLoc(r.Output));
+            return Result.Concat(
+                r,
+                Result.Expression(r.Output.Type, expr)
+            );
+        }
 
         private static Result TranslateLowerable(LowerableExpression e, MethodContext cx) =>
             TranslateExpression(e.Lowered, cx);
@@ -290,26 +330,8 @@ namespace Coberec.ExprCS.CodeTranslation
 
             var resultVar = CreateOutputVar(item.IfTrue.Type(), cx);
 
-            Result copyOutput(ILVariable output)
-            {
-                if (output == null)
-                {
-                    Assert.Null(resultVar);
-                    return Result.Nop;
-                }
-                else
-                {
-                    Assert.NotNull(resultVar);
-                    return new Result(new ExpressionStatement(new StLoc(resultVar, new LdLoc(ifTrue.Output))));
-                }
-            }
-
-            var ifTrueC = BuildBContainer(
-                Result.Concat(ifTrue, copyOutput(ifTrue.Output)),
-                cx);
-            var ifFalseC = ifFalse.IsNop ? null : BuildBContainer(
-                Result.Concat(ifFalse, copyOutput(ifFalse.Output)),
-                cx);
+            var ifTrueC = ToILInstruction(ifTrue, cx, resultVar);
+            var ifFalseC = ifFalse.IsNop ? null : ToILInstruction(ifFalse, cx, resultVar);
 
             return Result.Concat(
                 condition,

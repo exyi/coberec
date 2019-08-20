@@ -11,7 +11,7 @@ namespace NS
 			}
 			else
 			{
-				result = p1;
+				result = p2;
 			}
 			return result;
 		}

@@ -4,6 +4,10 @@ type BinaryExpression {
     right: Expression
 }
 
+type NotExpression {
+    expr: Expression
+}
+
 type MethodCallExpression {
     method: MethodSignature
     args: [Expression]
@@ -124,6 +128,7 @@ interface LowerableExpression {
 
 union Expression =
       BinaryExpression
+    | NotExpression
     | MethodCallExpression
     | NewObjectExpression
     | FieldAccessExpression
