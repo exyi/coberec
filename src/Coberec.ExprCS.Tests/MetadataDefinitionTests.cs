@@ -10,7 +10,7 @@ namespace Coberec.ExprCS.Tests
     public class MetadataDefinitionTests
     {
         OutputChecker check = new OutputChecker("testoutput");
-        MetadataContext MkContext() => MetadataContext.Create("MyModule");
+        MetadataContext cx = MetadataContext.Create("MyModule");
         [Fact]
         public void OneEmptyType()
         {
@@ -25,7 +25,6 @@ namespace Coberec.ExprCS.Tests
             );
             var typeDef = TypeDef.Empty(type);
 
-            var cx = MkContext();
             cx.AddType(typeDef);
             check.CheckOutput(cx);
         }
@@ -56,7 +55,6 @@ namespace Coberec.ExprCS.Tests
                 new TypeDef(type2, new SpecializedType(type1, ImmutableArray<TypeReference>.Empty), ImmutableArray<SpecializedType>.Empty, ImmutableArray<MemberDef>.Empty)
             ));
 
-            var cx = MkContext();
             cx.AddType(typeDef);
 
             cx.AddType(typeDef.With(signature: typeDef.Signature.With(name: "MyType2"), extends: new SpecializedType(type2, ImmutableArray<TypeReference>.Empty)));
@@ -76,7 +74,6 @@ namespace Coberec.ExprCS.Tests
                 Accessibility.APublic,
                 0
             );
-            var cx = MkContext();
             var iequatableT = cx.FindTypeDef(typeof(IEquatable<>));
             var method = new MethodSignature(type, ImmutableArray.Create(new MethodArgument(type, "obj")), "Equals", cx.FindType(typeof(bool)), false, Accessibility.APublic, false, false, false, false, ImmutableArray<GenericParameter>.Empty);
             var parameter = new ParameterExpression(Guid.NewGuid(), "obj", type, false);
@@ -94,7 +91,6 @@ namespace Coberec.ExprCS.Tests
         [Fact]
         public void FewFields()
         {
-            var cx = MkContext();
 
             var stringT = cx.FindType(typeof(string));
             var stringArr = cx.FindType(typeof(string[]));

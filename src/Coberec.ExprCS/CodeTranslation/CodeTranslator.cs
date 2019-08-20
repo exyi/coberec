@@ -12,47 +12,49 @@ using IL=ICSharpCode.Decompiler.IL;
 
 namespace Coberec.ExprCS.CodeTranslation
 {
-    public static class CodeTranslator
+    partial class CodeTranslator
     {
         public static ILFunction CreateBody(MethodDef method, IMethod generatedMethod, MetadataContext cx)
         {
-            var methodCx = new MethodContext { Method = method, Metadata = cx, GeneratedMethod = generatedMethod };
+            var translator = new CodeTranslator(method, generatedMethod, cx);
             if (!method.Signature.IsStatic)
             {
                 Assert.Equal(method.Signature.DeclaringType, method.ArgumentParams.First().Type);
-                methodCx.Parameters.Add(
+                translator.Parameters.Add(
                     method.ArgumentParams.First().Id,
                     new ILVariable(VariableKind.Parameter, cx.GetTypeDef(method.Signature.DeclaringType), -1) { Name = "this" });
             }
             foreach (var (i, (arg, param)) in method.ArgumentParams.Skip(method.Signature.IsStatic ? 0 : 1).ZipTuples(method.Signature.Args).Indexed())
             {
                 Assert.Equal(arg.Type, param.Type);
-                methodCx.Parameters.Add(
+                translator.Parameters.Add(
                     arg.Id,
                     new ILVariable(VariableKind.Parameter, cx.GetTypeReference(param.Type), i) { Name = arg.Name });
             }
-            var verificationVarCopy = methodCx.Parameters.Keys.ToHashSet();
+            var verificationVarCopy = translator.Parameters.Keys.ToHashSet();
 
-            var statements = TranslateExpression(method.Body, methodCx);
+            var statements = translator.TranslateExpression(method.Body);
 
-            Assert.Empty(methodCx.BreakTargets);
-            Assert.Equal(verificationVarCopy, methodCx.Parameters.Keys.ToHashSet());
+            Assert.Empty(translator.BreakTargets);
+            Assert.Equal(verificationVarCopy, translator.Parameters.Keys.ToHashSet());
 
-            return BuildTheFunction(statements, methodCx);
+            return translator.BuildTheFunction(statements);
         }
 
-        static void AddLeaveInstruction(this Block b, Block nextBlock)
+        private CodeTranslator(MethodDef method, IMethod generatedMethod, MetadataContext cx)
         {
-            if (b.HasReachableEndpoint())
-                b.Instructions.Add(new Branch(nextBlock));
+            this.Method = method;
+            this.GeneratedMethod = generatedMethod;
+            this.Metadata = cx;
         }
 
-        static bool HasReachableEndpoint(this Block b)
-        {
-            return b.Instructions.LastOrDefault()?.HasFlag(InstructionFlags.EndPointUnreachable) != true;
-        }
+        readonly MetadataContext Metadata;
+        readonly MethodDef Method;
+        readonly IMethod GeneratedMethod;
+        readonly Dictionary<Guid, ILVariable> Parameters = new Dictionary<Guid, ILVariable>();
+        readonly Dictionary<LabelTarget, (Block nextBlock, ILVariable resultVariable)> BreakTargets = new Dictionary<LabelTarget, (Block nextBlock, ILVariable resultVariable)>();
 
-        static ILInstruction ToILInstruction(Result r, MethodContext cx, ILVariable resultVar)
+        ILInstruction ToILInstruction(Result r, ILVariable resultVar)
         {
             Result copyOutput(ILVariable output)
             {
@@ -75,12 +77,11 @@ namespace Coberec.ExprCS.CodeTranslation
                 return expr.Instruction;
             }
 
-            return BuildBContainer(
-                Result.Concat(r, copyOutput(r.Output)),
-                cx);
+            return this.BuildBContainer(
+                Result.Concat(r, copyOutput(r.Output)));
         }
 
-        static BlockContainer BuildBContainer(Result r, MethodContext cx)
+        BlockContainer BuildBContainer(Result r)
         {
             var isVoid = r.Output == null;
             var container = new IL.BlockContainer(expectedResultType: isVoid ? IL.StackType.Void : r.Output.StackType);
@@ -133,22 +134,22 @@ namespace Coberec.ExprCS.CodeTranslation
             return container;
         }
 
-        static ILFunction BuildTheFunction(Result r, MethodContext cx)
+        ILFunction BuildTheFunction(Result r)
         {
-            var isVoid = cx.GeneratedMethod.ReturnType.FullName == "System.Void";
+            var isVoid = GeneratedMethod.ReturnType.FullName == "System.Void";
 
             Assert.Equal(isVoid, r.Output == null);
 
-            var functionContainer = BuildBContainer(r, cx);
+            var functionContainer = this.BuildBContainer(r);
 
             var variables = new VariableCollectingVisitor();
             r.Output?.Apply(variables.Variables.Add);
-            foreach (var p in cx.Parameters)
+            foreach (var p in this.Parameters)
                 variables.Variables.Add(p.Value);
 
             functionContainer.AcceptVisitor(variables);
 
-            var ilFunc = new IL.ILFunction(cx.GeneratedMethod, 10000, new ICSharpCode.Decompiler.TypeSystem.GenericContext(), functionContainer);
+            var ilFunc = new IL.ILFunction(this.GeneratedMethod, 10000, new ICSharpCode.Decompiler.TypeSystem.GenericContext(), functionContainer);
 
             foreach (var i in variables.Variables)
                 if (i.Function == null)
@@ -173,32 +174,32 @@ namespace Coberec.ExprCS.CodeTranslation
             }
         }
 
-        static Result TranslateExpression(Expression expr, MethodContext cx) =>
+        Result TranslateExpression(Expression expr) =>
             expr.Match(
-                e => TranslateBinary(e.Item, cx),
-                e => TranslateNot(e.Item, cx),
-                e => TranslateMethodCall(e.Item, cx),
-                e => TranslateNewObject(e.Item, cx),
-                e => TranslateFieldAccess(e.Item, cx),
-                e => TranslateFieldAssign(e.Item, cx),
-                e => TranslateNumericConversion(e.Item, cx),
-                e => TranslateReferenceConversion(e.Item, cx),
-                e => TranslateConstant(e.Item, cx),
-                e => TranslateDefault(e.Item, cx),
-                e => TranslateParameter(e.Item, cx),
-                e => TranslateConditional(e.Item, cx),
-                e => TranslateFunction(e.Item, cx),
-                e => TranslateInvoke(e.Item, cx),
-                e => TranslateBreak(e.Item, cx),
-                e => TranslateBreakable(e.Item, cx),
-                e => TranslateLoop(e.Item, cx),
-                e => TranslateLetIn(e.Item, cx),
-                e => TranslateBlock(e.Item, cx),
-                e => TranslateLowerable(e.Item, cx));
+                e => TranslateBinary(e.Item),
+                e => TranslateNot(e.Item),
+                e => TranslateMethodCall(e.Item),
+                e => TranslateNewObject(e.Item),
+                e => TranslateFieldAccess(e.Item),
+                e => TranslateFieldAssign(e.Item),
+                e => TranslateNumericConversion(e.Item),
+                e => TranslateReferenceConversion(e.Item),
+                e => TranslateConstant(e.Item),
+                e => TranslateDefault(e.Item),
+                e => TranslateParameter(e.Item),
+                e => TranslateConditional(e.Item),
+                e => TranslateFunction(e.Item),
+                e => TranslateInvoke(e.Item),
+                e => TranslateBreak(e.Item),
+                e => TranslateBreakable(e.Item),
+                e => TranslateLoop(e.Item),
+                e => TranslateLetIn(e.Item),
+                e => TranslateBlock(e.Item),
+                e => TranslateLowerable(e.Item));
 
-        private static Result TranslateNot(NotExpression item, MethodContext cx)
+        Result TranslateNot(NotExpression item)
         {
-            var r = TranslateExpression(item.Expr, cx);
+            var r = this.TranslateExpression(item.Expr);
             Assert.NotNull(r.Output);
             var expr = Comp.LogicNot(new LdLoc(r.Output));
             return Result.Concat(
@@ -207,39 +208,37 @@ namespace Coberec.ExprCS.CodeTranslation
             );
         }
 
-        private static Result TranslateLowerable(LowerableExpression e, MethodContext cx) =>
-            TranslateExpression(e.Lowered, cx);
+        Result TranslateLowerable(LowerableExpression e) =>
+            this.TranslateExpression(e.Lowered);
 
-        private static Result TranslateBlock(BlockExpression block, MethodContext cx)
-        {
-            return block.Expressions.Append(block.Result).Select(e => TranslateExpression(e, cx)).Apply(Result.Concat);
-        }
+        Result TranslateBlock(BlockExpression block) =>
+            block.Expressions.Append(block.Result).Select(TranslateExpression).Apply(Result.Concat);
 
-        private static Result TranslateLetIn(LetInExpression e, MethodContext cx)
+        Result TranslateLetIn(LetInExpression e)
         {
-            var value = TranslateExpression(e.Value, cx);
+            var value = this.TranslateExpression(e.Value);
 
             Assert.NotNull(value.Output);
             Assert.NotEqual(TypeSignature.Void, e.Variable.Type); // TODO: add support for voids?
-            Assert.Equal(value.Output.Type, cx.Metadata.GetTypeReference(e.Variable.Type));
+            Assert.Equal(value.Output.Type, this.Metadata.GetTypeReference(e.Variable.Type));
 
             var ilVar = new ILVariable(VariableKind.Local, value.Output.Type);
             ilVar.Name = e.Variable.Name;
-            cx.Parameters.Add(e.Variable.Id, ilVar);
-            var target = TranslateExpression(e.Target, cx);
-            cx.Parameters.Remove(e.Variable.Id);
+            this.Parameters.Add(e.Variable.Id, ilVar);
+            var target = this.TranslateExpression(e.Target);
+            this.Parameters.Remove(e.Variable.Id);
             return Result.Concat(
                 value,
                 new Result(ImmutableList.Create<Statement>(new ExpressionStatement(new StLoc(ilVar, new LdLoc(value.Output))))),
                 target);
         }
 
-        private static Result TranslateLoop(LoopExpression e, MethodContext cx)
+        Result TranslateLoop(LoopExpression e)
         {
             var startBlock = new Block();
-            var expr = TranslateExpression(e.Body, cx);
+            var expr = this.TranslateExpression(e.Body);
 
-            var bc = BuildBContainer(
+            var bc = this.BuildBContainer(
                 Result.Concat(
                     new Result(
                         new BasicBlockStatement(startBlock)
@@ -248,18 +247,17 @@ namespace Coberec.ExprCS.CodeTranslation
                     new Result(
                         new ExpressionStatement(new Branch(startBlock))
                     )
-                ),
-                cx);
+                ));
             return new Result(new ExpressionStatement(bc));
         }
 
-        private static Result TranslateBreakable(BreakableExpression e, MethodContext cx)
+        Result TranslateBreakable(BreakableExpression e)
         {
             var endBlock = new Block();
-            var resultVariable = CreateOutputVar(e.Label.Type, cx);
-            cx.BreakTargets.Add(e.Label, (endBlock, resultVariable));
-            var expr = TranslateExpression(e.Expression, cx);
-            Debug.Assert(cx.BreakTargets.Remove(e.Label));
+            var resultVariable = this.CreateOutputVar(e.Label.Type);
+            this.BreakTargets.Add(e.Label, (endBlock, resultVariable));
+            var expr = this.TranslateExpression(e.Expression);
+            Assert.True(this.BreakTargets.Remove(e.Label));
 
             return
                 Result.Concat(
@@ -271,20 +269,20 @@ namespace Coberec.ExprCS.CodeTranslation
                 );
         }
 
-        private static ILVariable CreateOutputVar(TypeReference type, MethodContext cx) =>
+        ILVariable CreateOutputVar(TypeReference type) =>
             type == TypeSignature.Void ?
                 null :
-                new ILVariable(VariableKind.Local, cx.Metadata.GetTypeReference(type));
+                new ILVariable(VariableKind.Local, this.Metadata.GetTypeReference(type));
 
-        private static Result TranslateBreak(BreakExpression e, MethodContext cx)
+        Result TranslateBreak(BreakExpression e)
         {
-            var (endBlock, resultVar) = cx.BreakTargets[e.Target];
+            var (endBlock, resultVar) = this.BreakTargets[e.Target];
             var breakStmt = new ExpressionStatement(new IL.Branch(endBlock));
             Assert.Equal(e.Target.Type, e.Value.Type());
             if (e.Target.Type == TypeSignature.Void)
             {
                 Assert.Null(resultVar);
-                var value = TranslateExpression(e.Value, cx);
+                var value = this.TranslateExpression(e.Value);
                 Assert.Null(value.Output);
                 return Result.Concat(
                     value,
@@ -293,7 +291,7 @@ namespace Coberec.ExprCS.CodeTranslation
             }
             else
             {
-                var value = TranslateExpression(e.Value, cx);
+                var value = this.TranslateExpression(e.Value);
 
                 Assert.NotNull(value.Output);
                 Assert.NotNull(resultVar);
@@ -308,30 +306,30 @@ namespace Coberec.ExprCS.CodeTranslation
             };
         }
 
-        private static Result TranslateInvoke(InvokeExpression item, MethodContext cx)
+        private static Result TranslateInvoke(InvokeExpression item)
         {
             throw new NotImplementedException();
         }
 
-        private static Result TranslateFunction(FunctionExpression item, MethodContext cx)
+        private static Result TranslateFunction(FunctionExpression item)
         {
             throw new NotImplementedException();
         }
 
-        private static Result TranslateConditional(ConditionalExpression item, MethodContext cx)
+        Result TranslateConditional(ConditionalExpression item)
         {
             // TODO: shortcut for simplest expressions
             Assert.Equal(item.IfTrue.Type(), item.IfFalse.Type());
 
-            var condition = TranslateExpression(item.Condition, cx);
+            var condition = this.TranslateExpression(item.Condition);
             Assert.NotNull(condition.Output);
-            var ifTrue = TranslateExpression(item.IfTrue, cx);
-            var ifFalse = TranslateExpression(item.IfFalse, cx);
+            var ifTrue = this.TranslateExpression(item.IfTrue);
+            var ifFalse = this.TranslateExpression(item.IfFalse);
 
-            var resultVar = CreateOutputVar(item.IfTrue.Type(), cx);
+            var resultVar = this.CreateOutputVar(item.IfTrue.Type());
 
-            var ifTrueC = ToILInstruction(ifTrue, cx, resultVar);
-            var ifFalseC = ifFalse.IsNop ? null : ToILInstruction(ifFalse, cx, resultVar);
+            var ifTrueC = this.ToILInstruction(ifTrue, resultVar);
+            var ifFalseC = ifFalse.IsNop ? null : this.ToILInstruction(ifFalse, resultVar);
 
             return Result.Concat(
                 condition,
@@ -367,31 +365,31 @@ namespace Coberec.ExprCS.CodeTranslation
             // );
         }
 
-        private static Result TranslateParameter(ParameterExpression pe, MethodContext cx)
+        Result TranslateParameter(ParameterExpression pe)
         {
-            var v = cx.Parameters[pe.Id];
+            var v = this.Parameters[pe.Id];
             return new Result(v);
         }
 
-        private static Result TranslateDefault(DefaultExpression e, MethodContext cx)
+        Result TranslateDefault(DefaultExpression e)
         {
             if (e.Type == TypeSignature.Void)
                 return new Result();
             else
             {
-                var type = cx.Metadata.GetTypeReference(e.Type);
+                var type = this.Metadata.GetTypeReference(e.Type);
                 return Result.Expression(type, new IL.DefaultValue(type));
             }
         }
 
-        private static Result TranslateReferenceConversion(ReferenceConversionExpression e, MethodContext cx)
+        Result TranslateReferenceConversion(ReferenceConversionExpression e)
         {
             // TODO: validate
 
-            var value = TranslateExpression(e.Value, cx);
-            var to = cx.Metadata.GetTypeReference(e.Type);
+            var value = this.TranslateExpression(e.Value);
+            var to = this.Metadata.GetTypeReference(e.Type);
 
-            var conversion = cx.Metadata.CSharpConversions.ExplicitConversion(value.Output.Type, to);
+            var conversion = this.Metadata.CSharpConversions.ExplicitConversion(value.Output.Type, to);
             if (!conversion.IsValid)
                 throw new Exception($"There isn't any valid conversion from {value.Output.Type} to {to}.");
             if (!conversion.IsReferenceConversion)
@@ -404,15 +402,15 @@ namespace Coberec.ExprCS.CodeTranslation
             );
         }
 
-        private static Result TranslateNumericConversion(NumericConversionExpression e, MethodContext cx)
+        Result TranslateNumericConversion(NumericConversionExpression e)
         {
-            var to = cx.Metadata.GetTypeReference(e.Type);
+            var to = this.Metadata.GetTypeReference(e.Type);
 
             var targetPrimitive = to.GetDefinition().KnownTypeCode.ToPrimitiveType();
             if (targetPrimitive == PrimitiveType.None)
                 throw new NotSupportedException($"Primitive type {to} is not supported.");
 
-            var value = TranslateExpression(e.Value, cx);
+            var value = this.TranslateExpression(e.Value);
 
             var expr = new Conv(new LdLoc(value.Output), targetPrimitive, e.Checked, value.Output.Type.GetSign());
 
@@ -422,19 +420,14 @@ namespace Coberec.ExprCS.CodeTranslation
             );
         }
 
-        static ILInstruction LoadFieldA(IField field, Result target, MethodContext cx) =>
-            target is object ?
-            new LdFlda(new LdLoc(target.Output), field) :
-            (ILInstruction)new LdsFlda(field);
-
-        private static Result TranslateFieldAssign(FieldAssignExpression e, MethodContext cx)
+        Result TranslateFieldAssign(FieldAssignExpression e)
         {
             // TODO: unit test
-            var field = cx.Metadata.GetField(e.Field);
-            var target = e.Target?.Apply(t => TranslateExpression(t, cx));
-            var value = TranslateExpression(e.Value, cx);
+            var field = this.Metadata.GetField(e.Field);
+            var target = e.Target?.Apply(this.TranslateExpression);
+            var value = this.TranslateExpression(e.Value);
 
-            var load = new StObj(LoadFieldA(field, target, cx), new LdLoc(value.Output), field.Type);
+            var load = new StObj(ILAstFactory.FieldAddr(field, target.Output), new LdLoc(value.Output), field.Type);
 
             return Result.Concat(
                 target,
@@ -443,13 +436,13 @@ namespace Coberec.ExprCS.CodeTranslation
             );
         }
 
-        private static Result TranslateFieldAccess(FieldAccessExpression e, MethodContext cx)
+        Result TranslateFieldAccess(FieldAccessExpression e)
         {
             // TODO: unit test
-            var field = cx.Metadata.GetField(e.Field);
-            var target = e.Target?.Apply(t => TranslateExpression(t, cx));
+            var field = this.Metadata.GetField(e.Field);
+            var target = e.Target?.Apply(TranslateExpression);
 
-            var load = new LdObj(LoadFieldA(field, target, cx), field.Type);
+            var load = new LdObj(ILAstFactory.FieldAddr(field, target.Output), field.Type);
 
             return Result.Concat(
                 target,
@@ -457,12 +450,12 @@ namespace Coberec.ExprCS.CodeTranslation
             );
         }
 
-        private static Result TranslateNewObject(NewObjectExpression e, MethodContext cx)
+        Result TranslateNewObject(NewObjectExpression e)
         {
             // TODO: unit test
-            var method = cx.Metadata.GetMethod(e.Ctor);
+            var method = this.Metadata.GetMethod(e.Ctor);
 
-            var args = e.Args.Select(a => TranslateExpression(a, cx)).ToArray();
+            var args = e.Args.Select(this.TranslateExpression).ToArray();
 
             var call = new NewObj(method);
             call.Arguments.AddRange(args.Select(a => new LdLoc(a.Output)));
@@ -470,15 +463,15 @@ namespace Coberec.ExprCS.CodeTranslation
             return Result.Concat(args.Append(Result.Expression(method.DeclaringType, call)));
         }
 
-        private static Result TranslateMethodCall(MethodCallExpression e, MethodContext cx)
+        Result TranslateMethodCall(MethodCallExpression e)
         {
             Assert.Equal(e.Method.IsStatic, e.Target == null);
             Assert.Equal(e.Method.Args.Length, e.Args.Length);
 
-            var method = cx.Metadata.GetMethod(e.Method);
+            var method = this.Metadata.GetMethod(e.Method);
 
-            var args = e.Args.Select(a => TranslateExpression(a, cx)).ToArray();
-            var target = e.Target?.Apply(t => TranslateExpression(t, cx));
+            var args = e.Args.Select(TranslateExpression).ToArray();
+            var target = e.Target?.Apply(TranslateExpression);
 
             var result = new List<Result>();
             target?.ApplyAction(result.Add);
@@ -494,63 +487,16 @@ namespace Coberec.ExprCS.CodeTranslation
             return Result.Concat(result);
         }
 
-        private static Result TranslateBinary(BinaryExpression item, MethodContext cx)
+        Result TranslateBinary(BinaryExpression item)
         {
             throw new NotImplementedException();
         }
 
-        private static Result TranslateConstant(ConstantExpression e, MethodContext cx)
+        Result TranslateConstant(ConstantExpression e)
         {
-            var type = cx.Metadata.GetTypeReference(e.Type);
-            return Result.Expression(type, TranslateConstant(e.Value, type));
+            var type = this.Metadata.GetTypeReference(e.Type);
+            return Result.Expression(type, ILAstFactory.Constant(e.Value, type));
         }
-
-        private static ILInstruction TranslateConstant(object constant, IType type)
-        {
-            if (constant == null)
-            {
-                Assert.True(type.IsReferenceType);
-                return new LdNull();
-            }
-            else if (constant is bool boolC)
-            {
-                Assert.Equal(typeof(bool).FullName, type.FullName);
-                return new IL.LdcI4(boolC ? 1 : 0);
-            }
-            else if (constant is char || constant is byte || constant is sbyte || constant is ushort || constant is short || constant is int)
-            {
-                return new IL.LdcI4(Convert.ToInt32(constant));
-            }
-            else if (constant is uint uintC)
-            {
-                return new IL.LdcI4(unchecked((int)uintC));
-            }
-            else if (constant is long longC)
-                return new IL.LdcI8(longC);
-            else if (constant is ulong ulongC)
-                return new IL.LdcI8(unchecked((long)ulongC));
-            else if (constant is float floatC)
-                return new LdcF4(floatC);
-            else if (constant is double doubleC)
-                return new LdcF8(doubleC);
-            else if (constant is decimal decimalC)
-                return new LdcDecimal(decimalC);
-            else if (constant is string stringC)
-                return new IL.LdStr(stringC);
-            else
-                throw new NotSupportedException($"Constant '{constant}' of type '{constant.GetType()}' with declared type '{type}' is not supported.");
-        }
-
-        class MethodContext
-        {
-            public MetadataContext Metadata;
-            public MethodDef Method;
-            internal IMethod GeneratedMethod;
-            public Dictionary<Guid, ILVariable> Parameters = new Dictionary<Guid, ILVariable>();
-            public Dictionary<LabelTarget, (Block nextBlock, ILVariable resultVariable)> BreakTargets = new Dictionary<LabelTarget, (Block nextBlock, ILVariable resultVariable)>();
-        }
-
-
 
         class Statement
         {
