@@ -6,6 +6,7 @@ using ICSharpCode.Decompiler.TypeSystem;
 using ICSharpCode.Decompiler.TypeSystem.Implementation;
 using TS=ICSharpCode.Decompiler.TypeSystem;
 using IL=ICSharpCode.Decompiler.IL;
+using Xunit;
 
 namespace Coberec.ExprCS
 {
@@ -43,7 +44,7 @@ namespace Coberec.ExprCS
 
         public static IMethod GetMethod(this MetadataContext cx, MethodSignature method)
         {
-            var t = cx.GetTypeReference(method.DeclaringType); // TODO: generic methos
+            var t = cx.GetTypeReference(method.DeclaringType); // TODO: generic methods
             // TODO: constructors, accessors and stuff
             bool filter(IMethod m) => m.Name == method.Name &&
                                       m.Parameters.Count == method.Args.Length &&
@@ -60,8 +61,20 @@ namespace Coberec.ExprCS
             if (candidates.Count == 0)
                 throw new Exception($"Method {method.Name} was not found on type {method.DeclaringType}. Method signature is {method}");
 
-            return candidates.OrderByDescending(m => m.DeclaringType.GetAllBaseTypes().Count())
+            var result = candidates.OrderByDescending(m => m.DeclaringType.GetAllBaseTypes().Count())
                              .First();
+
+            // make sure that there is only one such method
+            Assert.Empty(candidates.Where(m => m != result && m.DeclaringType.GetAllBaseTypes().Count() == result.DeclaringType.GetAllBaseTypes().Count()));
+
+            return result;
+        }
+
+        public static IField GetField(this MetadataContext cx, FieldSignature field)
+        {
+            var t = cx.GetTypeReference(field.DeclaringType); // TODO: generic methods
+
+            return t.GetFields(f => f.Name == field.Name, GetMemberOptions.None).Single();
         }
 
         public static VirtualType CreateTypeDefinition(MetadataContext c, TypeDef t)

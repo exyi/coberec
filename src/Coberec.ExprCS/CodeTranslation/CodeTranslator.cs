@@ -384,29 +384,90 @@ namespace Coberec.ExprCS.CodeTranslation
             }
         }
 
-        private static Result TranslateReferenceConversion(ReferenceConversionExpression item, MethodContext cx)
+        private static Result TranslateReferenceConversion(ReferenceConversionExpression e, MethodContext cx)
         {
-            throw new NotImplementedException();
+            // TODO: validate
+
+            var value = TranslateExpression(e.Value, cx);
+            var to = cx.Metadata.GetTypeReference(e.Type);
+
+            var conversion = cx.Metadata.CSharpConversions.ExplicitConversion(value.Output.Type, to);
+            if (!conversion.IsValid)
+                throw new Exception($"There isn't any valid conversion from {value.Output.Type} to {to}.");
+            if (!conversion.IsReferenceConversion)
+                throw new Exception($"There is not a reference conversion from {value.Output.Type} to {to}, but an '{conversion}' was found");
+
+            // reference conversions in IL code are simply omitted...
+            return Result.Concat(
+                value,
+                Result.Expression(to, new LdLoc(value.Output))
+            );
         }
 
-        private static Result TranslateNumericConversion(NumericConversionExpression item, MethodContext cx)
+        private static Result TranslateNumericConversion(NumericConversionExpression e, MethodContext cx)
         {
-            throw new NotImplementedException();
+            var to = cx.Metadata.GetTypeReference(e.Type);
+
+            var targetPrimitive = to.GetDefinition().KnownTypeCode.ToPrimitiveType();
+            if (targetPrimitive == PrimitiveType.None)
+                throw new NotSupportedException($"Primitive type {to} is not supported.");
+
+            var value = TranslateExpression(e.Value, cx);
+
+            var expr = new Conv(new LdLoc(value.Output), targetPrimitive, e.Checked, value.Output.Type.GetSign());
+
+            return Result.Concat(
+                value,
+                Result.Expression(to, expr)
+            );
         }
 
-        private static Result TranslateFieldAssign(FieldAssignExpression item, MethodContext cx)
+        static ILInstruction LoadFieldA(IField field, Result target, MethodContext cx) =>
+            target is object ?
+            new LdFlda(new LdLoc(target.Output), field) :
+            (ILInstruction)new LdsFlda(field);
+
+        private static Result TranslateFieldAssign(FieldAssignExpression e, MethodContext cx)
         {
-            throw new NotImplementedException();
+            // TODO: unit test
+            var field = cx.Metadata.GetField(e.Field);
+            var target = e.Target?.Apply(t => TranslateExpression(t, cx));
+            var value = TranslateExpression(e.Value, cx);
+
+            var load = new StObj(LoadFieldA(field, target, cx), new LdLoc(value.Output), field.Type);
+
+            return Result.Concat(
+                target,
+                value,
+                Result.Expression(field.Type, load)
+            );
         }
 
-        private static Result TranslateFieldAccess(FieldAccessExpression item, MethodContext cx)
+        private static Result TranslateFieldAccess(FieldAccessExpression e, MethodContext cx)
         {
-            throw new NotImplementedException();
+            // TODO: unit test
+            var field = cx.Metadata.GetField(e.Field);
+            var target = e.Target?.Apply(t => TranslateExpression(t, cx));
+
+            var load = new LdObj(LoadFieldA(field, target, cx), field.Type);
+
+            return Result.Concat(
+                target,
+                Result.Expression(field.Type, load)
+            );
         }
 
-        private static Result TranslateNewObject(NewObjectExpression item, MethodContext cx)
+        private static Result TranslateNewObject(NewObjectExpression e, MethodContext cx)
         {
-            throw new NotImplementedException();
+            // TODO: unit test
+            var method = cx.Metadata.GetMethod(e.Ctor);
+
+            var args = e.Args.Select(a => TranslateExpression(a, cx)).ToArray();
+
+            var call = new NewObj(method);
+            call.Arguments.AddRange(args.Select(a => new LdLoc(a.Output)));
+
+            return Result.Concat(args.Append(Result.Expression(method.DeclaringType, call)));
         }
 
         private static Result TranslateMethodCall(MethodCallExpression e, MethodContext cx)

@@ -15,11 +15,6 @@ namespace Coberec.CSharpGen.TypeSystem
         public HackedSimpleCompilation(IModuleReference mainAssembly, IEnumerable<IModuleReference> assemblyReferences) : base(mainAssembly, assemblyReferences)
         {
         }
-
-        protected HackedSimpleCompilation()
-        {
-        }
-
         MetadataModule IDecompilerTypeSystem.MainModule => throw new NotSupportedException("");
     }
 }

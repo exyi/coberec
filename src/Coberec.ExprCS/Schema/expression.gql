@@ -34,6 +34,7 @@ type FieldAssignExpression {
 type NumericConversionExpression {
     value: Expression
     type: TypeReference
+    checked: Boolean
 }
 
 type ReferenceConversionExpression {

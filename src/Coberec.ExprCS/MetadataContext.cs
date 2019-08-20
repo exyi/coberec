@@ -15,6 +15,7 @@ using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.CSharp;
 using ICSharpCode.Decompiler.CSharp.OutputVisitor;
 using Coberec.CSharpGen;
+using ICSharpCode.Decompiler.CSharp.Resolver;
 
 namespace Coberec.ExprCS
 {
@@ -23,11 +24,14 @@ namespace Coberec.ExprCS
         private readonly HackedSimpleCompilation hackedCompilation;
         internal ICompilation Compilation => hackedCompilation;
 
+        internal CSharpConversions CSharpConversions { get; }
+
 
         internal MetadataContext(HackedSimpleCompilation compilation)
         {
             this.hackedCompilation = compilation;
 
+            CSharpConversions = CSharpConversions.Get(compilation);
             moduleMap = compilation.Modules.ToDictionary(m => new ModuleSignature(m.Name));
             Modules = moduleMap.Keys.ToImmutableArray();
             MainModule = Modules[0];
