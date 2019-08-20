@@ -31,7 +31,7 @@ namespace Coberec.CSharpGen.TypeSystem
 		}
 		
 		public VirtualParameter(IType type, string name, IParameterizedMember owner = null, IEnumerable<IAttribute> attributes = null,
-		                        bool isRef = false, bool isOut = false, bool isIn = false, bool isParams = false, bool isOptional = false, object defaultValue = null)
+		                        ReferenceKind referenceKind = ReferenceKind.None, bool isRef = false, bool isOut = false, bool isIn = false, bool isParams = false, bool isOptional = false, object defaultValue = null)
 		{
 			if (type == null)
 				throw new ArgumentNullException("type");
@@ -41,6 +41,7 @@ namespace Coberec.CSharpGen.TypeSystem
 			this.name = name;
 			this.owner = owner;
 			this.Attributes = attributes?.ToList() ?? new List<IAttribute>();
+			this.ReferenceKind = referenceKind;
 			this.isRef = isRef;
 			this.isOut = isOut;
 			this.isIn = isIn;
@@ -98,8 +99,10 @@ namespace Coberec.CSharpGen.TypeSystem
 		public object ConstantValue {
 			get { return defaultValue; }
 		}
-		
-		public override string ToString()
+
+        public ReferenceKind ReferenceKind { get; }
+
+        public override string ToString()
 		{
 			return ToString(this);
 		}

@@ -124,6 +124,8 @@ namespace Coberec.CSharpGen.TypeSystem
 
         public bool ReturnTypeIsRefReadOnly => GetReturnTypeAttributes().Any(a => a.AttributeType.IsKnownType(KnownAttribute.IsReadOnly));
 
+        public bool IsLocalFunction { get; }
+
         public ILFunction GetBody()
         {
             return BodyFactory?.Invoke();
