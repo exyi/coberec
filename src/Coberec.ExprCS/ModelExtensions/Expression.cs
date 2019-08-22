@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Coberec.CoreLib;
+using Xunit;
 
 namespace Coberec.ExprCS
 {
@@ -22,14 +23,18 @@ namespace Coberec.ExprCS
                 e => e.Item.Type,
                 e => e.Item.Type,
                 e => e.Item.IfTrue.Type(),
-                e => e.Item.ResultType,
-                e => throw new NotImplementedException(), // TODO:
+                function: e => TypeReference.FunctionType(e.Item.Params, e.Item.Body.Type()),
+                functionConversion: e => e.Item.Type,
+                invoke: e => ExtractFunctionReturnType(e.Item.Function.Type()),
                 e => TypeSignature.Void,
                 e => e.Item.Expression.Type(),
                 e => TypeSignature.Void,
                 e => e.Item.Target.Type(),
                 e => e.Item.Result.Type(),
                 e => e.Item.Type);
+
+        static TypeReference ExtractFunctionReturnType(TypeReference type) =>
+            Assert.IsType<TypeReference.FunctionTypeCase>(type).Item.ResultType;
 
         public static Expression IfThen(Expression condition, Expression body)
         {

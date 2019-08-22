@@ -14,7 +14,7 @@
 			"DerivedVisible": true,
 			"InternalVisible": true
 		},
-		"GenericArgCount": 0
+		"GenericParamCount": 0
 	},
 	"dateTimeT": {
 		"Name": "DateTime",
@@ -31,7 +31,7 @@
 			"DerivedVisible": true,
 			"InternalVisible": true
 		},
-		"GenericArgCount": 0
+		"GenericParamCount": 0
 	},
 	"enumerableT": {
 		"Name": "IEnumerable",
@@ -54,6 +54,6 @@
 			"DerivedVisible": true,
 			"InternalVisible": true
 		},
-		"GenericArgCount": 1
+		"GenericParamCount": 1
 	}
 }

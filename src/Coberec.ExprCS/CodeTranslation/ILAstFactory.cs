@@ -49,5 +49,39 @@ namespace Coberec.ExprCS.CodeTranslation
             target is object ?
             new LdFlda(new LdLoc(target), field) :
             (ILInstruction)new LdsFlda(field);
+
+        public static ILFunction CreateFunction(IMethod method, BlockContainer functionContainer, IEnumerable<ILVariable> morevariables = null, ILFunctionKind functionKind = ILFunctionKind.TopLevelFunction)
+        {
+            Assert.Equal(method.ReturnType.GetStackType(), functionContainer.ExpectedResultType);
+
+            var variables = new VariableCollectingVisitor();
+            // r.Output?.Apply(variables.Variables.Add);
+            if (morevariables is object) foreach (var p in morevariables)
+                variables.Variables.Add(p);
+
+            functionContainer.AcceptVisitor(variables);
+
+            var ilFunc = new ILFunction(method, 10000, new ICSharpCode.Decompiler.TypeSystem.GenericContext(), functionContainer, functionKind);
+
+            foreach (var i in variables.Variables)
+                if (i.Function == null)
+                    ilFunc.Variables.Add(i);
+
+            return ilFunc;
+        }
+
+        class VariableCollectingVisitor : ILVisitor
+        {
+            public readonly HashSet<ILVariable> Variables = new HashSet<ILVariable>();
+
+            protected override void Default(ILInstruction inst)
+            {
+                if (inst is IInstructionWithVariableOperand a)
+                    Variables.Add(a.Variable);
+
+                foreach(var c in inst.Children)
+                    c.AcceptVisitor(this);
+            }
+        }
     }
 }

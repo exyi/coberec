@@ -37,13 +37,14 @@ type NumericConversionExpression {
     checked: Boolean
 }
 
+# reference or boxing/unboxing conversion
 type ReferenceConversionExpression {
     value: Expression
     type: TypeReference
 }
 
 type ConstantExpression {
-    value: Any
+    value: Any!
     type: TypeReference
 }
 
@@ -70,21 +71,34 @@ type ConditionalExpression {
     ifFalse: Expression
 }
 
+# creates an anonymous function. Should translate to a local function or a lambda expression
 type FunctionExpression {
+    params: [MethodParameter]
     args: [ParameterExpression]
-    resultType: TypeReference
-    delegateType: TypeReference!
+    body: Expression
 }
 
+# creates a function or delegate instance from a method reference
 type FunctionReference {
     method: MethodSignature
     target: Expression!
-    delegateType: TypeReference!
 }
 
+# Converts function to equivalent types
+# Does function -> function (by using covariance/contravariance)
+#      delegate -> function
+#      function -> delegate
+#      delegate -> delegate (must be only compatible, for example can convert Func<int, bool> <-> Predicate<bool>)
+type FunctionConversionExpression {
+    value: Expression
+    type: TypeReference
+}
+
+# invokes a function
 type InvokeExpression {
+    # function must be of type FunctionType, delegates are not supported because the return type is not known without metadata lookup
     function: Expression
-    args: [ParameterExpression]
+    args: [Expression]
 }
 
 type LabelTarget {
@@ -141,6 +155,7 @@ union Expression =
     | ParameterExpression
     | ConditionalExpression
     | FunctionExpression
+    | FunctionConversionExpression
     | InvokeExpression
     #| LabelExpression
     #| GotoExpression

@@ -74,7 +74,7 @@ namespace Coberec.ExprCS
             methodSignatureCache.GetOrAdd(method, m =>
                 new MethodSignature(
                     TranslateType(m.DeclaringType.GetDefinition()),
-                    m.Parameters.Select(TranslateArgument).ToImmutableArray(),
+                    m.Parameters.Select(TranslateParameter).ToImmutableArray(),
                     m.Name,
                     TranslateTypeReference(m.ReturnType),
                     m.IsStatic,
@@ -143,8 +143,8 @@ namespace Coberec.ExprCS
             m is IMethod method       ? (MemberSignature)TranslateMethod(method) :
             throw new NotSupportedException($"Member '{m}' of type '{m.GetType().Name}' is not supported");
 
-        MethodArgument TranslateArgument(IParameter parameter) =>
-            new MethodArgument(
+        internal MethodParameter TranslateParameter(IParameter parameter) =>
+            new MethodParameter(
                 TranslateTypeReference(parameter.Type),
                 parameter.Name
             );
@@ -171,7 +171,7 @@ namespace Coberec.ExprCS
 
         internal ITypeDefinition GetTypeDef(TypeSignature type) =>
             type.Parent.Match(
-                ns => GetNamespace(ns.Item).GetTypeDefinition(type.Name, type.GenericArgCount) ?? throw new InvalidOperationException($"Type {type} could not be found"),
+                ns => GetNamespace(ns.Item).GetTypeDefinition(type.Name, type.GenericParamCount) ?? throw new InvalidOperationException($"Type {type} could not be found"),
                 parentType => GetTypeDef(parentType.Item).GetNestedTypes(t => t.Name == type.Name).Single().GetDefinition());
 
         public TypeSignature FindTypeDef(string name) =>

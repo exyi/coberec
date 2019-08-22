@@ -14,8 +14,8 @@ namespace Coberec.ExprCS
     {
         public static FullTypeName GetFullTypeName(this TypeSignature t) =>
             t.Parent.Match(
-                ns => new FullTypeName(new TopLevelTypeName(ns.Item.FullName(), t.Name, t.GenericArgCount)),
-                parentType => GetFullTypeName(parentType.Item).NestedType(t.Name, t.GenericArgCount)
+                ns => new FullTypeName(new TopLevelTypeName(ns.Item.FullName(), t.Name, t.GenericParamCount)),
+                parentType => GetFullTypeName(parentType.Item).NestedType(t.Name, t.GenericParamCount)
             );
 
         public static TS.Accessibility GetAccessibility(Accessibility a) =>
@@ -39,7 +39,8 @@ namespace Coberec.ExprCS
                 arrayType => new TS.ArrayType(c.Compilation, GetTypeReference(c, arrayType.Item.Type), arrayType.Item.Dimensions),
                 byrefType => new TS.ByReferenceType(GetTypeReference(c, byrefType)),
                 pointerType => new TS.PointerType(GetTypeReference(c, pointerType.Item.Type)),
-                gParam => throw new NotSupportedException()
+                gParam => throw new NotSupportedException(),
+                function => throw new NotSupportedException($"Function types are not supported in metadata")
             );
 
         public static IMethod GetMethod(this MetadataContext cx, MethodSignature method)
@@ -47,8 +48,8 @@ namespace Coberec.ExprCS
             var t = cx.GetTypeReference(method.DeclaringType); // TODO: generic methods
             // TODO: constructors, accessors and stuff
             bool filter(IMethod m) => m.Name == method.Name &&
-                                      m.Parameters.Count == method.Args.Length &&
-                                      m.Parameters.Select(p => cx.TranslateTypeReference(p.Type)).SequenceEqual(method.Args.Select(a => a.Type));
+                                      m.Parameters.Count == method.Params.Length &&
+                                      m.Parameters.Select(p => cx.TranslateTypeReference(p.Type)).SequenceEqual(method.Params.Select(a => a.Type));
 
             var candidates =
                (!method.HasSpecialName ? t.GetMethods(filter, GetMemberOptions.None) :
@@ -94,15 +95,18 @@ namespace Coberec.ExprCS
             return vt;
         }
 
-        static VirtualMethod CreateMethodDefinition(MetadataContext c, MethodDef m)
+        internal static IParameter CreateParameter(MetadataContext cx, MethodParameter p) =>
+            new DefaultParameter(GetTypeReference(cx, p.Type), p.Name);
+
+        internal static VirtualMethod CreateMethodDefinition(MetadataContext cx, MethodDef m)
         {
             var sgn = m.Signature;
             return new VirtualMethod(
-                c.GetTypeDef(sgn.DeclaringType),
+                cx.GetTypeDef(sgn.DeclaringType),
                 GetAccessibility(sgn.Accessibility),
                 sgn.Name,
-                sgn.Args.Select(a => new DefaultParameter(GetTypeReference(c, a.Type), a.Name)).ToArray(),
-                GetTypeReference(c, sgn.ResultType),
+                sgn.Params.Select(p => CreateParameter(cx, p)).ToArray(),
+                GetTypeReference(cx, sgn.ResultType),
                 sgn.IsOverride,
                 sgn.IsVirtual,
                 isSealed: sgn.IsOverride && !sgn.IsVirtual,

@@ -18,7 +18,7 @@ namespace Coberec.ExprCS.Tests
             var dateTimeT = defaultContext.FindTypeDef("System.DateTime");
 
             Assert.True(stringT.IsSealed);
-            Assert.Equal(0, stringT.GenericArgCount);
+            Assert.Equal(0, stringT.GenericParamCount);
             Assert.Equal("String", stringT.Name);
             Assert.Equal("DateTime", dateTimeT.Name);
             Assert.Equal(TypeOrNamespace.NamespaceSignature(new NamespaceSignature("System", null)), dateTimeT.Parent);

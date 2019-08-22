@@ -75,7 +75,7 @@ namespace Coberec.ExprCS.Tests
                 0
             );
             var iequatableT = cx.FindTypeDef(typeof(IEquatable<>));
-            var method = new MethodSignature(type, ImmutableArray.Create(new MethodArgument(type, "obj")), "Equals", cx.FindType(typeof(bool)), false, Accessibility.APublic, false, false, false, false, ImmutableArray<GenericParameter>.Empty);
+            var method = new MethodSignature(type, ImmutableArray.Create(new MethodParameter(type, "obj")), "Equals", cx.FindType(typeof(bool)), false, Accessibility.APublic, false, false, false, false, ImmutableArray<GenericParameter>.Empty);
             var parameter = new ParameterExpression(Guid.NewGuid(), "obj", type, false);
             var methodDef = new MethodDef(method, ImmutableArray.Create(parameter), new ConstantExpression(true, cx.FindType(typeof(bool))));
             var typeDef = TypeDef.Empty(type).With(

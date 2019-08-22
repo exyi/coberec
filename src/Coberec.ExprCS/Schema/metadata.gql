@@ -31,7 +31,7 @@ type TypeSignature implements MemberSignature {
     isSealed: Boolean
     isAbstract: Boolean
     accessibility: Accessibility
-    genericArgCount: Int
+    genericParamCount: Int
 }
 
 type SpecializedType {
@@ -52,16 +52,23 @@ type PointerType {
     type: TypeReference
 }
 
-union TypeReference = SpecializedType | ArrayType | ByReferenceType | PointerType | GenericParameter
+# represents an anonymous delegate
+# it has a limitation that the function can not return itself (by type), but it can for example return equivalent delegate type
+type FunctionType {
+    params: [MethodParameter]
+    resultType: TypeReference
+}
 
-type MethodArgument {
+union TypeReference = SpecializedType | ArrayType | ByReferenceType | PointerType | GenericParameter | FunctionType
+
+type MethodParameter {
     type: TypeReference
     name: String
 }
 
 type MethodSignature implements MemberSignature {
     declaringType: TypeSignature
-    args: [MethodArgument]
+    params: [MethodParameter]
     name: String
     resultType: TypeReference
     isStatic: Boolean

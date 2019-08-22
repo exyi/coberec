@@ -24,7 +24,7 @@ namespace Coberec.ExprCS.CodeTranslation
                     method.ArgumentParams.First().Id,
                     new ILVariable(VariableKind.Parameter, cx.GetTypeDef(method.Signature.DeclaringType), -1) { Name = "this" });
             }
-            foreach (var (i, (arg, param)) in method.ArgumentParams.Skip(method.Signature.IsStatic ? 0 : 1).ZipTuples(method.Signature.Args).Indexed())
+            foreach (var (i, (arg, param)) in method.ArgumentParams.Skip(method.Signature.IsStatic ? 0 : 1).ZipTuples(method.Signature.Params).Indexed())
             {
                 Assert.Equal(arg.Type, param.Type);
                 translator.Parameters.Add(
@@ -52,7 +52,10 @@ namespace Coberec.ExprCS.CodeTranslation
         readonly MethodDef Method;
         readonly IMethod GeneratedMethod;
         readonly Dictionary<Guid, ILVariable> Parameters = new Dictionary<Guid, ILVariable>();
+        readonly Dictionary<Guid, ILFunction> ActiveLocalFunctions = new Dictionary<Guid, ILFunction>();
         readonly Dictionary<LabelTarget, (Block nextBlock, ILVariable resultVariable)> BreakTargets = new Dictionary<LabelTarget, (Block nextBlock, ILVariable resultVariable)>();
+        /// Local function that will need to be added into the nearest parent function
+        List<ILFunction> PendingLocalFunctions = new List<ILFunction>();
 
         ILInstruction ToILInstruction(Result r, ILVariable resultVar)
         {
@@ -116,6 +119,10 @@ namespace Coberec.ExprCS.CodeTranslation
 
             container.Blocks.Add(block);
 
+            foreach (var f in this.PendingLocalFunctions)
+                if (f.DeclarationScope is null)
+                    f.DeclarationScope = container;
+
 
             // compute fake IL ranges, just to have some IDs of the Blocks
             var index = 0;
@@ -136,42 +143,13 @@ namespace Coberec.ExprCS.CodeTranslation
 
         ILFunction BuildTheFunction(Result r)
         {
-            var isVoid = GeneratedMethod.ReturnType.FullName == "System.Void";
-
-            Assert.Equal(isVoid, r.Output == null);
-
             var functionContainer = this.BuildBContainer(r);
+            var fn = ILAstFactory.CreateFunction(this.GeneratedMethod, functionContainer, this.Parameters.Select(p => p.Value));
+            fn.LocalFunctions.AddRange(this.PendingLocalFunctions);
 
-            var variables = new VariableCollectingVisitor();
-            r.Output?.Apply(variables.Variables.Add);
-            foreach (var p in this.Parameters)
-                variables.Variables.Add(p.Value);
-
-            functionContainer.AcceptVisitor(variables);
-
-            var ilFunc = new IL.ILFunction(this.GeneratedMethod, 10000, new ICSharpCode.Decompiler.TypeSystem.GenericContext(), functionContainer);
-
-            foreach (var i in variables.Variables)
-                if (i.Function == null)
-                    ilFunc.Variables.Add(i);
-
-            ilFunc.AddRef(); // whatever, somehow initializes the freaking tree
-            ilFunc.CheckInvariantPublic(IL.ILPhase.Normal);
-            return ilFunc;
-        }
-
-        class VariableCollectingVisitor : IL.ILVisitor
-        {
-            public readonly HashSet<IL.ILVariable> Variables = new HashSet<IL.ILVariable>();
-
-            protected override void Default(IL.ILInstruction inst)
-            {
-                if (inst is IL.IInstructionWithVariableOperand a)
-                    Variables.Add(a.Variable);
-
-                foreach(var c in inst.Children)
-                    c.AcceptVisitor(this);
-            }
+            fn.AddRef(); // whatever, somehow initializes the freaking tree
+            fn.CheckInvariantPublic(ILPhase.Normal);
+            return fn;
         }
 
         Result TranslateExpression(Expression expr) =>
@@ -189,6 +167,7 @@ namespace Coberec.ExprCS.CodeTranslation
                 e => TranslateParameter(e.Item),
                 e => TranslateConditional(e.Item),
                 e => TranslateFunction(e.Item),
+                e => TranslateFunctionConversion(e.Item),
                 e => TranslateInvoke(e.Item),
                 e => TranslateBreak(e.Item),
                 e => TranslateBreakable(e.Item),
@@ -216,6 +195,9 @@ namespace Coberec.ExprCS.CodeTranslation
 
         Result TranslateLetIn(LetInExpression e)
         {
+            if (e.Value is Expression.FunctionCase fn)
+                return TranslateLocalFunction(fn.Item, e.Variable, e.Target);
+
             var value = this.TranslateExpression(e.Value);
 
             Assert.NotNull(value.Output);
@@ -306,16 +288,6 @@ namespace Coberec.ExprCS.CodeTranslation
             };
         }
 
-        private static Result TranslateInvoke(InvokeExpression item)
-        {
-            throw new NotImplementedException();
-        }
-
-        private static Result TranslateFunction(FunctionExpression item)
-        {
-            throw new NotImplementedException();
-        }
-
         Result TranslateConditional(ConditionalExpression item)
         {
             // TODO: shortcut for simplest expressions
@@ -367,7 +339,8 @@ namespace Coberec.ExprCS.CodeTranslation
 
         Result TranslateParameter(ParameterExpression pe)
         {
-            var v = this.Parameters[pe.Id];
+            if (!this.Parameters.TryGetValue(pe.Id, out var v))
+                throw new Exception($"Parameter {pe.Name}:{pe.Type} with id {pe.Id} is not defined");
             return new Result(v);
         }
 
@@ -392,13 +365,19 @@ namespace Coberec.ExprCS.CodeTranslation
             var conversion = this.Metadata.CSharpConversions.ExplicitConversion(value.Output.Type, to);
             if (!conversion.IsValid)
                 throw new Exception($"There isn't any valid conversion from {value.Output.Type} to {to}.");
-            if (!conversion.IsReferenceConversion)
+            if (!conversion.IsReferenceConversion && !conversion.IsBoxingConversion && !conversion.IsUnboxingConversion)
                 throw new Exception($"There is not a reference conversion from {value.Output.Type} to {to}, but an '{conversion}' was found");
+
+            var input = new LdLoc(value.Output);
+            var instruction =
+                conversion.IsBoxingConversion ? new Box(input, to) :
+                conversion.IsUnboxingConversion ? new UnboxAny(input, to) :
+                (ILInstruction)input;
 
             // reference conversions in IL code are simply omitted...
             return Result.Concat(
                 value,
-                Result.Expression(to, new LdLoc(value.Output))
+                Result.Expression(to, instruction)
             );
         }
 
@@ -466,7 +445,7 @@ namespace Coberec.ExprCS.CodeTranslation
         Result TranslateMethodCall(MethodCallExpression e)
         {
             Assert.Equal(e.Method.IsStatic, e.Target == null);
-            Assert.Equal(e.Method.Args.Length, e.Args.Length);
+            Assert.Equal(e.Method.Params.Length, e.Args.Length);
 
             var method = this.Metadata.GetMethod(e.Method);
 
@@ -534,6 +513,7 @@ namespace Coberec.ExprCS.CodeTranslation
             public static Result Expression(IType type, ILInstruction i)
             {
                 var resultVar = new ILVariable(VariableKind.StackSlot, type);
+                Assert.Equal(resultVar.StackType, i.ResultType);
                 return new Result(output: resultVar, new ExpressionStatement(i, resultVar));
             }
 
