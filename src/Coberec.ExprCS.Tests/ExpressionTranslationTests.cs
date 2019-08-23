@@ -210,5 +210,23 @@ namespace Coberec.ExprCS.Tests
                 )));
             check.CheckOutput(cx);
         }
+
+        [Fact]
+        public void LambdaFunction()
+        {
+            var fn1 = Expression.Function(Expression.Constant(1, TypeSignature.Int32));
+            var fn2 = Expression.Function(
+                        Expression.Conditional(
+                            pBool1,
+                            Expression.ReferenceConversion(Expression.Invoke(fn1, ImmutableArray<Expression>.Empty), TypeSignature.Object),
+                            Expression.Constant(null, TypeSignature.Object)
+                        ),
+                        pBool1);
+
+            cx.AddTestExpr(
+                Expression.Invoke(fn2, ImmutableArray.Create(Expression.Constant(true, TypeSignature.Boolean)))
+            );
+            check.CheckOutput(cx);
+        }
     }
 }

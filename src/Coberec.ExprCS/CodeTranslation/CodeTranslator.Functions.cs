@@ -51,6 +51,7 @@ namespace Coberec.ExprCS.CodeTranslation
                 call.Arguments.AddRange(args.Select(a => new LdLoc(a.Output)));
                 return Result.Concat(
                     args.Append(Result.Expression(invokeMethod.ReturnType, call))
+                        .Prepend(target)
                 );
             }
         }
@@ -95,14 +96,65 @@ namespace Coberec.ExprCS.CodeTranslation
             return result;
         }
 
-        Result TranslateFunction(FunctionExpression item)
+        Result TranslateFunction(FunctionExpression e) => TranslateFunction(e, TypeReference.FunctionType(e.Params, e.Body.Type()));
+        Result TranslateFunction(FunctionExpression e, TypeReference expectedType)
         {
-            throw new NotImplementedException();
+            var delegateType =
+                expectedType is TypeReference.FunctionTypeCase fnType ? this.FindAppropriateDelegate(fnType.Item) :
+                this.Metadata.GetTypeReference(expectedType);
+
+            Assert.True(delegateType.GetDelegateInvokeMethod() is object, $"Can not create a lambda of type {delegateType} as it's not a delegate.");
+
+            var parameters = e.Params.Select(p => MetadataDefiner.CreateParameter(this.Metadata, p)).ToImmutableArray();
+            var fakeName = $"<{this.GeneratedMethod.Name}>somethingsomething";
+            var method = new VirtualMethod(
+                this.GeneratedMethod.DeclaringTypeDefinition,
+                TS.Accessibility.Private,
+                fakeName,
+                parameters,
+                delegateType.GetDelegateInvokeMethod().ReturnType,
+                isHidden: true
+            );
+
+            foreach (var (i, p) in e.Args.Indexed())
+                this.Parameters.Add(p.Id, new ILVariable(VariableKind.Parameter, this.Metadata.GetTypeReference(p.Type), i) { Name = p.Name });
+            var pendingFunctions = this.PendingLocalFunctions;
+            this.PendingLocalFunctions = new List<ILFunction>();
+
+            var bodyR = this.TranslateExpression(e.Body);
+            var bodyC = this.BuildBContainer(bodyR);
+
+            var fn = ILAstFactory.CreateFunction(method, bodyC, functionKind: ILFunctionKind.Delegate);
+            fn.DelegateType = delegateType;
+
+            foreach (var p in e.Args)
+                this.Parameters.Remove(p.Id);
+            fn.LocalFunctions.AddRange(this.PendingLocalFunctions);
+            this.PendingLocalFunctions = pendingFunctions;
+
+            return Result.Expression(delegateType, fn);
         }
 
         Result TranslateFunctionConversion(FunctionConversionExpression item)
         {
             throw new NotImplementedException();
+        }
+
+        IType FindAppropriateDelegate(FunctionType type)
+        {
+            // TODO: weird delegates (ref parameters, ...)
+            if (type.ResultType == TypeSignature.Void)
+            {
+                var actionSig = new TypeSignature("Action", NamespaceSignature.System, true, false, Accessibility.APublic, type.Params.Length);
+                var actionRef = TypeReference.SpecializedType(actionSig, type.Params.Select(p => p.Type).ToImmutableArray());
+                return this.Metadata.GetTypeReference(actionRef);
+            }
+            else
+            {
+                var actionSig = new TypeSignature("Func", NamespaceSignature.System, true, false, Accessibility.APublic, type.Params.Length + 1);
+                var actionRef = TypeReference.SpecializedType(actionSig, type.Params.Select(p => p.Type).Append(type.ResultType).ToImmutableArray());
+                return this.Metadata.GetTypeReference(actionRef);
+            }
         }
     }
 }
