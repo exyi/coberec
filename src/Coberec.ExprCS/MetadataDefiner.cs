@@ -46,7 +46,7 @@ namespace Coberec.ExprCS
         public static IMethod GetMethod(this MetadataContext cx, MethodSignature method)
         {
             var t = cx.GetTypeReference(method.DeclaringType); // TODO: generic methods
-            // TODO: constructors, accessors and stuff
+
             bool filter(IMethod m) => m.Name == method.Name &&
                                       m.Parameters.Count == method.Params.Length &&
                                       m.Parameters.Select(p => cx.TranslateTypeReference(p.Type)).SequenceEqual(method.Params.Select(a => a.Type));
@@ -82,11 +82,11 @@ namespace Coberec.ExprCS
         {
             var sgn = t.Signature;
             var vt = new VirtualType(
-                TypeKind.Class, // TODO
+                sgn.IsValueType ? TypeKind.Struct : TypeKind.Class,
                 GetAccessibility(sgn.Accessibility),
                 sgn.GetFullTypeName(),
-                isStatic: false, // TODO
-                sgn.IsSealed,
+                isStatic: !sgn.CanOverride && sgn.IsAbstract,
+                isSealed: !sgn.CanOverride,
                 sgn.IsAbstract,
                 sgn.Parent is TypeOrNamespace.TypeSignatureCase tt ? c.GetTypeDef(tt.Item) : null,
                 parentModule: c.MainILSpyModule

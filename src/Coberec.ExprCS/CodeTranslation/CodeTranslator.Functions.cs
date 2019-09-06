@@ -185,13 +185,13 @@ namespace Coberec.ExprCS.CodeTranslation
             // TODO: weird delegates (ref parameters, ...)
             if (type.ResultType == TypeSignature.Void)
             {
-                var actionSig = new TypeSignature("Action", NamespaceSignature.System, true, false, Accessibility.APublic, type.Params.Length);
+                var actionSig = TypeSignature.SealedClass("Action", NamespaceSignature.System, Accessibility.APublic, type.Params.Length);
                 var actionRef = TypeReference.SpecializedType(actionSig, type.Params.Select(p => p.Type).ToImmutableArray());
                 return this.Metadata.GetTypeReference(actionRef);
             }
             else
             {
-                var actionSig = new TypeSignature("Func", NamespaceSignature.System, true, false, Accessibility.APublic, type.Params.Length + 1);
+                var actionSig = TypeSignature.SealedClass("Func", NamespaceSignature.System, Accessibility.APublic, type.Params.Length + 1);
                 var actionRef = TypeReference.SpecializedType(actionSig, type.Params.Select(p => p.Type).Append(type.ResultType).ToImmutableArray());
                 return this.Metadata.GetTypeReference(actionRef);
             }

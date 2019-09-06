@@ -7,7 +7,8 @@
 				"Parent": null
 			}
 		},
-		"IsSealed": true,
+		"IsValueType": false,
+		"CanOverride": false,
 		"IsAbstract": false,
 		"Accessibility": {
 			"Public": true,
@@ -24,7 +25,8 @@
 				"Parent": null
 			}
 		},
-		"IsSealed": true,
+		"IsValueType": true,
+		"CanOverride": false,
 		"IsAbstract": false,
 		"Accessibility": {
 			"Public": true,
@@ -47,7 +49,8 @@
 				}
 			}
 		},
-		"IsSealed": false,
+		"IsValueType": false,
+		"CanOverride": true,
 		"IsAbstract": true,
 		"Accessibility": {
 			"Public": true,

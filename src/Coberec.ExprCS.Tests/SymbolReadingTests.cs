@@ -17,7 +17,7 @@ namespace Coberec.ExprCS.Tests
             var stringT = defaultContext.FindTypeDef(typeof(string));
             var dateTimeT = defaultContext.FindTypeDef("System.DateTime");
 
-            Assert.True(stringT.IsSealed);
+            Assert.False(stringT.CanOverride);
             Assert.Equal(0, stringT.GenericParamCount);
             Assert.Equal("String", stringT.Name);
             Assert.Equal("DateTime", dateTimeT.Name);

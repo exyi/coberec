@@ -66,7 +66,7 @@ namespace Coberec.ExprCS
                 var parent = type.DeclaringTypeDefinition != null ?
                              TypeOrNamespace.TypeSignature(TranslateType(type.DeclaringTypeDefinition)) :
                              TypeOrNamespace.NamespaceSignature(TranslateNamespace(type.Namespace));
-                return new TypeSignature(type.Name, parent, type.IsSealed, type.IsAbstract, TranslateAccessibility(type.Accessibility), type.TypeParameterCount);
+                return new TypeSignature(type.Name, parent, isValueType: !(bool)type.IsReferenceType, canOverride: !type.IsSealed && !type.IsStatic, isAbstract: type.IsAbstract || type.IsStatic, TranslateAccessibility(type.Accessibility), type.TypeParameterCount);
             });
 
         readonly ConcurrentDictionary<IMethod, MethodSignature> methodSignatureCache = new ConcurrentDictionary<IMethod, MethodSignature>();

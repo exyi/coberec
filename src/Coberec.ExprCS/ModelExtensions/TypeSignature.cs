@@ -6,11 +6,37 @@ namespace Coberec.ExprCS
 {
     public partial class TypeSignature
     {
-        public static TypeSignature Void = new TypeSignature("Void", NamespaceSignature.System, true, false, Accessibility.APublic, 0);
-        public static TypeSignature Int32 = new TypeSignature("Int32", NamespaceSignature.System, true, false, Accessibility.APublic, 0);
-        public static TypeSignature TimeSpan = new TypeSignature("TimeSpan", NamespaceSignature.System, true, false, Accessibility.APublic, 0);
-        public static TypeSignature Object = new TypeSignature("Object", NamespaceSignature.System, true, false, Accessibility.APublic, 0);
-        public static TypeSignature Boolean = new TypeSignature("Boolean", NamespaceSignature.System, true, false, Accessibility.APublic, 0);
-        public static TypeSignature String = new TypeSignature("String", NamespaceSignature.System, true, false, Accessibility.APublic, 0);
+        public static TypeSignature Void = Struct("Void", NamespaceSignature.System, Accessibility.APublic);
+        public static TypeSignature Int32 = Struct("Int32", NamespaceSignature.System, Accessibility.APublic);
+        public static TypeSignature TimeSpan = Struct("TimeSpan", NamespaceSignature.System, Accessibility.APublic);
+        public static TypeSignature Object = Class("Object", NamespaceSignature.System, Accessibility.APublic);
+        public static TypeSignature Boolean = Struct("Boolean", NamespaceSignature.System, Accessibility.APublic);
+        public static TypeSignature String = SealedClass("String", NamespaceSignature.System, Accessibility.APublic);
+
+        public static TypeSignature Class(string name, TypeOrNamespace parent, Accessibility accessibility, bool canOverride = true, bool isAbstract = false, int genericParamCount = 0) =>
+            new TypeSignature(name, parent,
+                accessibility: accessibility,
+                canOverride: canOverride,
+                isAbstract: isAbstract,
+                isValueType: false,
+                genericParamCount: genericParamCount
+            );
+
+        public static TypeSignature StaticClass(string name, TypeOrNamespace parent, Accessibility accessibility, int genericParamCount = 0) =>
+            Class(name, parent, accessibility, canOverride: false, isAbstract: true, genericParamCount);
+
+        public static TypeSignature SealedClass(string name, TypeOrNamespace parent, Accessibility accessibility, int genericParamCount = 0) =>
+            Class(name, parent, accessibility, canOverride: false, isAbstract: false, genericParamCount);
+
+        public static TypeSignature Struct(string name, TypeOrNamespace parent, Accessibility accessibility, int genericParamCount = 0) =>
+            new TypeSignature(name, parent,
+                accessibility: accessibility,
+                canOverride: false,
+                isAbstract: false,
+                isValueType: true,
+                genericParamCount: genericParamCount
+            );
+
+
     }
 }

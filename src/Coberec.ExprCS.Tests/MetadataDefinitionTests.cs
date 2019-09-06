@@ -15,14 +15,7 @@ namespace Coberec.ExprCS.Tests
         public void OneEmptyType()
         {
             var ns = new NamespaceSignature("MyNamespace", parent: null);
-            var type = new TypeSignature(
-                "MyType",
-                ns,
-                isSealed: false,
-                isAbstract: false,
-                Accessibility.APublic,
-                0
-            );
+            var type = TypeSignature.Class("MyType", ns, Accessibility.APublic);
             var typeDef = TypeDef.Empty(type);
 
             cx.AddType(typeDef);
@@ -33,22 +26,8 @@ namespace Coberec.ExprCS.Tests
         public void NestedTypesWithInheritance()
         {
             var ns = new NamespaceSignature("MyNamespace", parent: null);
-            var rootType = new TypeSignature(
-                "MyType",
-                ns,
-                isSealed: false,
-                isAbstract: false,
-                Accessibility.APublic,
-                0
-            );
-            var type1 = new TypeSignature(
-                "A",
-                rootType,
-                isSealed: false,
-                isAbstract: false,
-                Accessibility.APublic,
-                0
-            );
+            var rootType = TypeSignature.Class("MyType", ns, Accessibility.APublic);
+            var type1 = TypeSignature.Class("A", rootType, Accessibility.APublic);
             var type2 = type1.With(name: "B");
             var typeDef = TypeDef.Empty(rootType).With(members: ImmutableArray.Create<MemberDef>(
                 new TypeDef(type1, null, ImmutableArray<SpecializedType>.Empty, ImmutableArray<MemberDef>.Empty),
@@ -66,14 +45,7 @@ namespace Coberec.ExprCS.Tests
         public void IEquatableImplementation()
         {
             var ns = new NamespaceSignature("MyNamespace", parent: null);
-            var type = new TypeSignature(
-                "MyType",
-                ns,
-                isSealed: false,
-                isAbstract: false,
-                Accessibility.APublic,
-                0
-            );
+            var type = TypeSignature.Class("MyType", ns, Accessibility.APublic);
             var iequatableT = cx.FindTypeDef(typeof(IEquatable<>));
             var method = new MethodSignature(type, ImmutableArray.Create(new MethodParameter(type, "obj")), "Equals", cx.FindType(typeof(bool)), false, Accessibility.APublic, false, false, false, false, ImmutableArray<GenericParameter>.Empty);
             var parameter = new ParameterExpression(Guid.NewGuid(), "obj", type, false);
@@ -97,14 +69,7 @@ namespace Coberec.ExprCS.Tests
             var someTuple = cx.FindType(typeof((List<int>, System.Threading.Tasks.Task)));
 
             var ns = new NamespaceSignature("MyNamespace", parent: null);
-            var type = new TypeSignature(
-                "MyType",
-                ns,
-                isSealed: false,
-                isAbstract: false,
-                Accessibility.APublic,
-                0
-            );
+            var type = TypeSignature.Class("MyType", ns, Accessibility.APublic);
             var typeDef = TypeDef.Empty(type).With(members: ImmutableArray.Create<MemberDef>(
                 new FieldDef(new FieldSignature(type, "F1", Accessibility.APublic, stringT, false, true)),
                 new FieldDef(new FieldSignature(type, "F2", Accessibility.APrivate, stringArr, false, true)),

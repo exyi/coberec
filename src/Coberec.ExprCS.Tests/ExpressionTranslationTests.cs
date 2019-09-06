@@ -15,7 +15,7 @@ namespace Coberec.ExprCS.Tests
             var name = cx.DefinedTypes.Count < 3 ? ((char)('C' + cx.DefinedTypes.Count)).ToString() : "C" + cx.DefinedTypes.Count;
             var ns = ((TypeOrNamespace.NamespaceSignatureCase)cx.DefinedTypes.FirstOrDefault()?.Signature.Parent)?.Item ??
                     new NamespaceSignature("NS", null);
-            var type = new TypeSignature(name, ns, false, false, Accessibility.APublic, 0);
+            var type = TypeSignature.Class(name, ns, Accessibility.APublic);
             var method = new MethodSignature(type, parameters.Select(p => new MethodParameter(p.Type, p.Name)).ToImmutableArray(), "M", expr.Type(), true, Accessibility.APublic, false, false, false, false, ImmutableArray<GenericParameter>.Empty);
             var methodDef = new MethodDef(method, parameters.ToImmutableArray(), expr);
             var typeDef = TypeDef.Empty(type).With(members: ImmutableArray.Create<MemberDef>(methodDef));
@@ -230,7 +230,7 @@ namespace Coberec.ExprCS.Tests
         }
         TypeReference makeFunc(FunctionType type)
         {
-            var actionSig = new TypeSignature("Func", NamespaceSignature.System, true, false, Accessibility.APublic, type.Params.Length + 1);
+            var actionSig = TypeSignature.SealedClass("Func", NamespaceSignature.System, Accessibility.APublic, type.Params.Length + 1);
             var actionRef = TypeReference.SpecializedType(actionSig, type.Params.Select(p => p.Type).Append(type.ResultType).ToImmutableArray());
             return actionRef;
         }
