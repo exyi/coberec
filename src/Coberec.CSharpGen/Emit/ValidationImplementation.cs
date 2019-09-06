@@ -124,7 +124,7 @@ namespace Coberec.CSharpGen.Emit
                 if (def.AcceptsNull) return (expr, resultType);
 
                 if (resultType.GetDefinition().ReflectionName == typeof(Nullable<>).FullName)
-                    return (new IL.Call(resultType.GetProperties(p => p.Name == "Value").Single().Getter) { Arguments = { new IL.AddressOf(expr) } }, resultType.TypeArguments.Single());
+                    return (new IL.Call(resultType.GetProperties(p => p.Name == "Value").Single().Getter) { Arguments = { new IL.AddressOf(expr, resultType) } }, resultType.TypeArguments.Single());
                 return (expr, resultType);
             }
 
@@ -162,7 +162,7 @@ namespace Coberec.CSharpGen.Emit
                 // var fieldType = (typeSchema.Core as TypeDefCore.CompositeCase)?.Fields.Single(f => f.Name == fieldName).Type;
                 var fieldExpr = expr.AccessMember(member);
                 if (member.ReturnType.GetDefinition().ReflectionName == typeof(Nullable<>).FullName)
-                    return new IL.Call(member.ReturnType.GetProperties(p => p.Name == "HasValue").Single().Getter) { Arguments = { new IL.AddressOf(fieldExpr) } };
+                    return new IL.Call(member.ReturnType.GetProperties(p => p.Name == "HasValue").Single().Getter) { Arguments = { new IL.AddressOf(fieldExpr, member.ReturnType) } };
                 else if (member.ReturnType.IsReferenceType == true)
                     return new IL.Comp(IL.ComparisonKind.Inequality, Sign.None, new IL.IsInst(fieldExpr, cx.Compilation.FindType(KnownTypeCode.Object)), new IL.LdNull());
                 else return null;

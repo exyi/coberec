@@ -105,7 +105,7 @@ namespace Coberec.CSharpGen.Emit
             else
             {
                 call.ConstrainedTo = targetType;
-                call.Arguments.Add(new IL.AddressOf(@this));
+                call.Arguments.Add(new IL.AddressOf(@this, targetType));
             }
             call.Arguments.AddRange(args);
             return call;

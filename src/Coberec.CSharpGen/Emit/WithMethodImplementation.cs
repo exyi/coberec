@@ -71,7 +71,7 @@ namespace Coberec.CSharpGen.Emit
                     localWithMethod.ReturnType.FullName == typeof(ValidationResult).FullName && ifcMethod.ReturnType.FullName == typeof(ValidationResult).FullName ?
                         // cast ValidationResult<Type> into ValidationResult<Interface>
                         new IL.Call(localWithMethod.ReturnType.GetMethods(m => m.Name == "Cast" && m.TypeParameters.Count == 1 && m.Parameters.Count == 0).Single().Specialize(new TypeParameterSubstitution(null, new [] { ifcMethod.DeclaringType }))) {
-                            Arguments = { new IL.AddressOf(withInvocation) }
+                            Arguments = { new IL.AddressOf(withInvocation, localWithMethod.ReturnType) }
                         } :
                     localWithMethod.ReturnType.Equals(type) && ifcMethod.ReturnType.FullName == typeof(ValidationResult).FullName ?
                         new IL.Call(type.Compilation.FindType(typeof(ValidationResult)).GetMethods(m => m.Name == "Create" && m.Parameters.Count == 1).Single().Specialize(new TypeParameterSubstitution(null, new [] { ifcMethod.DeclaringType }))) {
@@ -81,7 +81,7 @@ namespace Coberec.CSharpGen.Emit
                     localWithMethod.ReturnType.FullName == typeof(ValidationResult).FullName && ifcMethod.ReturnType.Equals(ifcMethod.DeclaringType) ?
                         // cast ValidationResult<Type> into Interface
                         (IL.ILInstruction)new IL.Call(localWithMethod.ReturnType.GetMethods(m => m.Name == nameof(ValidationResult<int>.Expect) && m.Parameters.Count == 1).Single()) {
-                            Arguments = { new IL.AddressOf(withInvocation), new IL.LdStr($"we can modify {type.Name}") }
+                            Arguments = { new IL.AddressOf(withInvocation, localWithMethod.ReturnType), new IL.LdStr($"we can modify {type.Name}") }
                         } :
                     throw new NotSupportedException();
 

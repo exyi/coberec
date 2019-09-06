@@ -228,5 +228,56 @@ namespace Coberec.ExprCS.Tests
             );
             check.CheckOutput(cx);
         }
+        TypeReference makeFunc(FunctionType type)
+        {
+            var actionSig = new TypeSignature("Func", NamespaceSignature.System, true, false, Accessibility.APublic, type.Params.Length + 1);
+            var actionRef = TypeReference.SpecializedType(actionSig, type.Params.Select(p => p.Type).Append(type.ResultType).ToImmutableArray());
+            return actionRef;
+        }
+
+
+        [Fact]
+        public void ReturnLambdaFunction()
+        {
+            var fn1 = Expression.Function(Expression.Constant(1, TypeSignature.Int32));
+            var fn2 = Expression.Function(
+                        Expression.Conditional(
+                            pBool1,
+                            Expression.ReferenceConversion(Expression.Invoke(fn1, ImmutableArray<Expression>.Empty), TypeSignature.Object),
+                            Expression.Constant(null, TypeSignature.Object)
+                        ),
+                        pBool1);
+
+            cx.AddTestExpr(Expression.FunctionConversion(fn1, makeFunc(new FunctionType(ImmutableArray<MethodParameter>.Empty, TypeSignature.Int32))));
+            cx.AddTestExpr(Expression.FunctionConversion(Expression.Function(Expression.Constant("abc", TypeSignature.String)), makeFunc(new FunctionType(ImmutableArray<MethodParameter>.Empty, TypeSignature.Object))));
+            cx.AddTestExpr(Expression.FunctionConversion(fn2, makeFunc(new FunctionType(ImmutableArray.Create(new MethodParameter(TypeSignature.Boolean, "a")), TypeSignature.Object))));
+            check.CheckOutput(cx);
+        }
+
+        [Fact]
+        public void TrivialFunctionConversions()
+        {
+            var stringFunc = makeFunc(new FunctionType(ImmutableArray<MethodParameter>.Empty, TypeSignature.String));
+            var objectFunc = makeFunc(new FunctionType(ImmutableArray<MethodParameter>.Empty, TypeSignature.Object));
+            var pStringFunc = ParameterExpression.Create(stringFunc, "stringFunc");
+            cx.AddTestExpr(Expression.ReferenceConversion(pStringFunc, objectFunc), pStringFunc);
+            cx.AddTestExpr(Expression.FunctionConversion(pStringFunc, objectFunc), pStringFunc);
+            cx.AddTestExpr(Expression.FunctionConversion(Expression.FunctionConversion(pStringFunc, new FunctionType(ImmutableArray<MethodParameter>.Empty, TypeSignature.String)), stringFunc), pStringFunc);
+            cx.AddTestExpr(Expression.FunctionConversion(Expression.FunctionConversion(pStringFunc, new FunctionType(ImmutableArray<MethodParameter>.Empty, TypeSignature.Object)), objectFunc), pStringFunc);
+
+            // var predicate = cx.FindType(typeof(Predicate<string>));
+            // var predicateP = ParameterExpression.Create(predicate, "predicateP");
+            // cx.AddTestExpr(Expression.FunctionConversion(predicateP, cx.FindType(typeof(Func<string, bool>))), predicateP);
+            check.CheckOutput(cx);
+        }
+
+        [Fact]
+        public void TransdelegateFunctionConversion()
+        {
+            var predicate = cx.FindType(typeof(Predicate<string>));
+            var predicateP = ParameterExpression.Create(predicate, "predicateP");
+            cx.AddTestExpr(Expression.FunctionConversion(predicateP, cx.FindType(typeof(Func<string, bool>))), predicateP);
+            check.CheckOutput(cx);
+        }
     }
 }

@@ -140,7 +140,7 @@ namespace Coberec.CSharpGen.Emit
                 var tuple = CreateTuple(compilation, nodes);
                 var tupleType = tuple.GetObjectResultType();
                 return new IL.Call(tupleType.GetMethods(options: GetMemberOptions.IgnoreInheritedMembers).Single(m => m.Name == "GetHashCode")) {
-                    Arguments = { new IL.AddressOf(tuple) }
+                    Arguments = { new IL.AddressOf(tuple, tupleType) }
                 };
             }
         }

@@ -77,7 +77,7 @@ namespace Coberec.ExprCS.CodeTranslation
             var bodyR = this.TranslateExpression(function.Body);
             var bodyC = this.BuildBContainer(bodyR);
 
-            var fn = ILAstFactory.CreateFunction(method, bodyC, functionKind: ILFunctionKind.LocalFunction);
+            var fn = ILAstFactory.CreateFunction(method, bodyC, function.Args.Select(a => this.Parameters[a.Id]), functionKind: ILFunctionKind.LocalFunction);
             fn.ReducedMethod = new TS.Implementation.LocalFunctionMethod(method, numberOfCompilerGeneratedParameters: 0);
 
             foreach (var p in function.Args)
@@ -124,7 +124,7 @@ namespace Coberec.ExprCS.CodeTranslation
             var bodyR = this.TranslateExpression(e.Body);
             var bodyC = this.BuildBContainer(bodyR);
 
-            var fn = ILAstFactory.CreateFunction(method, bodyC, functionKind: ILFunctionKind.Delegate);
+            var fn = ILAstFactory.CreateFunction(method, bodyC, e.Args.Select(a => this.Parameters[a.Id]), functionKind: ILFunctionKind.Delegate);
             fn.DelegateType = delegateType;
 
             foreach (var p in e.Args)
@@ -132,12 +132,52 @@ namespace Coberec.ExprCS.CodeTranslation
             fn.LocalFunctions.AddRange(this.PendingLocalFunctions);
             this.PendingLocalFunctions = pendingFunctions;
 
+            Assert.Equal(e.Params.Length, fn.Variables.Count(v => v.Kind == VariableKind.Parameter));
+
             return Result.Expression(delegateType, fn);
         }
 
-        Result TranslateFunctionConversion(FunctionConversionExpression item)
+        Result TranslateFunctionConversion(FunctionConversionExpression e)
         {
-            throw new NotImplementedException();
+            if (e.Value is Expression.FunctionCase fn)
+                return this.TranslateFunction(fn.Item, e.Type);
+
+            var fnType = e.Type as TypeReference.FunctionTypeCase;
+            var to = fnType is object ? this.FindAppropriateDelegate(fnType.Item) :
+                     this.Metadata.GetTypeReference(e.Type);
+            var target = this.TranslateExpression(e.Value);
+
+            var invokeMethod = target.Output.Type.GetDelegateInvokeMethod();
+            Assert.NotNull(invokeMethod);
+            var fromFnType = new FunctionType(invokeMethod.Parameters.Select(this.Metadata.TranslateParameter).ToImmutableArray(), this.Metadata.TranslateTypeReference(invokeMethod.ReturnType));
+            // if the result is function compatible with the delegate -> return it
+            if (fnType is object && fnType == fromFnType)
+            {
+                return target;
+            }
+
+            // attempt standard reference conversion
+            var conversion = this.Metadata.CSharpConversions.ExplicitConversion(target.Output.Type, to);
+            if (conversion.IsIdentityConversion)
+                return target;
+            if (conversion.IsReferenceConversion)
+                return Result.Concat(
+                    target,
+                    Result.Expression(to, new LdLoc(target.Output))
+                );
+
+            // reference conversion did not work? lets just create a lambda that will invoke the old function
+
+
+            var targetVar = ParameterExpression.Create(e.Value.Type(), "convertedFunction");
+            this.Parameters.Add(targetVar.Id, target.Output);
+            var args = fromFnType.Params.Select(p => ParameterExpression.Create(p.Type, p.Name)).ToImmutableArray();
+            var newFunction = TranslateFunction(new FunctionExpression(fromFnType.Params, args, Expression.Invoke(Expression.FunctionConversion(targetVar, fromFnType), args.Select(a => (Expression)a).ToImmutableArray())));
+            this.Parameters.Remove(targetVar.Id);
+            return Result.Concat(
+                target,
+                newFunction
+            );
         }
 
         IType FindAppropriateDelegate(FunctionType type)

@@ -76,7 +76,7 @@ namespace Coberec.ExprCS.CodeTranslation
 
             protected override void Default(ILInstruction inst)
             {
-                if (inst is IInstructionWithVariableOperand a)
+                if (inst is IInstructionWithVariableOperand a && a.Variable.Kind != VariableKind.Parameter)
                     Variables.Add(a.Variable);
 
                 foreach(var c in inst.Children)
