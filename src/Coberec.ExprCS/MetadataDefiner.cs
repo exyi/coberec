@@ -28,7 +28,7 @@ namespace Coberec.ExprCS
             throw new NotImplementedException();
 
         public static TS.ITypeDefinition GetTypeDefinition(this MetadataContext c, TypeSignature t) =>
-            c.Compilation.FindType(t.GetFullTypeName()).GetDefinition();
+            c.Compilation.FindType(t.GetFullTypeName()).GetDefinition() ?? throw new Exception($"Could not resolve {t.GetFullTypeName()} for some reason.");
 
         public static TS.IType GetTypeReference(this MetadataContext c, TypeReference tref) =>
             tref.Match(
@@ -37,7 +37,7 @@ namespace Coberec.ExprCS
                     new ParameterizedType(GetTypeDefinition(c, specializedType.Item.Type),
                         specializedType.Item.GenericParameters.Select(p => GetTypeReference(c, p))),
                 arrayType => new TS.ArrayType(c.Compilation, GetTypeReference(c, arrayType.Item.Type), arrayType.Item.Dimensions),
-                byrefType => new TS.ByReferenceType(GetTypeReference(c, byrefType)),
+                byrefType => new TS.ByReferenceType(GetTypeReference(c, byrefType.Item.Type)),
                 pointerType => new TS.PointerType(GetTypeReference(c, pointerType.Item.Type)),
                 gParam => throw new NotSupportedException(),
                 function => throw new NotSupportedException($"Function types are not supported in metadata")
@@ -63,7 +63,7 @@ namespace Coberec.ExprCS
                 throw new Exception($"Method {method.Name} was not found on type {method.DeclaringType}. Method signature is {method}");
 
             var result = candidates.OrderByDescending(m => m.DeclaringType.GetAllBaseTypes().Count())
-                             .First();
+                                   .First();
 
             // make sure that there is only one such method
             Assert.Empty(candidates.Where(m => m != result && m.DeclaringType.GetAllBaseTypes().Count() == result.DeclaringType.GetAllBaseTypes().Count()));
@@ -96,7 +96,7 @@ namespace Coberec.ExprCS
         }
 
         internal static IParameter CreateParameter(MetadataContext cx, MethodParameter p) =>
-            new DefaultParameter(GetTypeReference(cx, p.Type), p.Name);
+            new DefaultParameter(GetTypeReference(cx, p.Type), p.Name, referenceKind: p.Type is TypeReference.ByReferenceTypeCase ? ReferenceKind.Ref : ReferenceKind.None);
 
         internal static VirtualMethod CreateMethodDefinition(MetadataContext cx, MethodDef m)
         {

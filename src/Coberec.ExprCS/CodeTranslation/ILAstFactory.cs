@@ -4,6 +4,7 @@ using System.Linq;
 using ICSharpCode.Decompiler.IL;
 using ICSharpCode.Decompiler.TypeSystem;
 using Xunit;
+using TS=ICSharpCode.Decompiler.TypeSystem;
 
 namespace Coberec.ExprCS.CodeTranslation
 {
@@ -48,6 +49,7 @@ namespace Coberec.ExprCS.CodeTranslation
         public static ILInstruction FieldAddr(IField field, ILVariable target) =>
             target is object ?
             new LdFlda(new LdLoc(target), field) :
+            //                                                                 ^ needs to be reference for structs and not reference for not objects
             (ILInstruction)new LdsFlda(field);
 
         public static ILFunction CreateFunction(IMethod method, BlockContainer functionContainer, IEnumerable<ILVariable> morevariables = null, ILFunctionKind functionKind = ILFunctionKind.TopLevelFunction)

@@ -41,15 +41,18 @@ namespace Coberec.ExprCS.Tests
             check.CheckOutput(cx);
         }
 
-        [Fact]
-        public void IEquatableImplementation()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void IEquatableImplementation(bool isStruct)
         {
             var ns = new NamespaceSignature("MyNamespace", parent: null);
-            var type = TypeSignature.Class("MyType", ns, Accessibility.APublic);
+            var type = isStruct ? TypeSignature.Struct("MyType", ns, Accessibility.APublic)
+                                : TypeSignature.Class("MyType", ns, Accessibility.APublic);
             var iequatableT = cx.FindTypeDef(typeof(IEquatable<>));
             var method = new MethodSignature(type, ImmutableArray.Create(new MethodParameter(type, "obj")), "Equals", cx.FindType(typeof(bool)), false, Accessibility.APublic, false, false, false, false, ImmutableArray<GenericParameter>.Empty);
-            var parameter = new ParameterExpression(Guid.NewGuid(), "obj", type, false);
-            var methodDef = new MethodDef(method, ImmutableArray.Create(parameter), new ConstantExpression(true, cx.FindType(typeof(bool))));
+            var thisP = ParameterExpression.CreateThisParam(method);
+            var methodDef = new MethodDef(method, ImmutableArray.Create(thisP), new ConstantExpression(true, cx.FindType(typeof(bool))));
             var typeDef = TypeDef.Empty(type).With(
                 implements: ImmutableArray.Create(new SpecializedType(iequatableT, ImmutableArray.Create<TypeReference>(type))),
                 members: ImmutableArray.Create<MemberDef>(methodDef));
@@ -57,13 +60,12 @@ namespace Coberec.ExprCS.Tests
             cx.AddType(typeDef);
 
 
-            check.CheckOutput(cx);
+            check.CheckOutput(cx, $"{(isStruct ? "struct" : "class")}");
         }
 
         [Fact]
         public void FewFields()
         {
-
             var stringT = cx.FindType(typeof(string));
             var stringArr = cx.FindType(typeof(string[]));
             var someTuple = cx.FindType(typeof((List<int>, System.Threading.Tasks.Task)));

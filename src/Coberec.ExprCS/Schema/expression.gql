@@ -11,6 +11,7 @@ type NotExpression {
 type MethodCallExpression {
     method: MethodSignature
     args: [Expression]
+    # automatically adjusts reference on the target (unwraps reference for objects, makes reference for structs)
     target: Expression!
 }
 
@@ -19,16 +20,33 @@ type NewObjectExpression {
     args: [Expression]
 }
 
+# Gets a reference to the field
 type FieldAccessExpression {
     field: FieldSignature
+    # automatically adjusts reference on the target (unwraps reference for objects, makes reference for structs)
     target: Expression!
 }
 
-# nebo zavést LValue?
-type FieldAssignExpression {
-    field: FieldSignature
-    target: Expression!
+type ReferenceAssignExpression {
+    # target must be of type ByReference
+    target: Expression
     value: Expression
+}
+
+# returns a value from a reference
+type DereferenceExpression {
+    # expression must be of type ByReference
+    expr: Expression
+}
+
+# returns a reference to a local variable or a parameter
+type VariableReferenceExpression {
+    variable: ParameterExpression
+}
+
+# Stores the value into an anonymous temporary variable, and returns the address of that variable.
+type AddressOfExpression {
+    expr: Expression
 }
 
 type NumericConversionExpression {
@@ -38,6 +56,7 @@ type NumericConversionExpression {
 }
 
 # reference or boxing/unboxing conversion
+# automatically dereferences a by ref value before it's boxed/converted
 type ReferenceConversionExpression {
     value: Expression
     type: TypeReference
@@ -147,7 +166,10 @@ union Expression =
     | MethodCallExpression
     | NewObjectExpression
     | FieldAccessExpression
-    | FieldAssignExpression
+    | ReferenceAssignExpression
+    | DereferenceExpression
+    | VariableReferenceExpression
+    | AddressOfExpression
     | NumericConversionExpression
     | ReferenceConversionExpression
     | ConstantExpression

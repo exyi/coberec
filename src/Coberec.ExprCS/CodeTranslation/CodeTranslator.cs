@@ -9,6 +9,7 @@ using ICSharpCode.Decompiler.TypeSystem;
 using ICSharpCode.Decompiler.Util;
 using Xunit;
 using IL=ICSharpCode.Decompiler.IL;
+using TS=ICSharpCode.Decompiler.TypeSystem;
 
 namespace Coberec.ExprCS.CodeTranslation
 {
@@ -17,12 +18,18 @@ namespace Coberec.ExprCS.CodeTranslation
         public static ILFunction CreateBody(MethodDef method, IMethod generatedMethod, MetadataContext cx)
         {
             var translator = new CodeTranslator(method, generatedMethod, cx);
+            var declaringType = method.Signature.DeclaringType;
             if (!method.Signature.IsStatic)
             {
-                Assert.Equal(method.Signature.DeclaringType, method.ArgumentParams.First().Type);
+                var firstArgument = method.ArgumentParams.First();
+                if (declaringType.IsValueType)
+                    Assert.Equal(TypeReference.ByReferenceType(declaringType), firstArgument.Type);
+                else
+                    Assert.Equal(declaringType, firstArgument.Type);
+
                 translator.Parameters.Add(
-                    method.ArgumentParams.First().Id,
-                    new ILVariable(VariableKind.Parameter, cx.GetTypeDef(method.Signature.DeclaringType), -1) { Name = "this" });
+                    firstArgument.Id,
+                    new ILVariable(VariableKind.Parameter, cx.GetTypeReference(firstArgument.Type), -1) { Name = "this" });
             }
             foreach (var (i, (arg, param)) in method.ArgumentParams.Skip(method.Signature.IsStatic ? 0 : 1).ZipTuples(method.Signature.Params).Indexed())
             {
@@ -152,14 +159,18 @@ namespace Coberec.ExprCS.CodeTranslation
             return fn;
         }
 
-        Result TranslateExpression(Expression expr) =>
-            expr.Match(
+        Result TranslateExpression(Expression expr)
+        {
+            var result = expr.Match(
                 e => TranslateBinary(e.Item),
                 e => TranslateNot(e.Item),
                 e => TranslateMethodCall(e.Item),
                 e => TranslateNewObject(e.Item),
                 e => TranslateFieldAccess(e.Item),
-                e => TranslateFieldAssign(e.Item),
+                e => TranslateReferenceAssign(e.Item),
+                e => TranslateDereference(e.Item),
+                e => TranslateVariableReference(e.Item),
+                e => TranslateAddressOf(e.Item),
                 e => TranslateNumericConversion(e.Item),
                 e => TranslateReferenceConversion(e.Item),
                 e => TranslateConstant(e.Item),
@@ -175,7 +186,30 @@ namespace Coberec.ExprCS.CodeTranslation
                 e => TranslateLetIn(e.Item),
                 e => TranslateBlock(e.Item),
                 e => TranslateLowerable(e.Item));
+            var expectedType = expr.Type();
+            if (expectedType == TypeSignature.Void)
+                Assert.Null(result.Output);
+            else
+                Assert.NotNull(result.Output);
+            if (expectedType is TypeReference.FunctionTypeCase fn)
+            {
+                Assert.Equal(StackType.O, result.Output.StackType);
+                var invokeMethod = result.Output.Type.GetDelegateInvokeMethod();
+                Assert.NotNull(invokeMethod);
+                Assert.Equal(invokeMethod.Parameters.Count, fn.Item.Params.Length);
+                // TODO: more checks
+            }
 
+            else if (expectedType != TypeSignature.Void)
+            {
+                var t = this.Metadata.GetTypeReference(expectedType);
+                Assert.Equal(t.FullName, result.Output.Type.FullName);
+            }
+
+            return result;
+        }
+
+        
         Result TranslateNot(NotExpression item)
         {
             var r = this.TranslateExpression(item.Expr);
@@ -360,6 +394,8 @@ namespace Coberec.ExprCS.CodeTranslation
             // TODO: validate
 
             var value = this.TranslateExpression(e.Value);
+            value = AdjustReference(value, wantReference: false, false);
+
             var to = this.Metadata.GetTypeReference(e.Type);
 
             var conversion = this.Metadata.CSharpConversions.ExplicitConversion(value.Output.Type, to);
@@ -399,33 +435,69 @@ namespace Coberec.ExprCS.CodeTranslation
             );
         }
 
-        Result TranslateFieldAssign(FieldAssignExpression e)
+        Result TranslateReferenceAssign(ReferenceAssignExpression e)
         {
             // TODO: unit test
-            var field = this.Metadata.GetField(e.Field);
-            var target = e.Target?.Apply(this.TranslateExpression);
+            var target = this.TranslateExpression(e.Target);
             var value = this.TranslateExpression(e.Value);
 
-            var load = new StObj(ILAstFactory.FieldAddr(field, target.Output), new LdLoc(value.Output), field.Type);
+            var type = Assert.IsType<TS.ByReferenceType>(target.Output.Type).ElementType;
+
+            var load = new StObj(new LdLoc(target.Output), new LdLoc(value.Output), type);
 
             return Result.Concat(
                 target,
                 value,
-                Result.Expression(field.Type, load)
+                new Result(new ExpressionStatement(load))
             );
         }
 
         Result TranslateFieldAccess(FieldAccessExpression e)
         {
-            // TODO: unit test
+            if (e.Target is object)
+                Assert.Equal((TypeReference)e.Field.DeclaringType, e.Target.Type().UnwrapReference());
+            //                                                                      ^ auto-reference is allowed for targets
+
+            // TODO: unit test (static field)
             var field = this.Metadata.GetField(e.Field);
             var target = e.Target?.Apply(TranslateExpression);
+            target = AdjustReference(target, !(bool)field.DeclaringType.IsReferenceType, isReadonly: field.IsReadOnly);
 
-            var load = new LdObj(ILAstFactory.FieldAddr(field, target.Output), field.Type);
+            var load = ILAstFactory.FieldAddr(field, target?.Output);
 
             return Result.Concat(
                 target,
-                Result.Expression(field.Type, load)
+                Result.Expression(new TS.ByReferenceType(field.Type), load)
+            );
+        }
+
+        Result TranslateAddressOf(AddressOfExpression e)
+        {
+            var r = TranslateExpression(e.Expr);
+            var addr = new AddressOf(new LdLoc(r.Output), r.Output.Type);
+            var type = new TS.ByReferenceType(r.Output.Type);
+            return Result.Concat(
+                r,
+                Result.Expression(type, addr));
+        }
+
+        Result TranslateVariableReference(VariableReferenceExpression e)
+        {
+            if (!this.Parameters.TryGetValue(e.Variable.Id, out var v))
+                throw new Exception($"Parameter {e.Variable.Name}:{e.Variable.Type} with id {e.Variable.Id} is not defined.");
+
+            return Result.Expression(
+                new TS.ByReferenceType(v.Type),
+                new LdLoca(v));
+        }
+
+        Result TranslateDereference(DereferenceExpression e)
+        {
+            var r = TranslateExpression(e.Expr);
+            var type = Assert.IsType<TS.ByReferenceType>(r.Output.Type).ElementType;
+            return Result.Concat(
+                r,
+                Result.Expression(type, new LdObj(new LdLoc(r.Output), type))
             );
         }
 
@@ -442,15 +514,57 @@ namespace Coberec.ExprCS.CodeTranslation
             return Result.Concat(args.Append(Result.Expression(method.DeclaringType, call)));
         }
 
+        static Result AdjustReference(ILVariable v, bool wantReference, bool isReadonly)
+        {
+            var type = v.Type is TS.ByReferenceType refType ? refType.ElementType : v.Type;
+
+            if (wantReference)
+            {
+                if (v.StackType == StackType.Ref)
+                    return new Result(v);
+                else if (isReadonly)
+                    // no need for special variable
+                    return Result.Expression(new TS.ByReferenceType(type), new AddressOf(new LdLoc(v), type));
+                else
+                {
+                    var tmpVar = new ILVariable(VariableKind.StackSlot, type);
+                    return Result.Concat(
+                        new Result(new ExpressionStatement(new LdLoc(v), tmpVar)),
+                        Result.Expression(new TS.ByReferenceType(type), new LdLoca(tmpVar))
+                    );
+                }
+            }
+            else
+            {
+                if (v.StackType == StackType.Ref)
+                    return Result.Expression(type, new LdObj(new LdLoc(v), type));
+                else
+                    return new Result(v);
+            }
+        }
+
+        static Result AdjustReference(Result r, bool wantReference, bool isReadonly) =>
+            r == null ? null :
+            Result.Concat(
+                r,
+                AdjustReference(r.Output, wantReference, isReadonly)
+            );
+
         Result TranslateMethodCall(MethodCallExpression e)
         {
             Assert.Equal(e.Method.IsStatic, e.Target == null);
-            Assert.Equal(e.Method.Params.Length, e.Args.Length);
+            // check types, no implicit conversions are allowed
+            Assert.Equal(e.Method.Params.Select(p => p.Type), e.Args.Select(a => a.Type()));
+            if (e.Target is object)
+                Assert.Equal((TypeReference)e.Method.DeclaringType, e.Target.Type().UnwrapReference());
+            //                                                                      ^ except auto-reference is allowed for targets
 
             var method = this.Metadata.GetMethod(e.Method);
 
             var args = e.Args.Select(TranslateExpression).ToArray();
             var target = e.Target?.Apply(TranslateExpression);
+            target = AdjustReference(target, !(bool)method.DeclaringType.IsReferenceType, isReadonly: false);
+            //                                                                                          ^ TODO readonly structs
 
             var result = new List<Result>();
             target?.ApplyAction(result.Add);
