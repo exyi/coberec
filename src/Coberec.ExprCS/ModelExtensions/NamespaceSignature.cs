@@ -7,7 +7,17 @@ namespace Coberec.ExprCS
 {
     public partial class NamespaceSignature
     {
-        public string FullName() => Parent == null ? Name : $"{Parent.FullName()}.{Name}";
-        public static NamespaceSignature System = new NamespaceSignature("System", null);
+        public override string ToString() =>
+            Parent == Global || Parent == null ? Name :
+            $"{Parent}.{Name}";
+        public static NamespaceSignature Global = new NamespaceSignature("", null);
+        public static NamespaceSignature System = new NamespaceSignature("System", Global);
+
+        public static NamespaceSignature Parse(string ns) =>
+            Create(ns.Split('.'));
+
+        public static NamespaceSignature Create(Span<string> nsParts) =>
+            nsParts.IsEmpty ? Global :
+            new NamespaceSignature(nsParts[nsParts.Length - 1], Create(nsParts.Slice(0, nsParts.Length - 1)));
     }
 }

@@ -28,6 +28,7 @@ interface MemberSignature {
 type TypeSignature implements MemberSignature {
     name: String
     parent: TypeOrNamespace
+    kind: String
     isValueType: Boolean
     canOverride: Boolean
     isAbstract: Boolean

@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 
-namespace Coberec.CSharpGen.Emit
+namespace Coberec.ExprCS
 {
     public static class NameSanitizer
     {

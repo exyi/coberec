@@ -10,11 +10,11 @@ namespace Coberec.ExprCS.Tests
     public class MetadataDefinitionTests
     {
         OutputChecker check = new OutputChecker("testoutput");
-        MetadataContext cx = MetadataContext.Create("MyModule");
+        MetadataContext cx = MetadataContext.Create("MyModule", settings: new EmitSettings(sanitizeSymbolNames: false));
         [Fact]
         public void OneEmptyType()
         {
-            var ns = new NamespaceSignature("MyNamespace", parent: null);
+            var ns = NamespaceSignature.Parse("MyNamespace");
             var type = TypeSignature.Class("MyType", ns, Accessibility.APublic);
             var typeDef = TypeDef.Empty(type);
 
@@ -25,7 +25,7 @@ namespace Coberec.ExprCS.Tests
         [Fact]
         public void NestedTypesWithInheritance()
         {
-            var ns = new NamespaceSignature("MyNamespace", parent: null);
+            var ns = NamespaceSignature.Parse("MyNamespace");
             var rootType = TypeSignature.Class("MyType", ns, Accessibility.APublic);
             var type1 = TypeSignature.Class("A", rootType, Accessibility.APublic);
             var type2 = type1.With(name: "B");
@@ -46,7 +46,7 @@ namespace Coberec.ExprCS.Tests
         [InlineData(false)]
         public void IEquatableImplementation(bool isStruct)
         {
-            var ns = new NamespaceSignature("MyNamespace", parent: null);
+            var ns = NamespaceSignature.Parse("MyNamespace");
             var type = isStruct ? TypeSignature.Struct("MyType", ns, Accessibility.APublic)
                                 : TypeSignature.Class("MyType", ns, Accessibility.APublic);
             var iequatableT = cx.FindTypeDef(typeof(IEquatable<>));
@@ -70,7 +70,7 @@ namespace Coberec.ExprCS.Tests
             var stringArr = cx.FindType(typeof(string[]));
             var someTuple = cx.FindType(typeof((List<int>, System.Threading.Tasks.Task)));
 
-            var ns = new NamespaceSignature("MyNamespace", parent: null);
+            var ns = NamespaceSignature.Parse("MyNamespace");
             var type = TypeSignature.Class("MyType", ns, Accessibility.APublic);
             var typeDef = TypeDef.Empty(type).With(members: ImmutableArray.Create<MemberDef>(
                 new FieldDef(new FieldSignature(type, "F1", Accessibility.APublic, stringT, false, true)),
@@ -78,6 +78,23 @@ namespace Coberec.ExprCS.Tests
                 new FieldDef(new FieldSignature(type, "F3", Accessibility.AInternal, someTuple, false, true)),
                 new FieldDef(new FieldSignature(type, "F4", Accessibility.AProtectedInternal, stringArr, true, false))
             ));
+
+            cx.AddType(typeDef);
+            check.CheckOutput(cx);
+        }
+
+        [Fact]
+        public void Interface()
+        {
+            var ns = NamespaceSignature.Parse("MyNamespace");
+            var type = TypeSignature.Interface("MyInterface", ns, Accessibility.APublic);
+
+            var method = MethodSignature.Instance("MyMethod", type, Accessibility.APublic, TypeSignature.Int32, new MethodParameter(TypeSignature.String, "myParameter"));
+            var property = PropertySignature.Create("MyProperty", type, TypeSignature.Boolean, Accessibility.APublic, null);
+            var typeDef = TypeDef.Empty(type)
+                .AddMember(new MethodDef(method, default, null))
+                .AddMember(new PropertyDef(property, new MethodDef(property.Getter, default, null), null));
+
 
             cx.AddType(typeDef);
             check.CheckOutput(cx);

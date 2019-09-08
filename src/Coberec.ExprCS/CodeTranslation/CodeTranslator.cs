@@ -17,6 +17,11 @@ namespace Coberec.ExprCS.CodeTranslation
     {
         public static ILFunction CreateBody(MethodDef method, IMethod generatedMethod, MetadataContext cx)
         {
+            Assert.NotNull(method.Body);
+            Assert.False(method.ArgumentParams.IsDefault);
+            if (method.Body is ILSpyMethodBody iLSpyMethod)
+                return iLSpyMethod.BuildBody(generatedMethod, cx);
+
             var translator = new CodeTranslator(method, generatedMethod, cx);
             var declaringType = method.Signature.DeclaringType;
             if (!method.Signature.IsStatic)

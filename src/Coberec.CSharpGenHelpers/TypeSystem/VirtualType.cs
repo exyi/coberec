@@ -31,7 +31,7 @@ namespace Coberec.CSharpGen.TypeSystem
 
         public TypeKind Kind { get; }
 
-        public bool? IsReferenceType => this.Kind == TypeKind.Class || this.Kind == TypeKind.Interface;
+        public bool? IsReferenceType => this.Kind == TypeKind.Class || this.Kind == TypeKind.Interface || this.Kind == TypeKind.Delegate;
 
         public bool IsByRefLike => false;
 

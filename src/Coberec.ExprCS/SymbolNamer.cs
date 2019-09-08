@@ -6,18 +6,18 @@ using ICSharpCode.Decompiler.TypeSystem;
 using ICSharpCode.Decompiler.TypeSystem.Implementation;
 using Coberec.CSharpGen.TypeSystem;
 
-namespace Coberec.CSharpGen.Emit
+namespace Coberec.ExprCS
 {
     public static class SymbolNamer
     {
-        public static string NameType(string @namespace, string desiredName, EmitContext cx)
+        public static string NameType(string @namespace, string desiredName, int genericArgCount, ICompilation compilation)
         {
             desiredName = NameSanitizer.SanitizeTypeName(desiredName);
-            var ns = cx.Compilation.RootNamespace.FindDescendantNamespace(@namespace);
+            var ns = compilation.RootNamespace.FindDescendantNamespace(@namespace);
 
             if (ns == null) return desiredName; // there will be no collision
 
-            var existingNames = new HashSet<string>(ns.Types.Select(t => t.Name).Concat(ns.ChildNamespaces.Select(t => t.Name)), StringComparer.InvariantCultureIgnoreCase);
+            var existingNames = new HashSet<string>(ns.Types.Where(t => t.TypeArguments.Count == genericArgCount).Select(t => t.Name).Concat(ns.ChildNamespaces.Select(t => t.Name)), StringComparer.InvariantCultureIgnoreCase);
 
             if (!existingNames.Contains(desiredName)) return desiredName;
             for (int i = 2; true; i++)

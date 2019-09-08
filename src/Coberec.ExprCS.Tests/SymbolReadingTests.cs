@@ -21,7 +21,7 @@ namespace Coberec.ExprCS.Tests
             Assert.Equal(0, stringT.GenericParamCount);
             Assert.Equal("String", stringT.Name);
             Assert.Equal("DateTime", dateTimeT.Name);
-            Assert.Equal(TypeOrNamespace.NamespaceSignature(new NamespaceSignature("System", null)), dateTimeT.Parent);
+            Assert.Equal(TypeOrNamespace.NamespaceSignature(NamespaceSignature.System), dateTimeT.Parent);
             Assert.Equal(dateTimeT.Parent, stringT.Parent);
 
             var enumerableT = defaultContext.FindTypeDef(typeof(IEnumerable<>));

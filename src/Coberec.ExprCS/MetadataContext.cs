@@ -22,15 +22,20 @@ namespace Coberec.ExprCS
     public class MetadataContext
     {
         private readonly HackedSimpleCompilation hackedCompilation;
-        internal ICompilation Compilation => hackedCompilation;
+#if ExposeILSpy
+        public
+#else
+        internal
+#endif
+        ICompilation Compilation => hackedCompilation;
 
         internal CSharpConversions CSharpConversions { get; }
 
 
-        internal MetadataContext(HackedSimpleCompilation compilation)
+        internal MetadataContext(HackedSimpleCompilation compilation, EmitSettings settings)
         {
             this.hackedCompilation = compilation;
-
+            Settings = settings ?? new EmitSettings();
             CSharpConversions = CSharpConversions.Get(compilation);
             moduleMap = compilation.Modules.ToDictionary(m => new ModuleSignature(m.Name));
             Modules = moduleMap.Keys.ToImmutableArray();
@@ -42,18 +47,20 @@ namespace Coberec.ExprCS
 
         public static MetadataContext Create(
             string mainModuleName,
-            string[] references = null)
+            IEnumerable<string> references = null,
+            EmitSettings settings = null)
         {
             var referencedModules =
                 references == null ? ReferencedModules.Value :
-                references.Distinct().Select(r => new PEFile(r, PEStreamOptions.PrefetchMetadata)).ToArray();
+                ReferencedModules.Value.Concat(references.Distinct().Select(r => new PEFile(r, PEStreamOptions.PrefetchMetadata)).ToArray());
+            // TODO   ^ add a way to override this implicit reference
 
             var compilation = new HackedSimpleCompilation(
                 new VirtualModuleReference(true, mainModuleName),
                 referencedModules
             );
 
-            return new MetadataContext(compilation);
+            return new MetadataContext(compilation, settings);
         }
         public ImmutableArray<ModuleSignature> Modules { get; }
         public ModuleSignature MainModule { get; }
@@ -66,7 +73,14 @@ namespace Coberec.ExprCS
                 var parent = type.DeclaringTypeDefinition != null ?
                              TypeOrNamespace.TypeSignature(TranslateType(type.DeclaringTypeDefinition)) :
                              TypeOrNamespace.NamespaceSignature(TranslateNamespace(type.Namespace));
-                return new TypeSignature(type.Name, parent, isValueType: !(bool)type.IsReferenceType, canOverride: !type.IsSealed && !type.IsStatic, isAbstract: type.IsAbstract || type.IsStatic, TranslateAccessibility(type.Accessibility), type.TypeParameterCount);
+                var kind = t.Kind == TypeKind.Interface ? "interface" :
+                           t.Kind == TypeKind.Struct ? "struct" :
+                           t.Kind == TypeKind.Class ? "class" :
+                           t.Kind == TypeKind.Void ? "struct" :
+                           t.Kind == TypeKind.Enum ? "enum" :
+                           t.Kind == TypeKind.Delegate ? "delegate" :
+                           throw new NotSupportedException($"Type kind {t.Kind} is not supported.");
+                return new TypeSignature(type.Name, parent, kind, isValueType: !(bool)type.IsReferenceType, canOverride: !type.IsSealed && !type.IsStatic, isAbstract: type.IsAbstract || type.IsStatic, TranslateAccessibility(type.Accessibility), type.TypeParameterCount);
             });
 
         readonly ConcurrentDictionary<IMethod, MethodSignature> methodSignatureCache = new ConcurrentDictionary<IMethod, MethodSignature>();
@@ -129,14 +143,7 @@ namespace Coberec.ExprCS
 
         ConcurrentDictionary<string, NamespaceSignature> namespaceSignatureCache = new ConcurrentDictionary<string, NamespaceSignature>();
         NamespaceSignature TranslateNamespace(string ns) =>
-            namespaceSignatureCache.GetOrAdd(ns, n => {
-                var dot = n.LastIndexOf('.');
-                if (dot < 0) return new NamespaceSignature(n, null);
-                return new NamespaceSignature(
-                    n.Substring(dot + 1),
-                    TranslateNamespace(n.Substring(0, dot))
-                );
-            });
+            namespaceSignatureCache.GetOrAdd(ns, NamespaceSignature.Parse);
 
         MemberSignature TranslateMember(IMember m) =>
             m is ITypeDefinition type ? TranslateType(type) :
@@ -166,8 +173,8 @@ namespace Coberec.ExprCS
             throw new ArgumentException($"Module {module} is not known.");
 
         internal INamespace GetNamespace(NamespaceSignature ns) =>
-            ns == null ? Compilation.RootNamespace :
-            GetNamespace(ns.Parent).GetChildNamespace(ns.Name);
+            ns == NamespaceSignature.Global ? Compilation.RootNamespace :
+            GetNamespace(ns.Parent).GetChildNamespace(ns.Name) ?? throw new Exception($"Could not resolve namespace {ns}.");
 
         internal ITypeDefinition GetTypeDef(TypeSignature type) =>
             type.Parent.Match(
@@ -215,6 +222,8 @@ namespace Coberec.ExprCS
         private List<TypeDef> definedTypes = new List<TypeDef>();
         public IReadOnlyList<TypeDef> DefinedTypes => definedTypes.AsReadOnly();
 
+        public EmitSettings Settings { get; }
+
         public void AddType(TypeDef type)
         {
             var xx = MetadataDefiner.CreateTypeDefinition(this, type);
@@ -223,13 +232,21 @@ namespace Coberec.ExprCS
             definedTypes.Add(type);
         }
 
+// #if ExposeILSpy
+        public TypeSignature AddRawType(ITypeDefinition type)
+        {
+            mutableModule.AddType(type);
+            return TranslateType(type);
+        }
+// #endif
+
         private CSharpEmitter BuildCore()
         {
             var s = new DecompilerSettings(LanguageVersion.Latest);
             s.CSharpFormattingOptions.AutoPropertyFormatting = PropertyFormatting.ForceOneLine;
             s.CSharpFormattingOptions.PropertyBraceStyle = BraceStyle.DoNotChange;
 
-            var emitter = new CSharpEmitter(this.hackedCompilation, s, false);
+            var emitter = new CSharpEmitter(this.hackedCompilation, s, this.Settings.EmitPartialClasses);
             return emitter;
         }
 
@@ -237,6 +254,12 @@ namespace Coberec.ExprCS
         {
             var e = BuildCore();
             return e.DecompileWholeModuleAsString();
+        }
+
+        public IEnumerable<string> EmitToDirectory(string targetDir)
+        {
+            var e = BuildCore();
+            return e.WriteCodeFilesInProject(targetDir);
         }
 
         public static IEnumerable<string> GetReferencedPaths() =>

@@ -21,6 +21,7 @@ using System.Collections.Immutable;
 using ICSharpCode.Decompiler.CSharp.OutputVisitor;
 using Coberec.CoreLib;
 using System.Reflection.PortableExecutable;
+using E=Coberec.ExprCS;
 
 namespace Coberec.CSharpGen
 {
@@ -56,36 +57,36 @@ namespace Coberec.CSharpGen
     public sealed class CSharpBackend
     {
         private readonly EmitContext cx;
+        private readonly E.NamespaceSignature @namespace;
         private Dictionary<string, TypeDef> typeSchemas;
-        private Dictionary<string, VirtualType> prebuiltTypes = new Dictionary<string, VirtualType>();
-        private Dictionary<string, (VirtualType type, TypeSymbolNameMapping mapping)> realizedTypes = new Dictionary<string, (VirtualType, TypeSymbolNameMapping)>();
+        private Dictionary<string, E.TypeSignature> typeSignatures;
+        private Dictionary<string, (E.TypeDef type, TypeSymbolNameMapping mapping)> realizedTypes = new Dictionary<string, (E.TypeDef, TypeSymbolNameMapping)>();
         private CSharpBackend(EmitContext cx)
         {
             this.cx = cx;
+            this.@namespace = E.NamespaceSignature.Parse(cx.Settings.Namespace);
         }
-        VirtualType AddType(EmitContext cx, TypeDef def)
+        E.TypeSignature CreateTypeSignature(EmitContext cx, TypeDef def)
         {
-            var name = SymbolNamer.NameType(cx.Settings.Namespace, def.Name, cx);
-
             var isAbstract = def.Core is TypeDefCore.UnionCase;
-            var typeKind = def.Core is TypeDefCore.InterfaceCase ? TypeKind.Interface :
-                           TypeKind.Class;
+            var typeKind = def.Core is TypeDefCore.InterfaceCase ? "interface" :
+                           "class";
 
-            var type = new VirtualType(
+            var type = new E.TypeSignature(
+                def.Name,
+                this.@namespace,
                 typeKind,
-                Accessibility.Public,
-                new FullTypeName(new TopLevelTypeName(cx.Settings.Namespace, name)),
-                isStatic: false,
-                isSealed: !isAbstract && typeKind == TypeKind.Class,
+                isValueType: false,
+                canOverride: isAbstract || typeKind == "interface",
                 isAbstract: isAbstract,
-                parentModule: cx.Module
+                E.Accessibility.APublic,
+                genericParamCount: 0
             );
-            cx.Module.AddType(type);
             return type;
         }
 
         IType FindType(string name) =>
-            this.prebuiltTypes.TryGetValue(name, out var propType) ? (IType)propType :
+            this.typeSignatures.TryGetValue(name, out var propType) ? (IType)propType :
             cx.Settings.PrimitiveTypeMapping.TryGetValue(name, out var fullName) ? cx.FindType(new FullTypeName(fullName)) :
             // throw new Exception($"Could not resolve type '{name}'");
             cx.FindType<string>();
@@ -104,12 +105,12 @@ namespace Coberec.CSharpGen
                            return new ParameterizedType(cx.FindType(typeof(ImmutableArray<>)), new[] { t });
                        });
 
-        (VirtualType, TypeSymbolNameMapping) BuildType(TypeDef def)
+        (E.TypeDef, TypeSymbolNameMapping) BuildType(TypeDef def)
         {
             if (this.realizedTypes.TryGetValue(def.Name, out var result))
                 return result;
 
-            var type = this.prebuiltTypes[def.Name];
+            var type = this.typeSignatures[def.Name];
 
             try
             {
@@ -130,7 +131,7 @@ namespace Coberec.CSharpGen
             return result;
         }
 
-        private TypeSymbolNameMapping GenerateInterface(VirtualType type, TypeDefCore.InterfaceCase ifc, TypeDef typeDef)
+        private (E.TypeDef, TypeSymbolNameMapping) GenerateInterface(E.TypeSignature type, TypeDefCore.InterfaceCase ifc, TypeDef typeDef)
         {
             var specialSymbols = new Dictionary<string, string>();
             var propDictionary = new Dictionary<string, (TypeField schema, IProperty prop)>();
@@ -346,7 +347,7 @@ namespace Coberec.CSharpGen
         {
             IType findType(string name)
             {
-                if (this.prebuiltTypes.TryGetValue(name, out var result))
+                if (this.typeSignatures.TryGetValue(name, out var result))
                     return result;
                 return cx.FindType(new FullTypeName(name));
             }
@@ -357,7 +358,7 @@ namespace Coberec.CSharpGen
                         // TODO: warning when in the same namespace as model
                         //       error in case of real name collision
                         var newType = new VirtualType(TypeKind.Class, Accessibility.Public, new FullTypeName(new TopLevelTypeName(s.DeclaredIn, s.Name)), isStatic: false, isSealed: false, isAbstract: false, parentModule: cx.Module, isHidden: true);
-                        cx.Module.AddType(newType);
+                        cx.Metadata.AddRawType(newType);
                         break;
                     }
                     case ExternalSymbolKind.Method:
@@ -372,18 +373,23 @@ namespace Coberec.CSharpGen
                         throw new NotSupportedException($"External symbols of kind {s.Kind} are not supported.");
                 }
             }
+
         }
+
+        public static E.EmitSettings GetEmitSettings(EmitSettings settings) =>
+            new E.EmitSettings(settings.EmitPartialClasses);
+
 
         public static string Build(DataSchema schema, EmitSettings settings)
         {
-            CSharpEmitter emitter = BuildCore(schema, settings);
-            return emitter.DecompileWholeModuleAsString();
+            var cx = BuildCore(schema, settings);
+            return cx.EmitToString();
         }
 
         public static IEnumerable<string> BuildIntoFolder(DataSchema schema, EmitSettings settings, string targetDir)
         {
-            CSharpEmitter emitter = BuildCore(schema, settings);
-            return emitter.WriteCodeFilesInProject(targetDir);
+            var cx = BuildCore(schema, settings);
+            return cx.EmitToDirectory(targetDir);
         }
 
         public ValidationErrors ValidateSchema()
@@ -391,22 +397,16 @@ namespace Coberec.CSharpGen
             return cx.FullSchema.ValidateTypeReferences(predefinedTypes: cx.Settings.PrimitiveTypeMapping.Keys);
         }
 
-        private static CSharpEmitter BuildCore(DataSchema schema, EmitSettings settings)
+        private static E.MetadataContext BuildCore(DataSchema schema, EmitSettings settings)
         {
-            var cx = new EmitContext(
-                new HackedSimpleCompilation(
-                    new VirtualModuleReference(true, "NewEpicModule"),
-                    ReferencedModules.Value.Concat(settings.AdditionalReferences.Select(r => new PEFile(r, PEStreamOptions.PrefetchMetadata)))
-                ),
-                settings,
-                schema
-            );
+            var cx2 = E.MetadataContext.Create("NewEpicModule", settings.AdditionalReferences, GetEmitSettings(settings));
+            var cx = new EmitContext(cx2, settings, schema);
 
             var @this = new CSharpBackend(cx);
 
             @this.typeSchemas = schema.Types.ToDictionary(t => t.Name);
 
-            @this.prebuiltTypes = schema.Types.ToDictionary(t => t.Name, t => @this.AddType(cx, t));
+            @this.typeSignatures = schema.Types.ToDictionary(t => t.Name, t => @this.CreateTypeSignature(cx, t));
 
             @this.InitializeExternalSymbols();
 
@@ -421,27 +421,7 @@ namespace Coberec.CSharpGen
                 symbolNameMapping.Add(t.Name, mapping);
             }
 
-            var s = new DecompilerSettings(LanguageVersion.Latest);
-            s.CSharpFormattingOptions.AutoPropertyFormatting = PropertyFormatting.ForceOneLine;
-            s.CSharpFormattingOptions.PropertyBraceStyle = BraceStyle.DoNotChange;
-
-            var emitter = new CSharpEmitter(cx.HackedSimpleCompilation, s, cx.Settings.EmitPartialClasses);
-            return emitter;
+            return cx2;
         }
-
-        public static IEnumerable<string> GetReferencedPaths() =>
-            from r in Enumerable.Concat(typeof(CSharpBackend).Assembly.GetReferencedAssemblies(), new[] {
-                typeof(string).Assembly.GetName(),
-                typeof(System.Collections.StructuralComparisons).Assembly.GetName(),
-                typeof(ValueTuple<int, int>).Assembly.GetName(),
-                typeof(Uri).Assembly.GetName()
-                // new AssemblyName("netstandard")
-            })
-            let location = AssemblyLoadContext.Default.LoadFromAssemblyName(r).Location
-            where !string.IsNullOrEmpty(location)
-            let lUrl = new Uri(location)
-            select lUrl.AbsolutePath;
-
-        private static Lazy<PEFile[]> ReferencedModules = new Lazy<PEFile[]>(() => GetReferencedPaths().Select(a => new PEFile(a, System.Reflection.PortableExecutable.PEStreamOptions.PrefetchMetadata)).ToArray());
     }
 }

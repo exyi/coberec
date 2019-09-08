@@ -5,11 +5,17 @@ interface MemberDef {
 type MethodDef implements MemberDef {
     signature: MethodSignature
     argumentParams: [ParameterExpression]
-    body: Expression
+    body: Expression!
 }
 
 type FieldDef implements MemberDef {
     signature: FieldSignature
+}
+
+type PropertyDef implements MemberDef {
+    signature: PropertySignature
+    getter: MethodDef!
+    setter: MethodDef!
 }
 
 type TypeDef implements MemberDef {

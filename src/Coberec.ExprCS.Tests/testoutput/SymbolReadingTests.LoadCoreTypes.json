@@ -4,9 +4,13 @@
 		"Parent": {
 			"Item": {
 				"Name": "System",
-				"Parent": null
+				"Parent": {
+					"Name": "",
+					"Parent": null
+				}
 			}
 		},
+		"Kind": "class",
 		"IsValueType": false,
 		"CanOverride": false,
 		"IsAbstract": false,
@@ -22,9 +26,13 @@
 		"Parent": {
 			"Item": {
 				"Name": "System",
-				"Parent": null
+				"Parent": {
+					"Name": "",
+					"Parent": null
+				}
 			}
 		},
+		"Kind": "struct",
 		"IsValueType": true,
 		"CanOverride": false,
 		"IsAbstract": false,
@@ -44,11 +52,15 @@
 					"Name": "Collections",
 					"Parent": {
 						"Name": "System",
-						"Parent": null
+						"Parent": {
+							"Name": "",
+							"Parent": null
+						}
 					}
 				}
 			}
 		},
+		"Kind": "interface",
 		"IsValueType": false,
 		"CanOverride": true,
 		"IsAbstract": true,

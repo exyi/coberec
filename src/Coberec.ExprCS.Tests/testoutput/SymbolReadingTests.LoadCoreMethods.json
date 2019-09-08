@@ -5,9 +5,13 @@
 			"Parent": {
 				"Item": {
 					"Name": "System",
-					"Parent": null
+					"Parent": {
+						"Name": "",
+						"Parent": null
+					}
 				}
 			},
+			"Kind": "class",
 			"IsValueType": false,
 			"CanOverride": false,
 			"IsAbstract": false,
@@ -27,9 +31,13 @@
 					"Parent": {
 						"Item": {
 							"Name": "System",
-							"Parent": null
+							"Parent": {
+								"Name": "",
+								"Parent": null
+							}
 						}
 					},
+					"Kind": "class",
 					"IsValueType": false,
 					"CanOverride": false,
 					"IsAbstract": false,

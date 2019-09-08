@@ -3,10 +3,13 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>preview</LangVersion>
+
+    <DefineConstants>$(DefineConstants);ExposeILSpy</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- <ProjectReference Include="../Coberec.CLI/Coberec.CLI.csproj" ReferenceOutputAssembly="false" PrivateAssets="All" /> -->
+    <PackageReference Include="System.Memory" Version="4.5.3" />
     <PackageReference Include="XUnit.Assert" Version="2.4.1" />
     <ProjectReference Include="../Coberec.CoreLib/Coberec.CoreLib.csproj" />
     <ProjectReference Include="..\..\deps\ILSpy\ICSharpCode.Decompiler\ICSharpCode.Decompiler.csproj" />

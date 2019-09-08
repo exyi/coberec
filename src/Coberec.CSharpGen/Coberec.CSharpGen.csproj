@@ -4,6 +4,7 @@
     <ProjectReference Include="..\Coberec.MetaSchema\Coberec.MetaSchema.csproj" />
     <ProjectReference Include="..\..\deps\ILSpy\ICSharpCode.Decompiler\ICSharpCode.Decompiler.csproj" />
     <ProjectReference Include="..\Coberec.CSharpGenHelpers\Coberec.CSharpGenHelpers.csproj" />
+    <ProjectReference Include="..\Coberec.ExprCS\Coberec.ExprCS.csproj" />
   </ItemGroup>
 
   <ItemGroup>

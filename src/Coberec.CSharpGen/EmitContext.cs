@@ -20,6 +20,7 @@ using Coberec.MetaSchema;
 using System.Collections.Immutable;
 using ICSharpCode.Decompiler.CSharp.OutputVisitor;
 using Coberec.CoreLib;
+using E=Coberec.ExprCS;
 
 namespace Coberec.CSharpGen
 {
@@ -96,25 +97,27 @@ namespace Coberec.CSharpGen
     }
     public sealed class EmitContext
     {
-        public EmitContext(HackedSimpleCompilation hackedSimpleCompilation, EmitSettings settings, DataSchema fullSchema)
+        public EmitContext(E.MetadataContext metadata, EmitSettings settings, DataSchema fullSchema)
         {
+            var compilation = metadata.Compilation;
+
+            // TODO: move this assert to ExprCS
             foreach (var t in Enum.GetValues(typeof(KnownTypeCode)))
             {
-                var ft = hackedSimpleCompilation.FindType((KnownTypeCode)t);
+                var ft = compilation.FindType((KnownTypeCode)t);
                 Debug.Assert(!(ft is UnknownType) || KnownTypeCode.Unsafe.Equals(t));
             }
 
-            HackedSimpleCompilation = hackedSimpleCompilation;
-            Module = (VirtualModule)Compilation.MainModule;
+            Metadata = metadata;
+            Compilation = compilation;
+            Module = Compilation.MainModule;
             Settings = settings;
             FullSchema = fullSchema;
         }
 
-        public HackedSimpleCompilation HackedSimpleCompilation { get; }
-
-        public VirtualModule Module { get; }
-
-        public ICompilation Compilation => HackedSimpleCompilation;
+        public IModule Module { get; }
+        public E.MetadataContext Metadata { get; }
+        public ICompilation Compilation { get; }
 
         public EmitSettings Settings { get; }
         public DataSchema FullSchema { get; }

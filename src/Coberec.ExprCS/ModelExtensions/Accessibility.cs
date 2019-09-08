@@ -12,5 +12,23 @@ namespace Coberec.ExprCS
 		public static Accessibility AProtected = new Accessibility(false, true, false);
 		public static Accessibility AProtectedInternal = new Accessibility(false, true, true);
 		public static Accessibility APrivateProtected = new Accessibility(true, false, false);
+
+		public static Accessibility Max(Accessibility a, Accessibility b)
+		{
+			if (a == null) return b;
+			if (b == null) return a;
+
+			if (a == b) return a;
+			if (a == APublic || b == APublic) return APublic;
+			if (a == AProtectedInternal || b == AProtectedInternal) return AProtectedInternal;
+
+			if (a == APrivate) return b;
+			if (b == APrivate) return a;
+			if (a == APrivateProtected) return b;
+			if (b == APrivateProtected) return a;
+
+			// only remaining options are `internal` and `protected` and we certainly have both of them
+			return AProtectedInternal;
+		}
 	}
 }

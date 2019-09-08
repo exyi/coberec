@@ -7,6 +7,7 @@ using ICSharpCode.Decompiler.TypeSystem.Implementation;
 using TS=ICSharpCode.Decompiler.TypeSystem;
 using IL=ICSharpCode.Decompiler.IL;
 using Xunit;
+using Coberec.CSharpGen;
 
 namespace Coberec.ExprCS
 {
@@ -14,7 +15,7 @@ namespace Coberec.ExprCS
     {
         public static FullTypeName GetFullTypeName(this TypeSignature t) =>
             t.Parent.Match(
-                ns => new FullTypeName(new TopLevelTypeName(ns.Item.FullName(), t.Name, t.GenericParamCount)),
+                ns => new FullTypeName(new TopLevelTypeName(ns.Item.ToString(), t.Name, t.GenericParamCount)),
                 parentType => GetFullTypeName(parentType.Item).NestedType(t.Name, t.GenericParamCount)
             );
 
@@ -78,13 +79,37 @@ namespace Coberec.ExprCS
             return t.GetFields(f => f.Name == field.Name, GetMemberOptions.None).Single();
         }
 
+        public static FullTypeName SanitizeName(this MetadataContext cx, FullTypeName name)
+        {
+            if (!cx.Settings.SanitizeSymbolNames)
+                return name;
+
+            if (name.IsNested)
+            {
+                var declType = cx.Compilation.FindType(name.GetDeclaringType()).GetDefinition();
+                var newName = SymbolNamer.NameMember(declType, name.Name, false);
+                return name.GetDeclaringType().NestedType(name.Name, name.GetNestedTypeAdditionalTypeParameterCount(name.NestingLevel - 1));
+            }
+            else
+            {
+                var t = name.TopLevelTypeName;
+                var newName = SymbolNamer.NameType(t.Namespace, t.Name, t.TypeParameterCount, cx.Compilation);
+                return new FullTypeName(new TopLevelTypeName(t.Namespace, newName, t.TypeParameterCount));
+            }
+        }
+
         public static VirtualType CreateTypeDefinition(MetadataContext c, TypeDef t)
         {
             var sgn = t.Signature;
+            var kind = sgn.Kind == "struct" ? TypeKind.Struct :
+                       sgn.Kind == "interface" ? TypeKind.Interface :
+                       sgn.Kind == "class" ? TypeKind.Class :
+                       throw new NotSupportedException($"Type kind '{sgn.Kind}' is not supported.");
+
             var vt = new VirtualType(
-                sgn.IsValueType ? TypeKind.Struct : TypeKind.Class,
+                kind,
                 GetAccessibility(sgn.Accessibility),
-                sgn.GetFullTypeName(),
+                c.SanitizeName(sgn.GetFullTypeName()),
                 isStatic: !sgn.CanOverride && sgn.IsAbstract,
                 isSealed: !sgn.CanOverride,
                 sgn.IsAbstract,
@@ -92,39 +117,86 @@ namespace Coberec.ExprCS
                 parentModule: c.MainILSpyModule
             );
 
+            Assert.Equal((bool)vt.IsReferenceType, !sgn.IsValueType);
+
             return vt;
         }
 
         internal static IParameter CreateParameter(MetadataContext cx, MethodParameter p) =>
             new DefaultParameter(GetTypeReference(cx, p.Type), p.Name, referenceKind: p.Type is TypeReference.ByReferenceTypeCase ? ReferenceKind.Ref : ReferenceKind.None);
 
-        internal static VirtualMethod CreateMethodDefinition(MetadataContext cx, MethodDef m)
+        internal static VirtualMethod CreateMethodDefinition(MetadataContext cx, MethodDef m, bool isHidden = false)
         {
             var sgn = m.Signature;
+            var declType = cx.GetTypeDef(sgn.DeclaringType);
+            var parameters = sgn.Params.Select(p => CreateParameter(cx, p)).ToArray();
+            var name =
+                cx.Settings.SanitizeSymbolNames && !sgn.HasSpecialName
+                    ? SymbolNamer.NameMethod(declType, sgn.Name, sgn.TypeParameters.Length, parameters)
+                    : sgn.Name;
+
             return new VirtualMethod(
-                cx.GetTypeDef(sgn.DeclaringType),
+                declType,
                 GetAccessibility(sgn.Accessibility),
-                sgn.Name,
-                sgn.Params.Select(p => CreateParameter(cx, p)).ToArray(),
+                name,
+                parameters,
                 GetTypeReference(cx, sgn.ResultType),
                 sgn.IsOverride,
                 sgn.IsVirtual,
                 isSealed: sgn.IsOverride && !sgn.IsVirtual,
                 sgn.IsAbstract,
                 sgn.IsStatic,
-                isHidden: false,
+                isHidden,
                 sgn.TypeParameters.Select<GenericParameter, ITypeParameter>(a => throw new NotImplementedException()).ToArray()
                 // TODO: explicitImplementations
             );
         }
-        static VirtualField CreateFieldDefinition(MetadataContext c, FieldDef field)
+
+        static (VirtualProperty, VirtualMethod, VirtualMethod) CreatePropertyDefinition(MetadataContext cx, PropertyDef property)
+        {
+            Assert.Equal(property.Signature.Getter == null, property.Getter == null);
+            Assert.Equal(property.Signature.Setter == null, property.Setter == null);
+
+            var getter = property.Getter?.Apply(m => CreateMethodDefinition(cx, m, isHidden: true));
+            var setter = property.Setter?.Apply(m => CreateMethodDefinition(cx, m, isHidden: true));
+
+            var sgn = property.Signature;
+            var declType = cx.GetTypeDef(sgn.DeclaringType);
+            var name =
+                cx.Settings.SanitizeSymbolNames ? SymbolNamer.NameMember(declType, sgn.Name, null)
+                                                : sgn.Name;
+
+            var mSgn = sgn.Getter ?? sgn.Setter;
+
+            var prop = new VirtualProperty(
+                declType,
+                GetAccessibility(sgn.Accessibility),
+                name,
+                getter,
+                setter,
+                isIndexer: false, // TODO: indexers?
+                mSgn.IsVirtual,
+                mSgn.IsOverride,
+                sgn.IsStatic,
+                mSgn.IsAbstract,
+                !mSgn.IsVirtual && mSgn.IsOverride
+                // TODO: explicit implementations
+            );
+            return (prop, getter, setter);
+        }
+
+        static VirtualField CreateFieldDefinition(MetadataContext cx, FieldDef field)
         {
             var sgn = field.Signature;
+            var declType = cx.GetTypeDef(sgn.DeclaringType);
+            var name =
+                cx.Settings.SanitizeSymbolNames ? SymbolNamer.NameMember(declType, sgn.Name, null)
+                                                : sgn.Name;
             return new VirtualField(
-                c.GetTypeDef(sgn.DeclaringType),
+                declType,
                 GetAccessibility(sgn.Accessibility),
-                sgn.Name,
-                GetTypeReference(c, sgn.ResultType),
+                name,
+                GetTypeReference(cx, sgn.ResultType),
                 isReadOnly: sgn.IsReadonly,
                 isVolatile: false,
                 isStatic: sgn.IsStatic
@@ -133,6 +205,13 @@ namespace Coberec.ExprCS
 
         static Func<IL.ILFunction> CreateBodyFactory(VirtualMethod resultMethod, MethodDef method, MetadataContext cx)
         {
+            if (resultMethod.DeclaringType.Kind == TypeKind.Interface)
+            {
+                if (method.Body != null) throw new NotSupportedException($"Default interface implementation are not supported.");
+                return null;
+            }
+            Assert.NotNull(method.Body);
+
             return () => CodeTranslation.CodeTranslator.CreateBody(method, resultMethod, cx);
         }
 
@@ -164,6 +243,17 @@ namespace Coberec.ExprCS
                 {
                     var d = CreateFieldDefinition(cx, field);
                     type.Fields.Add(d);
+                }
+                else if (member is PropertyDef prop)
+                {
+                    var (p, getter, setter) = CreatePropertyDefinition(cx, prop);
+                    getter?.ApplyAction(type.Methods.Add);
+                    setter?.ApplyAction(type.Methods.Add);
+                    type.Properties.Add(p);
+                    if (getter != null)
+                        getter.BodyFactory = CreateBodyFactory(getter, prop.Getter, cx);
+                    if (setter != null)
+                        setter.BodyFactory = CreateBodyFactory(setter, prop.Setter, cx);
                 }
                 else throw new NotImplementedException($"Member '{member}' of type '{member.GetType().Name}'");
             }

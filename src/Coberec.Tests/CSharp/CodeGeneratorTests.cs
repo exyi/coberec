@@ -54,7 +54,7 @@ namespace GeneratedProject {
                 MetadataReference.CreateFromFile(Assembly.Load(new AssemblyName("System.Runtime")).Location),
             };
 
-            references = references.Concat(CSharpBackend.GetReferencedPaths().Select(p => MetadataReference.CreateFromFile(p))).ToArray();
+            references = references.Concat(ExprCS.MetadataContext.GetReferencedPaths().Select(p => MetadataReference.CreateFromFile(p))).ToArray();
 
             CSharpParseOptions options = new CSharpParseOptions(LanguageVersion.Latest);
             var compilation = CSharpCompilation.Create(

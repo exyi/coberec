@@ -13,7 +13,7 @@ namespace Coberec.ExprCS.Tests
         MetadataContext cx = MetadataContext.Create("MyModule");
 
         static TypeSignature GuidType = TypeSignature.Struct("Guid", NamespaceSignature.System, Accessibility.APublic);
-        static TypeSignature MyStruct = TypeSignature.Struct("MyStruct", new NamespaceSignature("MyNs", null), Accessibility.APublic);
+        static TypeSignature MyStruct = TypeSignature.Struct("MyStruct", NamespaceSignature.Parse("MyNs"), Accessibility.APublic);
         static FieldSignature MyStruct_GuidField = new FieldSignature(MyStruct, "id", Accessibility.APublic, GuidType, false, false);
         static FieldSignature MyStruct_IntField = new FieldSignature(MyStruct, "count", Accessibility.APublic, TypeSignature.Int32, false, false);
         static TypeDef MyStructDef = new TypeDef(
