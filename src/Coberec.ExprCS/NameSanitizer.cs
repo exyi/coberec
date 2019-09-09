@@ -78,7 +78,7 @@ namespace Coberec.ExprCS
 
         private static readonly HashSet<string> prohibitedNames = new HashSet<string> {
             // members of every class. We don't want to collide with them.
-            "Object", "Finalize", "GetType", "ToString", "Equals", "ReferenceEquals", "GetHashCode", "MemberwiseClone",
+            // "Finalize", "GetType", "ToString", "Equals", "ReferenceEquals", "GetHashCode", "MemberwiseClone",
 
             // This leads to some strange behavior, although not forbidden by the spec... https://sharplab.io/#v2:EYLgZgpghgLgrgJwgZwLQGMD2BbADgSwBsIEAfZGBOdGAAgGFaBvAWAChbPaABAZlvwA7OgDcohOBAD6UgNzsAvkA===
             "value__"

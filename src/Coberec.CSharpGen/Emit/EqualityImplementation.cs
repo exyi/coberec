@@ -230,7 +230,7 @@ namespace Coberec.CSharpGen.Emit
         public static (IMethod equalsCore, IMethod equals) ImplementEqualityForBase(this VirtualType type)
         {
             Debug.Assert(type.IsAbstract);
-            var methodName = SymbolNamer.NameMethod(type, "EqualsCore", 0, new[] { type });
+            var methodName = SymbolNamer.NameMethod(type, "EqualsCore", 0, new[] { type }, false);
             var eqCoreMethod = new VirtualMethod(type, Accessibility.ProtectedAndInternal, methodName, new [] { new VirtualParameter(type, "b") }, type.Compilation.FindType(typeof(bool)), isAbstract: true);
             type.Methods.Add(eqCoreMethod);
             return (eqCoreMethod, type.ImplementEqualityCore(eqMethod =>

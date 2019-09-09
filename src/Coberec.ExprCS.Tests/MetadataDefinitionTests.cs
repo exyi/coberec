@@ -10,7 +10,7 @@ namespace Coberec.ExprCS.Tests
     public class MetadataDefinitionTests
     {
         OutputChecker check = new OutputChecker("testoutput");
-        MetadataContext cx = MetadataContext.Create("MyModule", settings: new EmitSettings(sanitizeSymbolNames: false));
+        MetadataContext cx = MetadataContext.Create("MyModule");
         [Fact]
         public void OneEmptyType()
         {
@@ -97,6 +97,55 @@ namespace Coberec.ExprCS.Tests
 
 
             cx.AddType(typeDef);
+            check.CheckOutput(cx);
+        }
+
+        [Fact]
+        public void NameSanitization()
+        {
+            var stringT = cx.FindType(typeof(string));
+
+            var type = TypeSignature.Class("MyType", NamespaceSignature.Parse("MyNamespace"), Accessibility.APublic);
+            cx.AddType(TypeDef.Empty(type).AddMember(
+                // Should be renamed, there is collision with virtual object.Equals
+                new FieldDef(new FieldSignature(type, "Equals", Accessibility.APublic, stringT, false, true))
+            ));
+            var type2 = TypeSignature.Class("MyType2", NamespaceSignature.Parse("MyNamespace"), Accessibility.APublic);
+            cx.AddType(TypeDef.Empty(type2).AddMember(
+                // OK, no collision here
+                new MethodDef(
+                    MethodSignature.Instance("Equals", type2, Accessibility.APublic, TypeSignature.Boolean),
+                    ImmutableArray.Create(ParameterExpression.CreateThisParam(type2)),
+                    Expression.Constant(true, TypeSignature.Boolean)
+                )
+            ));
+            var type3 = TypeSignature.Class("MyType3", NamespaceSignature.Parse("MyNamespace"), Accessibility.APublic);
+            cx.AddType(TypeDef.Empty(type3).AddMember(
+                // Should be renamed
+                new MethodDef(
+                    MethodSignature.Instance("Equals", type3, Accessibility.APublic, TypeSignature.Boolean, new MethodParameter(TypeSignature.Object, "obj2")),
+                    ImmutableArray.Create(ParameterExpression.CreateThisParam(type3), ParameterExpression.Create(TypeSignature.Object, "obj2")),
+                    Expression.Constant(true, TypeSignature.Boolean)
+                )
+            ));
+            var type4 = TypeSignature.Class("MyType4", NamespaceSignature.Parse("MyNamespace"), Accessibility.APublic);
+            cx.AddType(TypeDef.Empty(type4).AddMember(
+                // Should be renamed
+                new MethodDef(
+                    MethodSignature.Static("Equals", type4, Accessibility.APublic, TypeSignature.Boolean, new MethodParameter(TypeSignature.Object, "obj2")),
+                    ImmutableArray.Create(ParameterExpression.Create(TypeSignature.Object, "obj2")),
+                    Expression.Constant(true, TypeSignature.Boolean)
+                )
+            ));
+            var type5 = TypeSignature.Class("MyType5", NamespaceSignature.Parse("MyNamespace"), Accessibility.APublic);
+            cx.AddType(TypeDef.Empty(type5).AddMember(
+                // OK, this is override
+                new MethodDef(
+                    MethodSignature.Instance("Equals", type5, Accessibility.APublic, TypeSignature.Boolean, new MethodParameter(TypeSignature.Object, "obj2")).With(isOverride: true, isVirtual: true),
+                    ImmutableArray.Create(ParameterExpression.CreateThisParam(type5), ParameterExpression.Create(TypeSignature.Object, "obj2")),
+                    Expression.Constant(true, TypeSignature.Boolean)
+                )
+            ));
             check.CheckOutput(cx);
         }
     }

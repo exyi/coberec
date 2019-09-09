@@ -30,7 +30,7 @@ namespace Coberec.ExprCS
         public static string NameMember(ITypeDefinition type, string desiredName, bool? lowerCase)
         {
             desiredName = NameSanitizer.SanitizeMemberName(desiredName, lowerCase);
-            var existingNames = new HashSet<string>(type.GetMembers().Select(m => m.Name));
+            var existingNames = new HashSet<string>(type.GetMembers(m => m.DeclaringTypeDefinition == type || m.IsVirtual).Select(m => m.Name));
             existingNames.UnionWith(type.NestedTypes.Select(t => t.Name));
             for (IType p = type; p != null; p = p.DeclaringType)
                 existingNames.Add(p.Name);
@@ -43,16 +43,16 @@ namespace Coberec.ExprCS
             throw new Exception("wtf");
         }
 
-        public static string NameMethod(ITypeDefinition type, string desiredName, int typeArgCount, IEnumerable<IParameter> signature, bool? lowerCase = false) =>
-            NameMethod(type, desiredName, typeArgCount, signature.Select(a => a.Type).ToArray(), lowerCase);
-        public static string NameMethod(ITypeDefinition type, string desiredName, int typeArgCount, IType[] signature, bool? lowerCase = false)
+        public static string NameMethod(ITypeDefinition type, string desiredName, int typeArgCount, IEnumerable<IParameter> signature, bool isOverride, bool? lowerCase = false) =>
+            NameMethod(type, desiredName, typeArgCount, signature.Select(a => a.Type).ToArray(), isOverride, lowerCase);
+        public static string NameMethod(ITypeDefinition type, string desiredName, int typeArgCount, IType[] signature, bool isOverride, bool? lowerCase = false)
         {
             desiredName = NameSanitizer.SanitizeMemberName(desiredName, lowerCase);
 
-            var existingNonmethods = new HashSet<string>(type.GetMembers(m => m.SymbolKind != SymbolKind.Method).Select(m => m.Name));
+            var existingNonmethods = new HashSet<string>(type.GetMembers(m => m.SymbolKind != SymbolKind.Method && (m.DeclaringTypeDefinition == type || m.IsVirtual)).Select(m => m.Name));
             for (IType p = type; p != null; p = p.DeclaringType)
                 existingNonmethods.Add(p.Name);
-            var existingMethods = type.GetMembers(m => m.SymbolKind == SymbolKind.Method).Cast<IMethod>().ToLookup(m => m.Name);
+            var existingMethods = type.GetMembers(m => m.SymbolKind == SymbolKind.Method && (m.DeclaringTypeDefinition == type || m.IsVirtual && !isOverride)).Cast<IMethod>().ToLookup(m => m.Name);
 
             bool collides(string n)
             {

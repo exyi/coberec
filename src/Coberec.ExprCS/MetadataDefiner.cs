@@ -132,7 +132,7 @@ namespace Coberec.ExprCS
             var parameters = sgn.Params.Select(p => CreateParameter(cx, p)).ToArray();
             var name =
                 cx.Settings.SanitizeSymbolNames && !sgn.HasSpecialName
-                    ? SymbolNamer.NameMethod(declType, sgn.Name, sgn.TypeParameters.Length, parameters)
+                    ? SymbolNamer.NameMethod(declType, sgn.Name, sgn.TypeParameters.Length, parameters, sgn.IsOverride)
                     : sgn.Name;
 
             return new VirtualMethod(
@@ -142,7 +142,7 @@ namespace Coberec.ExprCS
                 parameters,
                 GetTypeReference(cx, sgn.ResultType),
                 sgn.IsOverride,
-                sgn.IsVirtual,
+                isVirtual: sgn.IsVirtual && !sgn.IsOverride,
                 isSealed: sgn.IsOverride && !sgn.IsVirtual,
                 sgn.IsAbstract,
                 sgn.IsStatic,
@@ -229,23 +229,27 @@ namespace Coberec.ExprCS
             {
                 if (member is MethodDef method)
                 {
+                    Assert.Equal(definition.Signature, method.Signature.DeclaringType);
                     var d = CreateMethodDefinition(cx, method);
                     type.Methods.Add(d);
                     d.BodyFactory = CreateBodyFactory(d, method, cx);
                 }
                 else if (member is TypeDef typeMember)
                 {
+                    // Assert.Equal(definition.Signature, typeMember.Signature.Parent);
                     var d = CreateTypeDefinition(cx, typeMember);
                     type.NestedTypes.Add(d);
                     DefineTypeMembers(d, cx, typeMember);
                 }
                 else if (member is FieldDef field)
                 {
+                    Assert.Equal(definition.Signature, field.Signature.DeclaringType);
                     var d = CreateFieldDefinition(cx, field);
                     type.Fields.Add(d);
                 }
                 else if (member is PropertyDef prop)
                 {
+                    Assert.Equal(definition.Signature, prop.Signature.DeclaringType);
                     var (p, getter, setter) = CreatePropertyDefinition(cx, prop);
                     getter?.ApplyAction(type.Methods.Add);
                     setter?.ApplyAction(type.Methods.Add);

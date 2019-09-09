@@ -27,6 +27,7 @@ namespace Coberec.CSharpGen.TypeSystem
             this.IsSealed = isSealed;
             this.ParentModule = parentModule ?? declaringType.ParentModule ?? throw new ArgumentNullException(nameof(parentModule));
             this.IsHidden = isHidden;
+            this.DirectBaseType = this.ParentModule.Compilation.FindType(KnownTypeCode.Object);
         }
 
         public TypeKind Kind { get; }
@@ -44,8 +45,8 @@ namespace Coberec.CSharpGen.TypeSystem
 
         public IReadOnlyList<IType> TypeArguments => EmptyList<IType>.Instance;
 
-        public IType DirectBaseType { get; set; } = null;
-        public List<IType> ImplementedInterfaces = new List<IType>();
+        public IType DirectBaseType { get; set; }
+        public readonly List<IType> ImplementedInterfaces = new List<IType>();
         public IEnumerable<IType> DirectBaseTypes => ImplementedInterfaces.Concat(DirectBaseType == null ? Enumerable.Empty<IType>() : new [] { DirectBaseType });
 
         public string FullName => this.FullTypeName.ReflectionName;
@@ -126,30 +127,43 @@ namespace Coberec.CSharpGen.TypeSystem
         public ITypeDefinition GetDefinition() => this;
 
         public IEnumerable<IEvent> GetEvents(Predicate<IEvent> filter = null, GetMemberOptions options = GetMemberOptions.None) =>
-            this.Events.Where(e => filter?.Invoke(e) ?? true);
+            (options & GetMemberOptions.IgnoreInheritedMembers) != 0 ?
+            this.Events.Where(e => filter?.Invoke(e) ?? true) :
+            GetMembersHelper.GetEvents(this, filter, options);
 
         public IEnumerable<IField> GetFields(Predicate<IField> filter = null, GetMemberOptions options = GetMemberOptions.None) =>
-            this.Fields.Where(f => filter?.Invoke(f) ?? true);
+            (options & GetMemberOptions.IgnoreInheritedMembers) != 0 ?
+            this.Fields.Where(f => filter?.Invoke(f) ?? true) :
+            GetMembersHelper.GetFields(this, filter, options);
 
         public IEnumerable<IMember> GetMembers(Predicate<IMember> filter = null, GetMemberOptions options = GetMemberOptions.None) =>
-            this.Members.Where(m => filter?.Invoke(m) ?? true);
+            (options & GetMemberOptions.IgnoreInheritedMembers) != 0 ?
+            this.Members.Where(m => filter?.Invoke(m) ?? true) :
+            GetMembersHelper.GetMembers(this, filter, options);
 
         public IEnumerable<IMethod> GetMethods(Predicate<IMethod> filter = null, GetMemberOptions options = GetMemberOptions.None) =>
-            this.Methods.Where(a => filter?.Invoke(a) ?? true);
+            (options & GetMemberOptions.IgnoreInheritedMembers) != 0 ?
+            this.Methods.Where(a => filter?.Invoke(a) ?? true) :
+            GetMembersHelper.GetMethods(this, filter, options);
 
         public IEnumerable<IMethod> GetMethods(IReadOnlyList<IType> typeArguments, Predicate<IMethod> filter = null, GetMemberOptions options = GetMemberOptions.None) =>
-            typeArguments.Count == 0 ? GetMethods(filter, options) : Enumerable.Empty<IMethod>(); // TODO generic methods
-            //this.Methods.Where(m => filter?.Invoke(m) != false);
+            typeArguments.Count == 0 ? GetMethods(filter, options) :
+            GetMembersHelper.GetMethods(this, typeArguments, filter, options);
 
         public IEnumerable<IType> GetNestedTypes(Predicate<ITypeDefinition> filter = null, GetMemberOptions options = GetMemberOptions.None) =>
-            this.NestedTypes.Where(t => filter?.Invoke(t) ?? true);
+            (options & GetMemberOptions.IgnoreInheritedMembers) != 0 ?
+            this.NestedTypes.Where(t => filter?.Invoke(t) ?? true) :
+            GetMembersHelper.GetNestedTypes(this, filter, options);
 
 
         public IEnumerable<IType> GetNestedTypes(IReadOnlyList<IType> typeArguments, Predicate<ITypeDefinition> filter = null, GetMemberOptions options = GetMemberOptions.None) =>
-            typeArguments.Count == 0 ? GetNestedTypes(filter, options) : Enumerable.Empty<IType>(); // TODO generic types
+            typeArguments.Count == 0 ? GetNestedTypes(filter, options) :
+            GetMembersHelper.GetNestedTypes(this, typeArguments, filter, options); // TODO generic types
 
         public IEnumerable<IProperty> GetProperties(Predicate<IProperty> filter = null, GetMemberOptions options = GetMemberOptions.None) =>
-            Properties.Where(p => filter?.Invoke(p) != false);
+            (options & GetMemberOptions.IgnoreInheritedMembers) != 0 ?
+            Properties.Where(p => filter?.Invoke(p) != false) :
+            GetMembersHelper.GetProperties(this, filter, options);
 
         public TypeParameterSubstitution GetSubstitution()
         {

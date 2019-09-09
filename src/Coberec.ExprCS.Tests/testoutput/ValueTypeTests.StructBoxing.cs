@@ -19,7 +19,7 @@ namespace MyNs
 	{
 		public static int M(MyStruct p)
 		{
-			return ((object)p).GetHashCode();
+			return p.GetHashCode();
 		}
 	}
 }
