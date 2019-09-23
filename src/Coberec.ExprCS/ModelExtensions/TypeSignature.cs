@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 namespace Coberec.ExprCS
 {
@@ -47,6 +48,27 @@ namespace Coberec.ExprCS
                 genericParamCount: genericParamCount
             );
 
+        public static TypeSignature FromType(Type type)
+        {
+            // TODO: asserts it's a definition not reference
+
+            var parent = type.DeclaringType is object ? FromType(type.DeclaringType) : (TypeOrNamespace)NamespaceSignature.Parse(type.Namespace);
+            var kind =
+                       typeof(Delegate).IsAssignableFrom(type) ? "delegate" :
+                       type.IsEnum ? "enum" :
+                       type.IsValueType ? "struct" :
+                       type.IsInterface ? "interface" :
+                       type.IsClass ? "class" :
+                       throw new NotSupportedException($"Can not translate {type} to TypeSignature");
+            var accessibility = type.IsPublic || type.IsNestedPublic ? Accessibility.APublic :
+                                type.IsNestedAssembly ? Accessibility.AInternal :
+                                type.IsNestedPrivate ? Accessibility.APrivate :
+                                type.IsNestedFamily ? Accessibility.AProtected :
+                                type.IsNestedFamORAssem ? Accessibility.AProtectedInternal :
+                                type.IsNestedFamANDAssem ? Accessibility.APrivateProtected :
+                                throw new NotSupportedException("Unsupported accesibility of "+ type);
+            return new TypeSignature(type.Name, parent, kind, type.IsValueType, !type.IsSealed, type.IsAbstract, accessibility, type.GetGenericArguments().Length);
+        }
 
     }
 }

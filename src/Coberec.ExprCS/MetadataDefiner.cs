@@ -76,7 +76,14 @@ namespace Coberec.ExprCS
         {
             var t = cx.GetTypeReference(field.DeclaringType); // TODO: generic methods
 
-            return t.GetFields(f => f.Name == field.Name, GetMemberOptions.None).Single();
+            return t.GetFields(f => f.Name == field.Name, GetMemberOptions.IgnoreInheritedMembers).Single();
+        }
+
+        public static IProperty GetProperty(this MetadataContext cx, PropertySignature prop)
+        {
+            var t = cx.GetTypeReference(prop.DeclaringType); // TODO: generic methods
+
+            return t.GetProperties(p => p.Name == prop.Name, GetMemberOptions.IgnoreInheritedMembers).Single();
         }
 
         public static FullTypeName SanitizeName(this MetadataContext cx, FullTypeName name)
@@ -129,11 +136,20 @@ namespace Coberec.ExprCS
         {
             var sgn = m.Signature;
             var declType = cx.GetTypeDef(sgn.DeclaringType);
-            var parameters = sgn.Params.Select(p => CreateParameter(cx, p)).ToArray();
-            var name =
+            var parameters = SymbolNamer.NameParameters(sgn.Params.Select(p => CreateParameter(cx, p)));
+
+            foreach (var i in m.Implements)
+                if (i.DeclaringType.Kind == "interface")
+                    Assert.Contains(i.DeclaringType, cx.GetDirectImplements(sgn.DeclaringType).Select(t => t.Type));
+                else
+                    Assert.Contains(i.DeclaringType, cx.GetBaseTypes(sgn.DeclaringType).Select(t => t.Type));
+
+            var overridesName = m.Implements.Where(i => i.DeclaringType.Kind == "class").Select(cx.GetMethod).SingleOrDefault()?.Name;
+
+            var name = overridesName ?? (
                 cx.Settings.SanitizeSymbolNames && !sgn.HasSpecialName
                     ? SymbolNamer.NameMethod(declType, sgn.Name, sgn.TypeParameters.Length, parameters, sgn.IsOverride)
-                    : sgn.Name;
+                    : sgn.Name);
 
             return new VirtualMethod(
                 declType,
@@ -147,8 +163,8 @@ namespace Coberec.ExprCS
                 sgn.IsAbstract,
                 sgn.IsStatic,
                 isHidden,
-                sgn.TypeParameters.Select<GenericParameter, ITypeParameter>(a => throw new NotImplementedException()).ToArray()
-                // TODO: explicitImplementations
+                sgn.TypeParameters.Select<GenericParameter, ITypeParameter>(a => throw new NotImplementedException()).ToArray(),
+                explicitImplementations: m.Implements.Where(i => i.DeclaringType.Kind == "interface").Select(cx.GetMethod)
             );
         }
 
@@ -162,9 +178,19 @@ namespace Coberec.ExprCS
 
             var sgn = property.Signature;
             var declType = cx.GetTypeDef(sgn.DeclaringType);
-            var name =
+
+            foreach (var i in property.Implements)
+                if (i.DeclaringType.Kind == "interface")
+                    Assert.Contains(i.DeclaringType, cx.GetDirectImplements(sgn.DeclaringType).Select(t => t.Type));
+                else
+                    Assert.Contains(i.DeclaringType, cx.GetBaseTypes(sgn.DeclaringType).Select(t => t.Type));
+
+            var overridesName = property.Implements.Where(i => i.DeclaringType.Kind == "class").Select(cx.GetProperty).SingleOrDefault()?.Name;
+
+            var name = overridesName ?? (
                 cx.Settings.SanitizeSymbolNames ? SymbolNamer.NameMember(declType, sgn.Name, null)
-                                                : sgn.Name;
+                                                : sgn.Name
+            );
 
             var mSgn = sgn.Getter ?? sgn.Setter;
 
@@ -179,28 +205,37 @@ namespace Coberec.ExprCS
                 mSgn.IsOverride,
                 sgn.IsStatic,
                 mSgn.IsAbstract,
-                !mSgn.IsVirtual && mSgn.IsOverride
-                // TODO: explicit implementations
+                !mSgn.IsVirtual && mSgn.IsOverride,
+                explicitImplementations: property.Implements.Where(i => i.DeclaringType.Kind == "interface").Select(cx.GetProperty)
             );
             return (prop, getter, setter);
         }
+
+        static bool IsSpecialField(FieldSignature field) => field.Name.StartsWith("<");
 
         static VirtualField CreateFieldDefinition(MetadataContext cx, FieldDef field)
         {
             var sgn = field.Signature;
             var declType = cx.GetTypeDef(sgn.DeclaringType);
+            var special = IsSpecialField(sgn);
             var name =
-                cx.Settings.SanitizeSymbolNames ? SymbolNamer.NameMember(declType, sgn.Name, null)
-                                                : sgn.Name;
-            return new VirtualField(
+                cx.Settings.SanitizeSymbolNames && !special
+                    ? SymbolNamer.NameMember(declType, sgn.Name, null)
+                    : sgn.Name;
+            var result = new VirtualField(
                 declType,
                 GetAccessibility(sgn.Accessibility),
                 name,
                 GetTypeReference(cx, sgn.ResultType),
                 isReadOnly: sgn.IsReadonly,
                 isVolatile: false,
-                isStatic: sgn.IsStatic
+                isStatic: sgn.IsStatic,
+                isHidden: special
             );
+            if (special)
+                result.Attributes.Add(cx.Compilation.CompilerGeneratedAttribute());
+
+            return result;
         }
 
         static Func<IL.ILFunction> CreateBodyFactory(VirtualMethod resultMethod, MethodDef method, MetadataContext cx)
@@ -217,6 +252,8 @@ namespace Coberec.ExprCS
 
         public static void DefineTypeMembers(VirtualType type, MetadataContext cx, TypeDef definition)
         {
+            definition = ImplementationResolver.AutoResolveImplementations(definition, cx);
+
             if (definition.Extends is object)
             {
                 type.DirectBaseType = GetTypeReference(cx, definition.Extends);

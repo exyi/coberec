@@ -16,6 +16,7 @@ using ICSharpCode.Decompiler.CSharp;
 using ICSharpCode.Decompiler.CSharp.OutputVisitor;
 using Coberec.CSharpGen;
 using ICSharpCode.Decompiler.CSharp.Resolver;
+using Xunit;
 
 namespace Coberec.ExprCS
 {
@@ -84,7 +85,7 @@ namespace Coberec.ExprCS
             });
 
         readonly ConcurrentDictionary<IMethod, MethodSignature> methodSignatureCache = new ConcurrentDictionary<IMethod, MethodSignature>();
-        MethodSignature TranslateMethod(IMethod method) =>
+        public MethodSignature TranslateMethod(IMethod method) =>
             methodSignatureCache.GetOrAdd(method, m =>
                 new MethodSignature(
                     TranslateType(m.DeclaringType.GetDefinition()),
@@ -213,6 +214,12 @@ namespace Coberec.ExprCS
 
         public IEnumerable<PropertySignature> GetMemberProperties(TypeSignature type) =>
             GetTypeDef(type).GetProperties(null, GetMemberOptions.IgnoreInheritedMembers).Select(TranslateProperty);
+
+        public IEnumerable<SpecializedType> GetBaseTypes(TypeSignature type) =>
+            GetTypeDef(type).GetAllBaseTypes().Select(TranslateTypeReference).Select(t => Assert.IsType<TypeReference.SpecializedTypeCase>(t).Item);
+
+        public IEnumerable<SpecializedType> GetDirectImplements(TypeSignature type) =>
+            GetTypeDef(type).DirectBaseTypes.Where(b => b.Kind == TypeKind.Interface).Select(TranslateTypeReference).Select(t => Assert.IsType<TypeReference.SpecializedTypeCase>(t).Item);
 
         public IEnumerable<MemberSignature> GetMembers(TypeSignature type) =>
             GetMemberMethods(type).AsEnumerable<MemberSignature>()

@@ -9,6 +9,7 @@ namespace Coberec.ExprCS
 {
     public partial class Expression
     {
+        public static readonly Expression Nop = Expression.Default(TypeSignature.Void);
         public TypeReference Type() =>
             this.Match<TypeReference>(
                 e => e.Item.Left.Type(),
@@ -44,7 +45,7 @@ namespace Coberec.ExprCS
             if (body.Type() != TypeSignature.Void)
                 throw new ValidationErrorException(ValidationErrors.Create("Block of a IfThen expression must be void.").Nest("ifTrue"));
 
-            return Expression.Conditional(condition, body, Expression.Default(TypeSignature.Void));
+            return Expression.Conditional(condition, body, Expression.Nop);
         }
 
         public static Expression While(Expression condition, params Expression[] body)
@@ -54,14 +55,15 @@ namespace Coberec.ExprCS
                 Expression.Loop(
                     Expression.Block(
                         body.Prepend(
-                            Expression.IfThen(Expression.Not(condition), Expression.Break(Expression.Default(TypeSignature.Void), label)))
+                            Expression.IfThen(Expression.Not(condition), Expression.Break(Expression.Nop, label)))
                             .ToImmutableArray(),
-                        Expression.Default(TypeSignature.Void)
+                        Expression.Nop
                     )
                 ),
                 label
             );
             return bb;
         }
+
     }
 }

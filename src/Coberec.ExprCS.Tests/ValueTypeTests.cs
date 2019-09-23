@@ -37,14 +37,15 @@ namespace Coberec.ExprCS.Tests
             var idP = ParameterExpression.Create(GuidType, "id");
             var countP = ParameterExpression.Create(TypeSignature.Int32, "count");
 
-            var body = Expression.Block(
-                ImmutableArray.Create(
-                    Expression.ReferenceAssign(Expression.FieldAccess(MyStruct_GuidField, thisP), idP),
-                    Expression.ReferenceAssign(Expression.FieldAccess(MyStruct_IntField, thisP), countP)
-                ),
-                result: Expression.Default(TypeSignature.Void));
-
-            var method = new MethodDef(methodSignature, ImmutableArray.Create(thisP, idP, countP), body);
+            var method = MethodDef.Create(methodSignature, (thisP, idP, countP) =>
+                Expression.Block(
+                    ImmutableArray.Create(
+                        Expression.ReferenceAssign(Expression.FieldAccess(MyStruct_GuidField, thisP), idP),
+                        Expression.ReferenceAssign(Expression.FieldAccess(MyStruct_IntField, thisP), countP)
+                    ),
+                    result: Expression.Nop
+                )
+            );
             return MyStructDef.AddMember(method);
         }
 
@@ -52,9 +53,7 @@ namespace Coberec.ExprCS.Tests
         {
             var thisP = ParameterExpression.CreateThisParam(MyStruct);
 
-            var body = Expression.Default(TypeSignature.Void);
-
-            var method = new MethodDef(MyStruct_Method, ImmutableArray.Create(thisP), body);
+            var method = MethodDef.Create(MyStruct_Method, _ => Expression.Nop);
             return MyStructDef.AddMember(method);
         }
 

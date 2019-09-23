@@ -63,12 +63,12 @@ namespace Coberec.ExprCS.Tests
 
             var concatCall = Expression.MethodCall(stringConcat, ImmutableArray.Create(Expression.Constant("123456789", TypeSignature.String), pString1), null);
             var intMethod = Expression.MethodCall(intParse, ImmutableArray.Create(concatCall), null);
-            var voidMethod = Expression.Block(ImmutableArray.Create(intMethod), Expression.Default(TypeSignature.Void));
+            var voidMethod = Expression.Block(ImmutableArray.Create(intMethod), Expression.Nop);
 
             cx.AddTestExpr(intMethod, pString1);
             cx.AddTestExpr(Expression.LetIn(pString1, Expression.Constant("5", TypeSignature.String), intMethod));
             cx.AddTestExpr(voidMethod, pString1);
-            cx.AddTestExpr(Expression.Block(ImmutableArray.Create(concatCall), Expression.Default(TypeSignature.Void)), pString1);
+            cx.AddTestExpr(Expression.Block(ImmutableArray.Create(concatCall), Expression.Nop), pString1);
 
             check.CheckOutput(cx);
         }
@@ -105,13 +105,13 @@ namespace Coberec.ExprCS.Tests
 
             var ifBlock = Expression.IfThen(
                 condition,
-                Expression.Break(Expression.Default(TypeSignature.Void), label));
+                Expression.Break(Expression.Nop, label));
 
             return Expression.Block(ImmutableArray.Create<Expression>(
                 call,
                 ifBlock,
                 call
-            ), Expression.Default(TypeSignature.Void));
+            ), Expression.Nop);
         }
 
         static Expression ExampleCondition(MetadataContext cx)

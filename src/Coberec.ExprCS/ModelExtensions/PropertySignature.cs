@@ -17,5 +17,7 @@ namespace Coberec.ExprCS
 
             return new PropertySignature(declaringType, type, name, Accessibility.Max(getter, setter), isStatic, getMethod, setMethod);
         }
+
+        public bool IsOverride => (Getter ?? Setter).IsOverride;
     }
 }
