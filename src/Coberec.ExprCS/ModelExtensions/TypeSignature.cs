@@ -67,7 +67,9 @@ namespace Coberec.ExprCS
                                 type.IsNestedFamORAssem ? Accessibility.AProtectedInternal :
                                 type.IsNestedFamANDAssem ? Accessibility.APrivateProtected :
                                 throw new NotSupportedException("Unsupported accesibility of "+ type);
-            return new TypeSignature(type.Name, parent, kind, type.IsValueType, !type.IsSealed, type.IsAbstract, accessibility, type.GetGenericArguments().Length);
+            var typeName = type.Name.Contains('`') ? type.Name.Substring(0, type.Name.IndexOf("`")) :
+                                                     type.Name;
+            return new TypeSignature(typeName, parent, kind, type.IsValueType, !type.IsSealed, type.IsAbstract, accessibility, type.GetGenericArguments().Length);
         }
 
     }

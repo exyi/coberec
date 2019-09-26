@@ -66,6 +66,8 @@ union TypeReference = SpecializedType | ArrayType | ByReferenceType | PointerTyp
 type MethodParameter {
     type: TypeReference
     name: String
+    hasDefaultValue: Boolean
+    defaultValue: Any!
 }
 
 type MethodSignature implements MemberSignature {

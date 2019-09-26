@@ -23,7 +23,7 @@ namespace Coberec.Tests.GraphqlLoader
             Assert.Equal(t.ToString(), clone.ToString());
         }
 
-        [Property(Replay="487817991,296518929")]
+        [Property]
         public void TestDirective(Directive directive)
         {
             var clone = Helpers.ParseDirectives(directive.ToString(), invertNonNull: true).Single();

@@ -36,7 +36,13 @@ namespace Coberec.ExprCS.Tests
 
             cx.AddType(typeDef);
 
-            cx.AddType(typeDef.With(signature: typeDef.Signature.With(name: "MyType2"), extends: new SpecializedType(type2, ImmutableArray<TypeReference>.Empty)));
+
+            var rootType2 = typeDef.Signature.With(name: "MyType2");
+            cx.AddType(typeDef.With(
+                signature: rootType2,
+                extends: new SpecializedType(type2, ImmutableArray<TypeReference>.Empty),
+                members: typeDef.Members.OfType<TypeDef>().Select(m => m.With(signature: m.Signature.With(parent: TypeOrNamespace.TypeSignature(rootType2)))).ToImmutableArray<MemberDef>()
+            ));
 
             check.CheckOutput(cx);
         }
@@ -51,8 +57,7 @@ namespace Coberec.ExprCS.Tests
                                 : TypeSignature.Class("MyType", ns, Accessibility.APublic);
             var iequatableT = cx.FindTypeDef(typeof(IEquatable<>));
             var method = new MethodSignature(type, ImmutableArray.Create(new MethodParameter(type, "obj")), "Equals", cx.FindType(typeof(bool)), false, Accessibility.APublic, false, false, false, false, ImmutableArray<GenericParameter>.Empty);
-            var thisP = ParameterExpression.CreateThisParam(method);
-            var methodDef = new MethodDef(method, ImmutableArray.Create(thisP), new ConstantExpression(true, cx.FindType(typeof(bool))));
+            var methodDef = MethodDef.Create(method, (_thisP, _objP) => new ConstantExpression(true, cx.FindType(typeof(bool))));
             var typeDef = TypeDef.Empty(type).With(
                 implements: ImmutableArray.Create(new SpecializedType(iequatableT, ImmutableArray.Create<TypeReference>(type))),
                 members: ImmutableArray.Create<MemberDef>(methodDef));
@@ -92,8 +97,25 @@ namespace Coberec.ExprCS.Tests
             var method = MethodSignature.Instance("MyMethod", type, Accessibility.APublic, TypeSignature.Int32, new MethodParameter(TypeSignature.String, "myParameter"));
             var property = PropertySignature.Create("MyProperty", type, TypeSignature.Boolean, Accessibility.APublic, null);
             var typeDef = TypeDef.Empty(type)
-                .AddMember(new MethodDef(method, default, null))
-                .AddMember(new PropertyDef(property, new MethodDef(property.Getter, default, null), null));
+                .AddMember(MethodDef.InterfaceDef(method))
+                .AddMember(PropertyDef.InterfaceDef(property));
+
+
+            cx.AddType(typeDef);
+            check.CheckOutput(cx);
+        }
+
+        [Fact]
+        public void ParameterDefaultValues()
+        {
+            var ns = NamespaceSignature.Parse("MyNamespace");
+            var type = TypeSignature.Interface("MyInterface2", ns, Accessibility.APublic);
+
+            var method1 = MethodSignature.Instance("StringMethod", type, Accessibility.APublic, TypeSignature.Int32, new MethodParameter(TypeSignature.String, "myParameter", hasDefaultValue: true, "default value"));
+            var method2 = MethodSignature.Instance("ValueTypeMethod", type, Accessibility.APublic, TypeSignature.Int32, new MethodParameter(TypeSignature.FromType(typeof(Guid)), "myParameter", hasDefaultValue: true, null));
+            var typeDef = TypeDef.Empty(type)
+                .AddMember(MethodDef.InterfaceDef(method1))
+                .AddMember(MethodDef.InterfaceDef(method2));
 
 
             cx.AddType(typeDef);

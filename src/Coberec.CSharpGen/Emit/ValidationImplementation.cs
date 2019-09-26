@@ -13,6 +13,7 @@ using Coberec.CoreLib;
 using Coberec.MetaSchema;
 using Newtonsoft.Json.Linq;
 using ObjExpr = System.Func<ICSharpCode.Decompiler.IL.ILVariable, ICSharpCode.Decompiler.IL.ILInstruction>;
+using E=Coberec.ExprCS;
 
 namespace Coberec.CSharpGen.Emit
 {
@@ -76,7 +77,7 @@ namespace Coberec.CSharpGen.Emit
             }
         }
 
-        static IEnumerable<ValidatorUsage> GetImplicitNullValidators(VirtualType type, TypeDef typeSchema, TypeSymbolNameMapping typeMapping)
+        static IEnumerable<ValidatorUsage> GetImplicitNullValidators(VirtualType type, TypeDef typeSchema, TypeSymbolNameMapping typeMapping, E.MetadataContext cx)
         {
             if (typeSchema.Core is TypeDefCore.PrimitiveCase)
             {
@@ -87,7 +88,10 @@ namespace Coberec.CSharpGen.Emit
                 foreach (var f in comp.Fields)
                 {
                     var realPropName = typeMapping.Fields[f.Name];
-                    var realProp = type.GetProperties(p => p.Name == realPropName).Single();
+                    var realProp = cx.DefinedTypes.Single(t => t.Signature.Name == typeMapping.Name)
+                                   .Members.OfType<E.PropertyDef>()
+                                   .Single(p => p.Signature.Name == realPropName)
+                                   .Apply(p => E.MetadataDefiner.GetProperty(cx, p.Signature));
                     if (!(f.Type is TypeRef.NullableTypeCase) && realProp.ReturnType.IsReferenceType == true)
                     {
                         yield return new ValidatorUsage("notNull", new Dictionary<string, JToken>(), new [] { f.Name });
@@ -117,7 +121,9 @@ namespace Coberec.CSharpGen.Emit
                             new [] { new string[0] } :
                             v.ForFields.Select(f => f.Split('.')).ToArray();
 
-            IMember getFieldMember(string field) => type.Members.Single(m => m.Name == typeMapping.Fields[field]);
+            var exprCSType = cx.Metadata.DeclaredEntities.Single(t => t.Value == type).Key.CastTo<E.TypeSignature>();
+
+            IMember getFieldMember(string field) => E.MetadataDefiner.GetMember(cx.Metadata, cx.Metadata.GetMembers(exprCSType).Single(m => m.Name == typeMapping.Fields[field]));
 
             (IL.ILInstruction, IType) unwrapNullable(IL.ILInstruction expr, IType resultType)
             {
@@ -211,7 +217,7 @@ namespace Coberec.CSharpGen.Emit
         public static VirtualMethod ImplementValidateIfNeeded(this VirtualType type, EmitContext cx, TypeDef typeSchema, TypeSymbolNameMapping typeMapping, IEnumerable<ValidatorUsage> validators)
         {
             var validateCalls = new List<Func<IL.ILVariable, IL.ILInstruction>>();
-            foreach(var v in Enumerable.Concat(GetImplicitNullValidators(type, typeSchema, typeMapping), validators))
+            foreach(var v in Enumerable.Concat(GetImplicitNullValidators(type, typeSchema, typeMapping, cx.Metadata), validators))
             {
                 try
                 {
@@ -229,7 +235,7 @@ namespace Coberec.CSharpGen.Emit
             if (validateCalls.Count == 0) return null;
 
             var methodParams = new IParameter[] { new VirtualParameter(type, "obj") };
-            var methodName = SymbolNamer.NameMethod(type, "ValidateObject", 0, methodParams);
+            var methodName = E.SymbolNamer.NameMethod(type, "ValidateObject", 0, methodParams, isOverride: false);
             var validationMethod = new VirtualMethod(type, Accessibility.Private, methodName, methodParams, cx.FindType<ValidationErrors>(), isStatic: true);
             validationMethod.BodyFactory = () => {
                 var thisParam = new IL.ILVariable(IL.VariableKind.Parameter, type, 0);

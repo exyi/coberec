@@ -16,7 +16,7 @@ namespace MyNamespace
 		{
 		}
 
-		public class B : A
+		public class B : MyType.A
 		{
 		}
 	}

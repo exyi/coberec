@@ -8,6 +8,7 @@ using Coberec.CSharpGen;
 using Coberec.CSharpGen.Emit;
 using Coberec.Tests.TestGens;
 using Xunit;
+using Coberec.ExprCS;
 
 namespace Coberec.Tests.CSharp
 {

@@ -52,6 +52,7 @@ namespace Coberec.CSharpGen.TypeSystem
         public string FullName => this.FullTypeName.ReflectionName;
 
         public string Name => this.FullTypeName.Name;
+        // public ExprCS DesiredName { get; set; }
 
         public string ReflectionName => this.FullTypeName.ReflectionName;
 

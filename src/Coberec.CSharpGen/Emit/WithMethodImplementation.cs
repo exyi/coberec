@@ -8,6 +8,7 @@ using ICSharpCode.Decompiler.TypeSystem.Implementation;
 using Coberec.CoreLib;
 using Coberec.CSharpGen.TypeSystem;
 using IL=ICSharpCode.Decompiler.IL;
+using E=Coberec.ExprCS;
 
 namespace Coberec.CSharpGen.Emit
 {
@@ -17,8 +18,8 @@ namespace Coberec.CSharpGen.Emit
         {
             IType optParamType(IType t) => isOptional ? new ParameterizedType(type.Compilation.FindType(typeof(OptParam<>)), new [] { t }) : t;
 
-            var parameters = SymbolNamer.NameParameters(properties.Select((p) => new VirtualParameter(optParamType(p.type), p.desiredName, isOptional: isOptional)));
-            var withName = SymbolNamer.NameMethod(type, "With", 0, parameters);
+            var parameters = E.SymbolNamer.NameParameters(properties.Select((p) => new VirtualParameter(optParamType(p.type), p.desiredName, isOptional: isOptional)));
+            var withName = E.SymbolNamer.NameMethod(type, "With", 0, parameters, false);
             var returnType = returnValidationResult ?
                              new ParameterizedType(type.Compilation.FindType(typeof(ValidationResult<>)), new [] { type }) :
                              (IType)type;
@@ -26,17 +27,22 @@ namespace Coberec.CSharpGen.Emit
             return new VirtualMethod(type, Accessibility.Public, withName, parameters, returnType);
         }
 
-        public static IMethod InterfaceWithMethod(this VirtualType type, (IMember property, string desiredName)[] properties, bool isOptional, bool returnValidationResult = true)
+        public static E.MethodDef InterfaceWithMethod(E.TypeSignature type, (E.TypeReference type, string desiredName)[] properties, bool isOptional, bool returnValidationResult = true)
         {
-            Debug.Assert(type.Kind == TypeKind.Interface);
+            Debug.Assert(type.Kind == "interface");
 
-            var method = CreateSignatureCore(type, properties.Select((p) => (p.property.ReturnType, p.desiredName)), isOptional, returnValidationResult);
-            type.Methods.Add(method);
-            return method;
+            E.TypeReference optParamType(E.TypeReference t) => isOptional ? new E.SpecializedType(E.TypeSignature.FromType(typeof(OptParam<>)), new [] { t }) : t;
+            var returnType = returnValidationResult ?
+                             new E.SpecializedType(E.TypeSignature.FromType(typeof(ValidationResult<>)), new [] { (E.TypeReference)new E.SpecializedType(type) }) :
+                             new E.SpecializedType(type);
+
+            var method = E.MethodSignature.Instance("With", type, E.Accessibility.APublic, returnType, properties.Select((p) => new E.MethodParameter(optParamType(p.type), p.desiredName, isOptional, null)).ToArray());
+            return new E.MethodDef(method, null, null);
         }
 
         static IType UnwrapOptParam(IType t) =>
             t.Name == "OptParam" && t.Namespace == "Coberec.CoreLib" ? t.TypeArguments.Single() : t;
+
         public static IMember InterfaceImplementationWithMethod(this VirtualType type, IMethod localWithMethod, IMethod ifcMethod, (IMember localProperty, string desiredName)[] ifcProperties, IMember[] localProperties)
         {
             Debug.Assert(ifcProperties.Select(p => p.localProperty.ReturnType).SequenceEqual(ifcMethod.Parameters.Select(p => UnwrapOptParam(p.Type))));

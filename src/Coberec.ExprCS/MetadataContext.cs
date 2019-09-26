@@ -20,6 +20,9 @@ using Xunit;
 
 namespace Coberec.ExprCS
 {
+    /// <summary>
+    /// Hold the entire compilation.
+    ///</summary>
     public class MetadataContext
     {
         private readonly HackedSimpleCompilation hackedCompilation;
@@ -68,106 +71,22 @@ namespace Coberec.ExprCS
         internal IModule MainILSpyModule => mutableModule;
         readonly VirtualModule mutableModule;
         private readonly Dictionary<ModuleSignature, IModule> moduleMap;
-        readonly ConcurrentDictionary<ITypeDefinition, TypeSignature> typeSignatureCache = new ConcurrentDictionary<ITypeDefinition, TypeSignature>();
-        internal TypeSignature TranslateType(ITypeDefinition t) =>
-            typeSignatureCache.GetOrAdd(t, type => {
-                var parent = type.DeclaringTypeDefinition != null ?
-                             TypeOrNamespace.TypeSignature(TranslateType(type.DeclaringTypeDefinition)) :
-                             TypeOrNamespace.NamespaceSignature(TranslateNamespace(type.Namespace));
-                var kind = t.Kind == TypeKind.Interface ? "interface" :
-                           t.Kind == TypeKind.Struct ? "struct" :
-                           t.Kind == TypeKind.Class ? "class" :
-                           t.Kind == TypeKind.Void ? "struct" :
-                           t.Kind == TypeKind.Enum ? "enum" :
-                           t.Kind == TypeKind.Delegate ? "delegate" :
-                           throw new NotSupportedException($"Type kind {t.Kind} is not supported.");
-                return new TypeSignature(type.Name, parent, kind, isValueType: !(bool)type.IsReferenceType, canOverride: !type.IsSealed && !type.IsStatic, isAbstract: type.IsAbstract || type.IsStatic, TranslateAccessibility(type.Accessibility), type.TypeParameterCount);
-            });
+        private readonly Dictionary<MemberSignature, IEntity> declaredEntities = new Dictionary<MemberSignature, IEntity>();
+        public IReadOnlyDictionary<MemberSignature, IEntity> DeclaredEntities => declaredEntities;
+        private Dictionary<TypeSignature, TypeDef> definedTypes = new Dictionary<TypeSignature, TypeDef>();
+        public IReadOnlyCollection<TypeDef> DefinedTypes => definedTypes.Values;
+        private Dictionary<FullTypeName, TypeDef> definedTypeNames = new Dictionary<FullTypeName, TypeDef>();
 
-        readonly ConcurrentDictionary<IMethod, MethodSignature> methodSignatureCache = new ConcurrentDictionary<IMethod, MethodSignature>();
-        public MethodSignature TranslateMethod(IMethod method) =>
-            methodSignatureCache.GetOrAdd(method, m =>
-                new MethodSignature(
-                    TranslateType(m.DeclaringType.GetDefinition()),
-                    m.Parameters.Select(TranslateParameter).ToImmutableArray(),
-                    m.Name,
-                    TranslateTypeReference(m.ReturnType),
-                    m.IsStatic,
-                    TranslateAccessibility(m.Accessibility),
-                    m.IsVirtual,
-                    m.IsOverride,
-                    m.IsAbstract,
-                    m.IsConstructor || m.IsAccessor || m.IsOperator || m.IsDestructor,
-                    m.TypeParameters.Select(TranslateGenericParameter).ToImmutableArray()
-                )
-            );
-
-        readonly ConcurrentDictionary<IField, FieldSignature> fieldSignatureCache = new ConcurrentDictionary<IField, FieldSignature>();
-        FieldSignature TranslateField(IField field) =>
-            fieldSignatureCache.GetOrAdd(field, f =>
-                new FieldSignature(
-                    TranslateType(f.DeclaringType.GetDefinition()),
-                    f.Name,
-                    TranslateAccessibility(field.Accessibility),
-                    TranslateTypeReference(f.ReturnType),
-                    f.IsStatic,
-                    f.IsReadOnly
-                )
-            );
-
-        readonly ConcurrentDictionary<IProperty, PropertySignature> propSignatureCache = new ConcurrentDictionary<IProperty, PropertySignature>();
-        PropertySignature TranslateProperty(IProperty property) =>
-            propSignatureCache.GetOrAdd(property, p =>
-                new PropertySignature(
-                    TranslateType(p.DeclaringType.GetDefinition()),
-                    TranslateTypeReference(p.ReturnType),
-                    p.Name,
-                    TranslateAccessibility(p.Accessibility),
-                    p.IsStatic,
-                    p.Getter?.Apply(TranslateMethod),
-                    p.Setter?.Apply(TranslateMethod)
-                )
-            );
-
-        ConcurrentDictionary<ITypeParameter, GenericParameter> typeParameterCache = new ConcurrentDictionary<ITypeParameter, GenericParameter>();
-        GenericParameter TranslateGenericParameter(ITypeParameter parameter) =>
-            typeParameterCache.GetOrAdd(parameter, p => new GenericParameter(Guid.NewGuid(), p.Name));
-
-        Accessibility TranslateAccessibility(TS.Accessibility a) =>
-            a == TS.Accessibility.Internal ? Accessibility.AInternal :
-            a == TS.Accessibility.Private ? Accessibility.APrivate :
-            a == TS.Accessibility.Public ? Accessibility.APublic :
-            a == TS.Accessibility.Protected ? Accessibility.AProtected :
-            a == TS.Accessibility.ProtectedOrInternal ? Accessibility.AProtectedInternal :
-            a == TS.Accessibility.ProtectedAndInternal ? Accessibility.APrivateProtected :
-            throw new NotSupportedException($"{a}");
-
-        ConcurrentDictionary<string, NamespaceSignature> namespaceSignatureCache = new ConcurrentDictionary<string, NamespaceSignature>();
-        NamespaceSignature TranslateNamespace(string ns) =>
-            namespaceSignatureCache.GetOrAdd(ns, NamespaceSignature.Parse);
-
-        MemberSignature TranslateMember(IMember m) =>
-            m is ITypeDefinition type ? TranslateType(type) :
-            m is IMethod method       ? (MemberSignature)TranslateMethod(method) :
-            throw new NotSupportedException($"Member '{m}' of type '{m.GetType().Name}' is not supported");
-
-        internal MethodParameter TranslateParameter(IParameter parameter) =>
-            new MethodParameter(
-                TranslateTypeReference(parameter.Type),
-                parameter.Name
-            );
-
-        internal TypeReference TranslateTypeReference(IType type) =>
-            type is ITypeDefinition td ? TypeReference.SpecializedType(TranslateType(td), ImmutableArray<TypeReference>.Empty) :
-            type is TS.ByReferenceType refType ? TypeReference.ByReferenceType(TranslateTypeReference(refType.ElementType)) :
-            type is TS.PointerType ptrType ? TypeReference.PointerType(TranslateTypeReference(ptrType.ElementType)) :
-            type is TS.ArrayType arrType ? TypeReference.ArrayType(TranslateTypeReference(arrType.ElementType), arrType.Dimensions) :
-            type is TS.ParameterizedType paramType ? TypeReference.SpecializedType(
-                                                         TranslateType(paramType.GenericType.GetDefinition()),
-                                                         paramType.TypeArguments.Select(TranslateTypeReference).ToImmutableArray()) :
-            type is TS.ITypeParameter typeParam ? TypeReference.GenericParameter(TranslateGenericParameter(typeParam)) :
-            type is TS.Implementation.NullabilityAnnotatedType decoratedType ? TranslateTypeReference(decoratedType.TypeWithoutAnnotation) :
-            throw new NotImplementedException($"Type reference '{type}' of type '{type.GetType().Name}' is not supported.");
+        internal void RegisterEntity(MemberDef member, IEntity entity)
+        {
+            declaredEntities.Add(member.Signature, entity);
+            if (member is TypeDef type)
+            {
+                this.definedTypes.Add(type.Signature, type);
+                this.definedTypeNames.Add(type.Signature.GetFullTypeName(), type);
+            }
+            SymbolLoader.RegisterDeclaredEntity(entity, member.Signature);
+        }
 
         internal IModule GetModule(ModuleSignature module) =>
             moduleMap.TryGetValue(module, out var result) ? result :
@@ -178,72 +97,101 @@ namespace Coberec.ExprCS
             GetNamespace(ns.Parent).GetChildNamespace(ns.Name) ?? throw new Exception($"Could not resolve namespace {ns}.");
 
         internal ITypeDefinition GetTypeDef(TypeSignature type) =>
+            declaredEntities.TryGetValue(type, out var result) ? (ITypeDefinition)result :
             type.Parent.Match(
-                ns => GetNamespace(ns.Item).GetTypeDefinition(type.Name, type.GenericParamCount) ?? throw new InvalidOperationException($"Type {type} could not be found"),
+                ns => GetNamespace(ns.Item).GetTypeDefinition(type.Name, type.GenericParamCount) ?? throw new InvalidOperationException($"Type {type.GetFullTypeName()} could not be found"),
                 parentType => GetTypeDef(parentType.Item).GetNestedTypes(t => t.Name == type.Name).Single().GetDefinition());
 
-        public TypeSignature FindTypeDef(string name) =>
-            TranslateType(Compilation.FindType(new FullTypeName(name)).GetDefinition());
+        public TypeSignature FindTypeDef(string name)
+        {
+            var fullTypeName = new FullTypeName(name);
+            if (this.definedTypeNames.TryGetValue(fullTypeName, out var result))
+                return result.Signature;
+            else
+                return SymbolLoader.Type(Compilation.FindType(fullTypeName).GetDefinition());
+        }
         public TypeSignature FindTypeDef(Type type) =>
-            TranslateType(Compilation.FindType(type).GetDefinition());
+            SymbolLoader.Type(Compilation.FindType(type).GetDefinition());
 
 
-        public TypeReference FindType(string name) =>
-            TranslateTypeReference(Compilation.FindType(new FullTypeName(name)));
+        public TypeReference FindType(string name)
+        {
+            var fullTypeName = new FullTypeName(name);
+            if (this.definedTypeNames.TryGetValue(fullTypeName, out var result))
+                return result.Signature;
+            else
+                return SymbolLoader.TypeRef(Compilation.FindType(fullTypeName));
+        }
         public TypeReference FindType(Type type) =>
-            TranslateTypeReference(Compilation.FindType(type));
+            SymbolLoader.TypeRef(Compilation.FindType(type));
 
         public IEnumerable<TypeSignature> GetTopLevelTypes() =>
-            Compilation.GetTopLevelTypeDefinitions().Select(TranslateType);
+            Compilation.GetTopLevelTypeDefinitions().Where(t => !(t is VirtualType)).Select(SymbolLoader.Type)
+            .Concat(this.definedTypes.Keys);
 
         public IEnumerable<TypeSignature> GetTopLevelTypes(ModuleSignature module) =>
-            GetModule(module).TopLevelTypeDefinitions.Select(TranslateType);
+            GetModule(module).TopLevelTypeDefinitions.Select(SymbolLoader.Type);
 
         public IEnumerable<TypeOrNamespace> GetNamespaceMembers(NamespaceSignature @namespace)
         {
             var ns = GetNamespace(@namespace);
-            return ns.ChildNamespaces.Select(n => TranslateNamespace(n.FullName)).Select(TypeOrNamespace.NamespaceSignature)
-                   .Concat(ns.Types.Select(TranslateType).Select(TypeOrNamespace.TypeSignature));
+            return ns.ChildNamespaces.Select(n => SymbolLoader.Namespace(n.FullName)).Select(TypeOrNamespace.NamespaceSignature)
+                   .Concat(ns.Types.Select(SymbolLoader.Type).Select(TypeOrNamespace.TypeSignature));
         }
 
         public IEnumerable<MethodSignature> GetMemberMethods(TypeSignature type) =>
-            GetTypeDef(type).GetMethods(null, GetMemberOptions.IgnoreInheritedMembers).Select(TranslateMethod);
+            GetTypeDef(type).GetMethods(null, GetMemberOptions.IgnoreInheritedMembers).Select(SymbolLoader.Method);
 
         public IEnumerable<FieldSignature> GetMemberFields(TypeSignature type) =>
-            GetTypeDef(type).GetFields(null, GetMemberOptions.IgnoreInheritedMembers).Select(TranslateField);
+            GetTypeDef(type).GetFields(null, GetMemberOptions.IgnoreInheritedMembers).Select(SymbolLoader.Field);
 
         public IEnumerable<PropertySignature> GetMemberProperties(TypeSignature type) =>
-            GetTypeDef(type).GetProperties(null, GetMemberOptions.IgnoreInheritedMembers).Select(TranslateProperty);
+            GetTypeDef(type).GetProperties(null, GetMemberOptions.IgnoreInheritedMembers).Select(SymbolLoader.Property);
 
         public IEnumerable<SpecializedType> GetBaseTypes(TypeSignature type) =>
-            GetTypeDef(type).GetAllBaseTypes().Select(TranslateTypeReference).Select(t => Assert.IsType<TypeReference.SpecializedTypeCase>(t).Item);
+            GetTypeDef(type).GetAllBaseTypes().Select(SymbolLoader.TypeRef).Select(t => Assert.IsType<TypeReference.SpecializedTypeCase>(t).Item);
 
         public IEnumerable<SpecializedType> GetDirectImplements(TypeSignature type) =>
-            GetTypeDef(type).DirectBaseTypes.Where(b => b.Kind == TypeKind.Interface).Select(TranslateTypeReference).Select(t => Assert.IsType<TypeReference.SpecializedTypeCase>(t).Item);
+            GetTypeDef(type).DirectBaseTypes.Where(b => b.Kind == TypeKind.Interface).Select(SymbolLoader.TypeRef).Select(t => Assert.IsType<TypeReference.SpecializedTypeCase>(t).Item);
 
         public IEnumerable<MemberSignature> GetMembers(TypeSignature type) =>
             GetMemberMethods(type).AsEnumerable<MemberSignature>()
             .Concat(GetMemberProperties(type))
             .Concat(GetMemberFields(type));
 
-        private List<TypeDef> definedTypes = new List<TypeDef>();
-        public IReadOnlyList<TypeDef> DefinedTypes => definedTypes.AsReadOnly();
+
+        private Dictionary<TypeSignature, List<ILSpyArbitraryTypeModification>> typeMods = new Dictionary<TypeSignature, List<ILSpyArbitraryTypeModification>>();
 
         public EmitSettings Settings { get; }
+
+        public void RegisterTypeMod(TypeSignature type, Action<VirtualType> declareMembers, Action<VirtualType> completeDefinitions = null) =>
+            RegisterTypeMod(type, new ILSpyArbitraryTypeModification(declareMembers, completeDefinitions));
+        public void RegisterTypeMod(TypeSignature type, ILSpyArbitraryTypeModification modification)
+        {
+            if (definedTypes.ContainsKey(type))
+                throw new Exception($"Type {type.GetFullTypeName()} was already defined.");
+
+            if (!typeMods.TryGetValue(type, out var list))
+                typeMods[type] = list = new List<ILSpyArbitraryTypeModification>();
+
+            list.Add(modification);
+        }
+
+        internal IEnumerable<ILSpyArbitraryTypeModification> GetTypeMods(TypeSignature type) =>
+            typeMods.GetValueOrDefault(type)?.AsEnumerable() ?? Enumerable.Empty<ILSpyArbitraryTypeModification>();
 
         public void AddType(TypeDef type)
         {
             var xx = MetadataDefiner.CreateTypeDefinition(this, type);
             mutableModule.AddType(xx);
             MetadataDefiner.DefineTypeMembers(xx, this, type);
-            definedTypes.Add(type);
         }
 
 // #if ExposeILSpy
         public TypeSignature AddRawType(ITypeDefinition type)
         {
             mutableModule.AddType(type);
-            return TranslateType(type);
+            return SymbolLoader.Type(type);
         }
 // #endif
 

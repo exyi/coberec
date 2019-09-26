@@ -10,6 +10,7 @@ using Coberec.CSharpGen.TypeSystem;
 using IL=ICSharpCode.Decompiler.IL;
 using static Coberec.CSharpGen.Emit.EmitExtensions;
 using System.Reflection.Metadata;
+using E=Coberec.ExprCS;
 
 namespace Coberec.CSharpGen.Emit
 {
@@ -21,8 +22,8 @@ namespace Coberec.CSharpGen.Emit
             var func = type.Compilation.FindType(typeof(Func<,>));
             IType makeArgType(IType caseType) => new ParameterizedType(func, new [] { caseType, genericParameter });
 
-            var parameters = SymbolNamer.NameParameters(cases.Select(c => new VirtualParameter(makeArgType(c.caseType), c.caseName)));
-            var methodName = SymbolNamer.NameMethod(type, "Match", 1, parameters, false);
+            var parameters = E.SymbolNamer.NameParameters(cases.Select(c => new VirtualParameter(makeArgType(c.caseType), c.caseName)));
+            var methodName = E.SymbolNamer.NameMethod(type, "Match", 1, parameters, false);
             var method = new VirtualMethod(type, Accessibility.Public, methodName, parameters, genericParameter, isVirtual: true, isAbstract: true, typeParameters: new [] { genericParameter });
 
             type.Methods.Add(method);

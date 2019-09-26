@@ -149,7 +149,7 @@ namespace Coberec.ExprCS.CodeTranslation
 
             var invokeMethod = target.Output.Type.GetDelegateInvokeMethod();
             Assert.NotNull(invokeMethod);
-            var fromFnType = new FunctionType(invokeMethod.Parameters.Select(this.Metadata.TranslateParameter).ToImmutableArray(), this.Metadata.TranslateTypeReference(invokeMethod.ReturnType));
+            var fromFnType = new FunctionType(invokeMethod.Parameters.Select(SymbolLoader.Parameter).ToImmutableArray(), SymbolLoader.TypeRef(invokeMethod.ReturnType));
             // if the result is function compatible with the delegate -> return it
             if (fnType is object && fnType == fromFnType)
             {

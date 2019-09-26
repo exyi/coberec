@@ -6,6 +6,7 @@ using System.Linq;
 using Coberec.CSharpGen.TypeSystem;
 using ICSharpCode.Decompiler.TypeSystem;
 using IL = ICSharpCode.Decompiler.IL;
+using E=Coberec.ExprCS;
 
 namespace Coberec.CSharpGen.Emit
 {
@@ -15,7 +16,7 @@ namespace Coberec.CSharpGen.Emit
         {
             var valueType = caseCtor.Parameters.Single().Type;
             var caseFactory = new VirtualMethod(type, Accessibility.Public,
-                SymbolNamer.NameMethod(type, caseName, 0, new [] { valueType }),
+                E.SymbolNamer.NameMethod(type, caseName, 0, new [] { valueType }, isOverride: false),
                 new[] { new VirtualParameter(valueType, "item") },
                 returnType: type,
                 isStatic: true
@@ -88,7 +89,7 @@ namespace Coberec.CSharpGen.Emit
             Debug.Assert(valueType == valueTypeCtor.DeclaringType);
 
             var caseFactory = new VirtualMethod(type, Accessibility.Public,
-                SymbolNamer.NameMethod(type, caseName, 0, valueTypeCtor.Parameters),
+                E.SymbolNamer.NameMethod(type, caseName, 0, valueTypeCtor.Parameters, isOverride: false),
                 valueTypeCtor.Parameters,
                 returnType: type,
                 isStatic: true

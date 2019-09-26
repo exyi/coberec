@@ -11,6 +11,7 @@ using Coberec.CSharpGen.TypeSystem;
 using IL=ICSharpCode.Decompiler.IL;
 using Coberec.CoreLib;
 using Coberec.MetaSchema;
+using E=Coberec.ExprCS;
 
 namespace Coberec.CSharpGen.Emit
 {
@@ -19,7 +20,7 @@ namespace Coberec.CSharpGen.Emit
         public static VirtualMethod AddCreateConstructor(this VirtualType type, EmitContext cx, (string name, IField field)[] fields, bool privateNoValidationVersion, IMethod validationMethod = null)
         {
             var noValidationSentinelParameter = privateNoValidationVersion ? new [] { new VirtualParameter(cx.FindType<NoNeedForValidationSentinel>(), "_") } : new IParameter[0];
-            var parameters = SymbolNamer.NameParameters(noValidationSentinelParameter.Concat(fields.Select(f => (IParameter)new VirtualParameter(f.field.Type, f.name))));
+            var parameters = E.SymbolNamer.NameParameters(noValidationSentinelParameter.Concat(fields.Select(f => (IParameter)new VirtualParameter(f.field.Type, f.name))));
             var accessibility = privateNoValidationVersion ? Accessibility.Private : Accessibility.Public;
             var ctor = new VirtualMethod(type, accessibility, ".ctor", parameters, cx.FindType(typeof(void)));
             var objectCtor = cx.FindMethod(() => new object());
@@ -105,7 +106,7 @@ namespace Coberec.CSharpGen.Emit
                              constructor.Parameters.Skip(1).ToArray() :
                              constructor.Parameters.ToArray();
 
-            var methodName = SymbolNamer.NameMethod(type, "Create", 0, parameters);
+            var methodName = E.SymbolNamer.NameMethod(type, "Create", 0, parameters, isOverride: false);
             var method = new VirtualMethod(type, Accessibility.Public, methodName, parameters, returnType, isStatic: true);
 
             method.BodyFactory = () => {

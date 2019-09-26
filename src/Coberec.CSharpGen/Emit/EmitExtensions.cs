@@ -10,6 +10,7 @@ using ICSharpCode.Decompiler.TypeSystem.Implementation;
 using Coberec.CSharpGen.TypeSystem;
 using IL=ICSharpCode.Decompiler.IL;
 using Coberec.CoreLib;
+using E=Coberec.ExprCS;
 
 namespace Coberec.CSharpGen.Emit
 {
@@ -52,7 +53,7 @@ namespace Coberec.CSharpGen.Emit
 
         public static (VirtualProperty prop, IField field) AddAutoProperty(this VirtualType declaringType, string name, IType propertyType, Accessibility accessibility = Accessibility.Public, bool isReadOnly = true)
         {
-            name = SymbolNamer.NameMember(declaringType, name, lowerCase: accessibility == Accessibility.Private);
+            name = E.SymbolNamer.NameMember(declaringType, name, lowerCase: accessibility == Accessibility.Private);
 
 
             var field = new VirtualField(declaringType, Accessibility.Private, string.Format(AutoPropertyField, name), propertyType, isReadOnly: isReadOnly, isHidden: true);
@@ -75,22 +76,6 @@ namespace Coberec.CSharpGen.Emit
             declaringType.Properties.Add(prop);
 
             return (prop, field);
-        }
-
-        public static IProperty AddInterfaceProperty(this VirtualType declaringType, string name, IType propertyType, bool isReadOnly = true)
-        {
-            name = SymbolNamer.NameMember(declaringType, name, lowerCase: false);
-
-            var getter = new VirtualMethod(declaringType, Accessibility.Public, string.Format(PropertyGetter, name), Array.Empty<IParameter>(), propertyType, isHidden: true);
-            var setter = isReadOnly ? null :
-                         new VirtualMethod(declaringType, Accessibility.Public, string.Format(PropertySetter, name), new [] { new VirtualParameter(propertyType, "value") }, declaringType.Compilation.FindType(typeof(void)), isHidden: true);
-            var prop = new VirtualProperty(declaringType, Accessibility.Public, name, getter, setter, isVirtual: true);
-
-
-            declaringType.Methods.Add(getter);
-            if (setter != null) declaringType.Methods.Add(setter);
-            declaringType.Properties.Add(prop);
-            return prop;
         }
 
         public static IL.ILInstruction InvokeInterfaceMethod(IMethod method, IType targetType, IL.ILInstruction @this, params IL.ILInstruction[] args)

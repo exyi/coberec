@@ -113,7 +113,7 @@ namespace Coberec.GraphqlLoader
                 }
                 return ((path, t), source);
             }
-            else throw new NotSupportedException($"Could not map path {string.Join(".", path.ToArray())}");
+            else throw new NotSupportedException($"Could not map path {string.Join(".", path.ToArray())} on graphql schema");
         }
 
         private static ValidationResult<DataSchema> CreateDataSchema(CollectedDefinitions cds) =>

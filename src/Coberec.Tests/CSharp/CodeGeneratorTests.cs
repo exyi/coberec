@@ -135,6 +135,18 @@ namespace GeneratedProject {
             check.CheckString(result, fileExtension: "cs");
         }
 
+        [Fact]
+        public void SimpleScalarType()
+        {
+            var schema = new DataSchema(Enumerable.Empty<Entity>(), new [] {
+                new TypeDef("Scalar123", Enumerable.Empty<Directive>(), TypeDefCore.Primitive())
+            });
+
+            var result = CSharpBackend.Build(schema, DefaultSettings);
+            CheckItCompiles(result);
+            check.CheckString(result, fileExtension: "cs");
+        }
+
         [Theory]
         [InlineData("default", true)]
         [InlineData("noOptionalWith", false)]

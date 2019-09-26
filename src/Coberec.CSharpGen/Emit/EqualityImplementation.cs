@@ -9,6 +9,7 @@ using ICSharpCode.Decompiler.TypeSystem;
 using ICSharpCode.Decompiler.TypeSystem.Implementation;
 using Coberec.CSharpGen.TypeSystem;
 using IL=ICSharpCode.Decompiler.IL;
+using E=Coberec.ExprCS;
 using static Coberec.CSharpGen.Emit.EmitExtensions;
 
 namespace Coberec.CSharpGen.Emit
@@ -230,7 +231,7 @@ namespace Coberec.CSharpGen.Emit
         public static (IMethod equalsCore, IMethod equals) ImplementEqualityForBase(this VirtualType type)
         {
             Debug.Assert(type.IsAbstract);
-            var methodName = SymbolNamer.NameMethod(type, "EqualsCore", 0, new[] { type }, false);
+            var methodName = E.SymbolNamer.NameMethod(type, "EqualsCore", 0, new[] { type }, false);
             var eqCoreMethod = new VirtualMethod(type, Accessibility.ProtectedAndInternal, methodName, new [] { new VirtualParameter(type, "b") }, type.Compilation.FindType(typeof(bool)), isAbstract: true);
             type.Methods.Add(eqCoreMethod);
             return (eqCoreMethod, type.ImplementEqualityCore(eqMethod =>

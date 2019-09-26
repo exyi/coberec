@@ -88,13 +88,13 @@ namespace GeneratedProject.ModelNamespace
 
 			public override int GetHashCode()
 			{
-				return ((object)Item).GetHashCode();
+				return Item.GetHashCode();
 			}
 
 			private protected override bool EqualsCore(Union123 b)
 			{
 				Test123Case test123Case;
-				return (test123Case = (b as Test123Case)) != null && Item == ((Test123Case)b).Item;
+				return (object)(test123Case = (b as Test123Case)) != null && Item == ((Test123Case)b).Item;
 			}
 
 			public override TResult Match<TResult>(Func<Test123Case, TResult> test123, Func<StringCase, TResult> @string)
@@ -122,7 +122,7 @@ namespace GeneratedProject.ModelNamespace
 			private protected override bool EqualsCore(Union123 b)
 			{
 				StringCase stringCase;
-				return (stringCase = (b as StringCase)) != null && Item == ((StringCase)b).Item;
+				return (object)(stringCase = (b as StringCase)) != null && Item == ((StringCase)b).Item;
 			}
 
 			public override TResult Match<TResult>(Func<Test123Case, TResult> test123, Func<StringCase, TResult> @string)

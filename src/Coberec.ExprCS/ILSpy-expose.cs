@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Coberec.CSharpGen.TypeSystem;
 using ICSharpCode.Decompiler.IL;
 using ICSharpCode.Decompiler.TypeSystem;
 
@@ -23,6 +24,18 @@ namespace Coberec.ExprCS
         public ILSpyMethodBody(Func<IMethod, MetadataContext, ILFunction> buildBody)
         {
             BuildBody = buildBody;
+        }
+    }
+
+    public class ILSpyArbitraryTypeModification
+    {
+        public Action<VirtualType> DeclareMembers { get; }
+        public Action<VirtualType> CompleteDefinitions { get; }
+
+        public ILSpyArbitraryTypeModification(Action<VirtualType> declareMembers, Action<VirtualType> completeDefinitions)
+        {
+            DeclareMembers = declareMembers ?? throw new ArgumentNullException(nameof(declareMembers));
+            CompleteDefinitions = completeDefinitions;
         }
     }
 }

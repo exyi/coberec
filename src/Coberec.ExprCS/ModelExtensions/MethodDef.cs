@@ -34,5 +34,11 @@ namespace Coberec.ExprCS
             CreateWithArray(signature, args => { Assert.Equal(2, args.Length); return body(args[0], args[1]); });
         public static MethodDef Create(MethodSignature signature, Func<ParameterExpression, ParameterExpression, ParameterExpression, Expression> body) =>
             CreateWithArray(signature, args => { Assert.Equal(3, args.Length); return body(args[0], args[1], args[2]); });
+
+        public static MethodDef InterfaceDef(MethodSignature signature)
+        {
+            Assert.Equal("interface", signature.DeclaringType.Kind);
+            return CreateWithArray(signature, _ => null);
+        }
     }
 }
