@@ -72,5 +72,21 @@ namespace Coberec.ExprCS
             return new TypeSignature(typeName, parent, kind, type.IsValueType, !type.IsSealed, type.IsAbstract, accessibility, type.GetGenericArguments().Length);
         }
 
+
+        public override string ToString()
+        {
+            if (this == Void) return "void";
+            else if (this == Int32) return "int";
+            else if (this == Object) return "object";
+            else if (this == String) return "string";
+
+            var sb = new System.Text.StringBuilder();
+            if (this.Accessibility != Accessibility.APublic) sb.Append(this.Accessibility).Append(" ");
+            if (this.IsAbstract) sb.Append("abstract ");
+            if (this.Kind == "class" && !this.CanOverride) sb.Append("sealed ");
+            if (this.Kind != "class") sb.Append(this.Kind).Append(" ");
+            sb.Append(this.GetFullTypeName());
+            return sb.ToString();
+        }
     }
 }

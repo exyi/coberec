@@ -106,12 +106,18 @@ namespace Coberec.CSharpGen
                            return new E.SpecializedType(cx.Metadata.FindTypeDef(typeof(ImmutableArray<>)), new[] { t });
                        });
 
-        (E.TypeDef, TypeSymbolNameMapping) BuildType(TypeDef def)
+        (E.TypeDef type, TypeSymbolNameMapping mapping) BuildType(TypeDef def)
         {
             if (this.realizedTypes.TryGetValue(def.Name, out var result))
                 return result;
 
             var type = this.typeSignatures[def.Name];
+
+            void handleError(ValidationErrorException ex)
+            {
+                var typeIndex = cx.FullSchema.Types.IndexOf(def);
+                throw ex.Nest("core").Nest(typeIndex.ToString()).Nest("types");
+            }
 
             try
             {
@@ -120,13 +126,16 @@ namespace Coberec.CSharpGen
                     primitive: primitive => GenerateScalar(type, primitive, def),
                     union: union => GenerateUnion(type, union, def),
                     @interface: ifc => GenerateInterface(type, ifc, def));
-                this.cx.Metadata.AddType(result.type);
             }
             catch (ValidationErrorException ex)
             {
-                var typeIndex = cx.FullSchema.Types.IndexOf(def);
-                throw ex.Nest("core").Nest(typeIndex.ToString()).Nest("types");
+                handleError(ex);
             }
+            this.cx.Metadata.AddType(result.type, ex => {
+                if (ex is ValidationErrorException vex)
+                    handleError(vex);
+                else throw ex;
+            });
 
 
             this.realizedTypes.Add(def.Name, result);
@@ -216,7 +225,16 @@ namespace Coberec.CSharpGen
                 props.ToDictionary(p => p.schema.Name, p => p.prop.Signature.Name)
             );
 
+
+            var interfaces =
+                from f in composite.Implements
+                let name = ((TypeRef.ActualTypeCase)f).TypeName
+                let declaration = this.typeSchemas[name]
+                let definition = this.BuildType(declaration)
+                select (declaration, definition.type, definition.mapping);
+
             var result = E.TypeDef.Empty(type)
+                         .With(implements: interfaces.Select(i => new E.SpecializedType(i.type.Signature)).ToImmutableArray())
                          .AddMember(props.Select(p => p.prop).ToArray())
                          .AddMember(props.Select(p => p.field).ToArray());
 
@@ -251,20 +269,15 @@ namespace Coberec.CSharpGen
                         vtype.ImplementOptionalWithMethod(withMethod, properties);
                 }
 
-                foreach (var f in composite.Implements)
+                foreach (var i in interfaces)
                 {
-                    var interfaceName = ((TypeRef.ActualTypeCase)f).TypeName;
-                    var interfaceDeclaration = this.typeSchemas[interfaceName];
-                    var (interfaceType, interfaceMapping) = this.BuildType(interfaceDeclaration);
-                    vtype.ImplementedInterfaces.Add(E.MetadataDefiner.GetTypeReference(cx.Metadata, interfaceType.Signature));
-
                     var interfaceFields =
-                    (from ifcProp in ((TypeDefCore.InterfaceCase)interfaceDeclaration.Core).Fields
+                    (from ifcProp in ((TypeDefCore.InterfaceCase)i.declaration.Core).Fields
                         select (
                             ifcProp,
                             myProp: propDictionary[ifcProp.Name],
-                            ifcRealProp: interfaceMapping.Fields[ifcProp.Name]
-                                        .Apply(n => interfaceType.Members.Where(p => p.Signature.Name == n))
+                            ifcRealProp: i.mapping.Fields[ifcProp.Name]
+                                        .Apply(n => i.type.Members.Where(p => p.Signature.Name == n))
                                         .Cast<E.PropertyDef>()
                                         .Single()
                         )
@@ -279,11 +292,11 @@ namespace Coberec.CSharpGen
                             vtype.AddExplicitInterfaceProperty(E.MetadataDefiner.GetProperty(cx.Metadata, ifcRealProp.Signature), E.MetadataDefiner.GetProperty(cx.Metadata, myProp.prop.Signature));
                     }
 
-                    if (interfaceMapping.GetSymbol("With") is string withMethodName)
+                    if (i.mapping.GetSymbol("With") is string withMethodName)
                     {
-                        var ifcWithMethod = interfaceType.Members.OfType<E.MethodDef>().Where(m => m.Signature.Name == withMethodName).Single();
+                        var ifcWithMethod = i.type.Members.OfType<E.MethodDef>().Where(m => m.Signature.Name == withMethodName).Single();
 
-                        if (withMethod == null) throw new NotSupportedException($"Could not implement {interfaceName} for {type.Name} due to conflict in With method settings.");
+                        if (withMethod == null) throw new NotSupportedException($"Could not implement {i.declaration.Name} for {type.Name} due to conflict in With method settings.");
 
                         vtype.InterfaceImplementationWithMethod(
                             withMethod,

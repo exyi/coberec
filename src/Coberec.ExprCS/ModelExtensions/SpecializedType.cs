@@ -9,5 +9,11 @@ namespace Coberec.ExprCS
     {
         public SpecializedType(TypeSignature type, params TypeReference[] genericArgs)
             : this(type, genericArgs.ToImmutableArray()) {}
+
+        public override string ToString() =>
+            this.GenericParameters.IsEmpty
+                ? this.Type.ToString()
+                : $"{this.Type}<{string.Join(", ", GenericParameters)}>";
+
     }
 }

@@ -103,27 +103,28 @@ namespace Coberec.ExprCS
             sgn is FieldSignature field ? (IMember)cx.GetField(field) :
             throw new NotSupportedException();
 
-        public static FullTypeName SanitizeName(this MetadataContext cx, FullTypeName name)
+        public static FullTypeName SanitizeTypeName(this MetadataContext cx, FullTypeName name, TypeDef type)
         {
             if (!cx.Settings.SanitizeSymbolNames)
                 return name;
 
-            if (name.IsNested)
-            {
-                var declType = cx.Compilation.FindType(name.GetDeclaringType()).GetDefinition();
-                var newName = SymbolNamer.NameMember(declType, name.Name, false);
-                return name.GetDeclaringType().NestedType(name.Name, name.GetNestedTypeAdditionalTypeParameterCount(name.NestingLevel - 1));
-            }
-            else
-            {
-                var t = name.TopLevelTypeName;
-                var newName = SymbolNamer.NameType(t.Namespace, t.Name, t.TypeParameterCount, cx.Compilation);
-                return new FullTypeName(new TopLevelTypeName(t.Namespace, newName, t.TypeParameterCount));
-            }
+            Assert.False(name.IsNested);
+            // {
+            //     var declType = cx.Compilation.FindType(name.GetDeclaringType()).GetDefinition();
+            //     var newName = SymbolNamer.NameMember(declType, name.Name, false);
+            //     return name.GetDeclaringType().NestedType(name.Name, name.GetNestedTypeAdditionalTypeParameterCount(name.NestingLevel - 1));
+            // }
+            var t = name.TopLevelTypeName;
+            var newName = SymbolNamer.NameType(type, cx.Compilation);
+            return new FullTypeName(new TopLevelTypeName(t.Namespace, newName, t.TypeParameterCount));
         }
 
-        public static VirtualType CreateTypeDefinition(MetadataContext cx, TypeDef t)
+        public static VirtualType CreateTypeDefinition(MetadataContext cx, TypeDef t, FullTypeName? name = null)
         {
+            if (t.Signature.Parent is TypeOrNamespace.TypeSignatureCase)
+                Assert.NotNull(name);
+
+
             var sgn = t.Signature;
             var kind = sgn.Kind == "struct" ? TypeKind.Struct :
                        sgn.Kind == "interface" ? TypeKind.Interface :
@@ -133,7 +134,7 @@ namespace Coberec.ExprCS
             var vt = new VirtualType(
                 kind,
                 GetAccessibility(sgn.Accessibility),
-                cx.SanitizeName(sgn.GetFullTypeName()),
+                name ?? cx.SanitizeTypeName(sgn.GetFullTypeName(), t),
                 isStatic: !sgn.CanOverride && sgn.IsAbstract,
                 isSealed: !sgn.CanOverride,
                 sgn.IsAbstract,
@@ -290,7 +291,7 @@ namespace Coberec.ExprCS
                 else if (member is TypeDef typeMember)
                 {
                     // Assert.Equal(definition.Signature, typeMember.Signature.Parent);
-                    var d = CreateTypeDefinition(cx, typeMember);
+                    var d = CreateTypeDefinition(cx, typeMember, type.FullTypeName.NestedType(name, typeMember.Signature.GenericParamCount));
                     type.NestedTypes.Add(d);
                     DefineTypeMembers(d, cx, typeMember);
                 }
@@ -317,6 +318,29 @@ namespace Coberec.ExprCS
 
             foreach (var a in cx.GetTypeMods(definition.Signature))
                 a.CompleteDefinitions?.Invoke(type);
+        }
+
+        /// Orders the definitions so that base types and implemented interfaces are declared before use
+        public static TypeDef[] SortDefinitions(IList<TypeDef> types)
+        {
+            var lookup = types.ToDictionary(t => t.Signature);
+            var result = new List<TypeDef>();
+
+            void add(TypeSignature t)
+            {
+                if (lookup.TryGetValue(t, out var td))
+                {
+                    lookup.Remove(t);
+                    result.Add(td);
+                    foreach (var tt in td.Implements) add(tt.Type);
+                    if (td.Extends is object) add(td.Extends.Type);
+                }
+            }
+
+            foreach (var t in types) add(t.Signature);
+
+            Assert.Equal(result.Count, types.Count);
+            return result.ToArray();
         }
 
     }

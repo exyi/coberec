@@ -30,5 +30,14 @@ namespace Coberec.ExprCS
 			// only remaining options are `internal` and `protected` and we certainly have both of them
 			return AProtectedInternal;
 		}
+
+		public override string ToString() =>
+			this == AInternal ? "internal" :
+			this == APublic ? "public" :
+			this == APrivate ? "private" :
+			this == AProtected ? "protected" :
+			this == AProtectedInternal ? "protected internal" :
+			this == APrivateProtected ? "private protected" :
+			throw new NotSupportedException();
 	}
 }

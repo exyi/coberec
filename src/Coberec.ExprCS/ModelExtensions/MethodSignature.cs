@@ -20,5 +20,26 @@ namespace Coberec.ExprCS
         public static MethodSignature Instance(string name, TypeSignature declaringType, Accessibility accessibility, TypeReference returnType, params MethodParameter[] parameters) =>
             new MethodSignature(declaringType, parameters.ToImmutableArray(), name, returnType, isStatic: false, accessibility, isVirtual: false, isOverride: false, isAbstract: false, hasSpecialName: false, ImmutableArray<GenericParameter>.Empty);
 
+
+        public override string ToString()
+        {
+            var sb = new System.Text.StringBuilder();
+            if (this.Accessibility != Accessibility.APublic) sb.Append(this.Accessibility).Append(" ");
+            if (this.IsStatic) sb.Append("static ");
+            if (this.HasSpecialName) sb.Append("[specialname] ");
+            if (this.IsVirtual && !this.IsOverride) sb.Append("virtual ");
+            if (this.IsOverride && !this.IsVirtual) sb.Append("sealed ");
+            if (this.IsOverride) sb.Append("override ");
+            if (this.IsAbstract) sb.Append("abstract ");
+            sb.Append(this.Name);
+            if (!this.TypeParameters.IsEmpty)
+                sb.Append("<").Append(string.Join(", ", this.TypeParameters)).Append(">");
+            sb.Append("(");
+            sb.Append(string.Join(", ", this.Params));
+            sb.Append("): ");
+            sb.Append(this.ResultType);
+            return sb.ToString();
+        }
+
     }
 }

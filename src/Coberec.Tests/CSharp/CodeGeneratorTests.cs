@@ -179,6 +179,15 @@ namespace GeneratedProject {
         }
 
         [Fact]
+        public void DifferentOrderInterface()
+        {
+            var schema = GraphqlLoader.Helpers.ParseSchema(@"type a implements b { } interface b { }", invertNonNull: true);
+            var result = CSharpBackend.Build(schema, DefaultSettings);
+            CheckItCompiles(result);
+            check.CheckString(result, fileExtension: "cs");
+        }
+
+        [Fact]
         public void CyclicValidatorTest()
         {
             var schema = new DataSchema(Enumerable.Empty<Entity>(), new [] {
@@ -215,8 +224,8 @@ namespace GeneratedProject {
             check.CheckString(result, fileExtension: "cs");
         }
 
-        // [Property(MaxTest = 2000, EndSize = 10_000)]
-        [Property]
+        [Property(MaxTest = 2000, EndSize = 10_000)]
+        // [Property]
         public void GenerateArbitrarySchema(DataSchema schema)
         {
             // var schema = new DataSchema(Enumerable.Empty<Entity>(), new [] { typeDef });

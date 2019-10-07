@@ -180,11 +180,36 @@ namespace Coberec.ExprCS
         internal IEnumerable<ILSpyArbitraryTypeModification> GetTypeMods(TypeSignature type) =>
             typeMods.GetValueOrDefault(type)?.AsEnumerable() ?? Enumerable.Empty<ILSpyArbitraryTypeModification>();
 
-        public void AddType(TypeDef type)
+        private List<(TypeDef type, Action<Exception> errorHandler)> waitingTypes = new List<(TypeDef type, Action<Exception> errorHandler)>();
+
+        public void AddType(TypeDef type, Action<Exception> errorHandler = null)
         {
-            var xx = MetadataDefiner.CreateTypeDefinition(this, type);
-            mutableModule.AddType(xx);
-            MetadataDefiner.DefineTypeMembers(xx, this, type);
+            waitingTypes.Add((type, errorHandler));
+        }
+
+        public void CommitWaitingTypes()
+        {
+            var sortedTypes = MetadataDefiner.SortDefinitions(this.waitingTypes.Select(t => t.type).ToArray());
+            var types =
+                sortedTypes.Select(t => {
+                    var vtype = MetadataDefiner.CreateTypeDefinition(this, t);
+                    mutableModule.AddType(vtype);
+                    return vtype;
+                }).ToArray();
+            var handlers = this.waitingTypes.ToDictionary(t => t.type.Signature, t => t.errorHandler);
+            foreach (var (type, vtype) in sortedTypes.ZipTuples(types))
+            {
+                var errorHandler = handlers[type.Signature];
+                try
+                {
+                    MetadataDefiner.DefineTypeMembers(vtype, this, type);
+                }
+                catch (Exception ex) when (errorHandler != null)
+                {
+                    errorHandler(ex);
+                }
+            }
+            this.waitingTypes.Clear();
         }
 
 // #if ExposeILSpy
@@ -197,6 +222,7 @@ namespace Coberec.ExprCS
 
         private CSharpEmitter BuildCore()
         {
+            CommitWaitingTypes();
             var s = new DecompilerSettings(LanguageVersion.Latest);
             s.CSharpFormattingOptions.AutoPropertyFormatting = PropertyFormatting.ForceOneLine;
             s.CSharpFormattingOptions.PropertyBraceStyle = BraceStyle.DoNotChange;

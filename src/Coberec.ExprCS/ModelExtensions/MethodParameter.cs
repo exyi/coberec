@@ -10,5 +10,20 @@ namespace Coberec.ExprCS
     {
         public MethodParameter(TypeReference type, string name)
             : this(type, name, false, null) { }
+
+
+        public override string ToString()
+        {
+            var b = $"{this.Name}: {this.Type}";
+            if (this.HasDefaultValue)
+            {
+                b += $" = ";
+                if (this.DefaultValue == null)
+                    b += this.Type.IsReferenceType == true ? "null" : "default";
+                else
+                    b += this.DefaultValue;
+            }
+            return b;
+        }
     }
 }

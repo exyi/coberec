@@ -17,7 +17,7 @@ namespace GeneratedProject.ModelNamespace
 
 		ValidationResult<Interface1> With(OptParam<ImmutableArray<string>> field543 = default(OptParam<ImmutableArray<string>>), OptParam<ImmutableArray<int>> someName = default(OptParam<ImmutableArray<int>>));
 	}
-	public sealed class Test123 : IEquatable<Test123>, Interface1
+	public sealed class Test123 : Interface1, IEquatable<Test123>
 	{
 		public ImmutableArray<string> Field543 {
 			get;

@@ -21,5 +21,15 @@ namespace Coberec.ExprCS
         public TypeReference UnwrapReference() =>
             this is ByReferenceTypeCase byref ? byref.Item.Type
                                               : this;
+
+        // TODO: this should be generated
+        public override string ToString() => this.Match(
+            x => x.Item.ToString(),
+            x => x.Item.ToString(),
+            x => x.Item.ToString(),
+            x => x.Item.ToString(),
+            x => x.Item.ToString(),
+            x => x.Item.ToString()
+        );
     }
 }

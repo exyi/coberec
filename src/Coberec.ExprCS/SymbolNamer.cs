@@ -10,7 +10,7 @@ namespace Coberec.ExprCS
 {
     public static class SymbolNamer
     {
-        public static string NameType(string @namespace, string desiredName, int genericArgCount, ICompilation compilation)
+        public static string NameType(string @namespace, string desiredName, int genericArgCount, ICompilation compilation, IEnumerable<string> blacklist = null)
         {
             desiredName = NameSanitizer.SanitizeTypeName(desiredName);
             var ns = compilation.RootNamespace.FindDescendantNamespace(@namespace);
@@ -18,6 +18,7 @@ namespace Coberec.ExprCS
             if (ns == null) return desiredName; // there will be no collision
 
             var existingNames = new HashSet<string>(ns.Types.Where(t => t.TypeArguments.Count == genericArgCount).Select(t => t.Name).Concat(ns.ChildNamespaces.Select(t => t.Name)), StringComparer.InvariantCultureIgnoreCase);
+            existingNames.UnionWith(blacklist ?? Enumerable.Empty<string>());
 
             if (!existingNames.Contains(desiredName)) return desiredName;
             for (int i = 2; true; i++)
@@ -51,13 +52,14 @@ namespace Coberec.ExprCS
 
         public static bool IsSpecial(MemberSignature m) => (m as MethodSignature)?.HasSpecialName == true || m.Name.StartsWith("<");
 
-        static string NameMember(ITypeDefinition type, Dictionary<MemberSignature, string> names, string desiredName, bool? lowerCase)
+        static string NameMember(ITypeDefinition type, Dictionary<MemberSignature, string> names, string desiredName, bool? lowerCase, IEnumerable<string> blacklist = null)
         {
             desiredName = NameSanitizer.SanitizeMemberName(desiredName, lowerCase);
 
             var existingNames = new HashSet<string>(type.GetMembers(m => m.DeclaringTypeDefinition == type || m.IsVirtual).Select(m => m.Name));
             existingNames.UnionWith(type.NestedTypes.Select(t => t.Name));
             existingNames.UnionWith(names.Values);
+            existingNames.UnionWith(blacklist ?? Enumerable.Empty<string>());
             for (IType p = type; p != null; p = p.DeclaringType)
                 existingNames.Add(p.Name);
 
@@ -101,6 +103,15 @@ namespace Coberec.ExprCS
             throw new Exception("wtf");
         }
 
+        public static IEnumerable<string> BlacklistedTypeNames(TypeDef typeDef)
+        {
+            // TODO: renamed virtual methods
+            return typeDef.Members.OfType<MethodDef>().Where(m => m.Signature.IsOverride || m.Signature.IsVirtual).AsEnumerable<MemberDef>()
+                   .Concat(typeDef.Members.OfType<PropertyDef>().Where(m => m.Signature.IsOverride || m.Signature.Getter?.IsVirtual == true))
+                   .Select(m => m.Signature.Name)
+                   .Concat(new [] { "Finalize", "GetType", "ToString", "Equals", "ReferenceEquals", "GetHashCode", "MemberwiseClone" });
+        }
+
         public static Dictionary<MemberSignature, string> NameMembers(TypeDef type, VirtualType realType, bool adjustCasing)
         {
             var result = new Dictionary<MemberSignature, string>();
@@ -114,7 +125,8 @@ namespace Coberec.ExprCS
 
             foreach (var m in type.Members
                 .Where(m => !IsSpecial(m.Signature))
-                .OrderBy(m => m.Signature.Accessibility == Accessibility.APrivate ? 20 : // private
+                .OrderBy(m =>
+                              m.Signature.Accessibility == Accessibility.APrivate ? 20 : // private
                               m.Signature.Accessibility == Accessibility.AInternal || m.Signature.Accessibility == Accessibility.APrivateProtected ? 19 : // internal
                               m.Signature.Accessibility == Accessibility.APublic ? 0 : // public - top priority
                               10 // protected (so kindof public)
@@ -128,8 +140,9 @@ namespace Coberec.ExprCS
                 }
                 else
                 {
+                    var blacklist = m is TypeDef typeMember ? BlacklistedTypeNames(typeMember) : null;
                     var lowerCase = adjustCasing ? m is FieldDef : (bool?)null;
-                    var name = NameMember(realType, result, m.Signature.Name, lowerCase);
+                    var name = NameMember(realType, result, m.Signature.Name, lowerCase, blacklist);
                     result.Add(m.Signature, name);
                 }
             }
@@ -148,6 +161,13 @@ namespace Coberec.ExprCS
             }
 
             return result;
+        }
+
+        public static string NameType(TypeDef type, ICompilation compilation)
+        {
+            var blacklist = BlacklistedTypeNames(type);
+            var ns = ((TypeOrNamespace.NamespaceSignatureCase)type.Signature.Parent).Item.ToString();
+            return NameType(ns, type.Signature.Name, type.Signature.GenericParamCount, compilation, blacklist);
         }
     }
 }

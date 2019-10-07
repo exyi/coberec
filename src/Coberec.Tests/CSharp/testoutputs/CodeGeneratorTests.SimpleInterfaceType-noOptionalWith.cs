@@ -17,7 +17,7 @@ namespace GeneratedProject.ModelNamespace
 
 		ValidationResult<Interface1> With(ImmutableArray<string> field543, ImmutableArray<int> someName);
 	}
-	public sealed class Test123 : IEquatable<Test123>, Interface1
+	public sealed class Test123 : Interface1, IEquatable<Test123>
 	{
 		public ImmutableArray<string> Field543 {
 			get;
