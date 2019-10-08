@@ -390,35 +390,42 @@ namespace Coberec.CSharpGen
         private void InitializeExternalSymbols()
         {
             // TODO: move to ExprCS
-            IType findType(string name)
+            E.TypeReference findType(string name)
             {
                 if (this.typeSignatures.TryGetValue(name, out var result))
-                    throw new NotSupportedException(); //return result;
-                return cx.FindType(new FullTypeName(name));
+                    return result;
+                return cx.Metadata.TryFindType(name);
             }
+            var types = new Dictionary<string, E.TypeDef>();
             foreach (var s in cx.Settings.ExternalSymbols)
             {
                 switch (s.Kind) {
                     case ExternalSymbolKind.TypeDefinition: {
-                        // TODO: warning when in the same namespace as model
-                        //       error in case of real name collision
-                        var newType = new VirtualType(TypeKind.Class, Accessibility.Public, new FullTypeName(new TopLevelTypeName(s.DeclaredIn, s.Name)), isStatic: false, isSealed: false, isAbstract: false, parentModule: cx.Module, isHidden: true);
-                        cx.Metadata.AddRawType(newType);
+                        var declaringType = cx.Metadata.TryFindTypeDef(s.DeclaredIn);
+                        var declaredIn = declaringType is object ? E.TypeOrNamespace.TypeSignature(declaringType) : E.TypeOrNamespace.NamespaceSignature(E.NamespaceSignature.Parse(s.DeclaredIn));
+
+                        var newType = E.TypeSignature.Class(s.Name, declaredIn, E.Accessibility.APublic);
+                        types.Add(s.DeclaredIn + "." + s.Name, E.TypeDef.Empty(newType));
                         break;
                     }
                     case ExternalSymbolKind.Method:
                     case ExternalSymbolKind.StaticMethod: {
-                        var methodArgs = s.Args.Select(a => new VirtualParameter(findType(a.Type), a.Name)).ToArray();
-                        var declaringType = (VirtualType)findType(s.DeclaredIn);
-                        var newMethod = new VirtualMethod(declaringType, Accessibility.Public, s.Name, methodArgs, findType(s.ResultType), isStatic: s.Kind == ExternalSymbolKind.StaticMethod, isHidden: true);
-                        declaringType.Methods.Add(newMethod);
+                        var declaringType = types.GetValueOrDefault(s.DeclaredIn) ??
+                                            throw new Exception($"The declaring symbol `{s.DeclaredIn}` of `{s.Name}` must be a also defined as external symbol.");
+
+                        var methodArgs = s.Args.Select(a => new E.MethodParameter(findType(a.Type), a.Name)).ToImmutableArray();
+                        var returnType = findType(s.ResultType);
+                        var newMethod = new E.MethodSignature(declaringType.Signature, methodArgs, s.Name, returnType, isStatic: s.Kind == ExternalSymbolKind.StaticMethod, E.Accessibility.APublic, true, false, false, false, ImmutableArray<E.GenericParameter>.Empty);
+                        types[s.DeclaredIn] = declaringType.AddMember(E.MethodDef.CreateWithArray(newMethod, _ => E.Expression.Default(returnType)));
                         break;
                     }
                     default:
                         throw new NotSupportedException($"External symbols of kind {s.Kind} are not supported.");
                 }
             }
-
+            foreach (var t in types)
+                cx.Metadata.AddType(t.Value, isExternal: true);
+            // cx.Metadata.CommitWaitingTypes();
         }
 
         public static E.EmitSettings GetEmitSettings(EmitSettings settings) =>

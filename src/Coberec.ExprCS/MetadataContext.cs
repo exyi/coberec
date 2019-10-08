@@ -112,29 +112,47 @@ namespace Coberec.ExprCS
                 parentType => GetTypeDef(parentType.Item).GetNestedTypes(t => t.Name == type.Name).Single().GetDefinition());
 
         /// <summary> Finds a type signature by a <paramref name="name" />. Will only look for type definitions (e.g. <see cref="String" />), not type references (<see cref="String[]" /> or <see cref="List{String}" />). </summary>
-        public TypeSignature FindTypeDef(string name)
+        public TypeSignature TryFindTypeDef(string name)
         {
             var fullTypeName = new FullTypeName(name);
             if (this.definedTypeNames.TryGetValue(fullTypeName, out var result))
                 return result.Signature;
             else
-                return SymbolLoader.Type(Compilation.FindType(fullTypeName).GetDefinition());
+            {
+                var t = Compilation.FindType(fullTypeName).GetDefinition();
+                return t is object ? SymbolLoader.Type(t) : null;
+            }
         }
+
+        /// <summary> Finds a type signature by a <paramref name="name" />. Will only look for type definitions (e.g. <see cref="String" />), not type references (<see cref="String[]" /> or <see cref="List{String}" />). </summary>
+        public TypeSignature FindTypeDef(string name) =>
+            TryFindTypeDef(name) ?? throw new ArgumentException($"Type {name} could be found.", nameof(name));
 
         [Obsolete]
         public TypeSignature FindTypeDef(Type type) =>
             SymbolLoader.Type(Compilation.FindType(type).GetDefinition());
 
 
-        /// <summary> Finds a type reference by a <paramref name="name" />. Will look for both type definitions (e.g. <see cref="String" />) and for type references (<see cref="String[]" /> or <see cref="List{String}" />). </summary>
-        public TypeReference FindType(string name)
+        /// <summary> Finds a type reference by a <paramref name="name" />. Will look for both type definitions (e.g. <see cref="String" />) and for type references (<see cref="String[]" /> or <see cref="List{String}" />). Returns null if the type can not be found. </summary>
+        public TypeReference TryFindType(string name)
         {
             var fullTypeName = new FullTypeName(name);
             if (this.definedTypeNames.TryGetValue(fullTypeName, out var result))
                 return result.Signature;
             else
-                return SymbolLoader.TypeRef(Compilation.FindType(fullTypeName));
+            {
+                var t = Compilation.FindType(fullTypeName);
+                if (t is TS.Implementation.UnknownType)
+                    return null;
+                else
+                    return SymbolLoader.TypeRef(t);
+            }
         }
+
+        /// <summary> Finds a type reference by a <paramref name="name" />. Will look for both type definitions (e.g. <see cref="String" />) and for type references (<see cref="String[]" /> or <see cref="List{String}" />). Throws an exception if the type can not be found. </summary>
+        public TypeReference FindType(string name) =>
+            TryFindType(name) ?? throw new ArgumentException($"Type reference {name} could be found.", nameof(name));
+
         [Obsolete]
         public TypeReference FindType(Type type) =>
             SymbolLoader.TypeRef(Compilation.FindType(type));
@@ -206,13 +224,14 @@ namespace Coberec.ExprCS
         internal IEnumerable<ILSpyArbitraryTypeModification> GetTypeMods(TypeSignature type) =>
             typeMods.GetValueOrDefault(type)?.AsEnumerable() ?? Enumerable.Empty<ILSpyArbitraryTypeModification>();
 
-        private List<(TypeDef type, Action<Exception> errorHandler)> waitingTypes = new List<(TypeDef type, Action<Exception> errorHandler)>();
+        private List<(TypeDef type, Action<Exception> errorHandler, bool isExternal)> waitingTypes = new List<(TypeDef, Action<Exception>, bool)>();
 
         /// <summary> Adds a top level type definition that will be included in the generated code. </summary>
         /// <param name="errorHandler">The error handler will be invoked when an exception occurs during creating of this type. If not null, it will always catch the exception, so you may want to rethrow it with some more information about the generated type.</param>
-        public void AddType(TypeDef type, Action<Exception> errorHandler = null)
+        /// <param name="isExternal">If true, the type will not be included in the generated config. It will be however treated as already present in the code, so the generated code will be aware that it exists.</param>
+        public void AddType(TypeDef type, Action<Exception> errorHandler = null, bool isExternal = false)
         {
-            waitingTypes.Add((type, errorHandler));
+            waitingTypes.Add((type, errorHandler, isExternal));
         }
 
         /// <summary> Generates the "real" types from the symbolic <see cref="TypeDef" />s. When this method is called, all symbols used in the metadata must be already added to the context (using <see cref="AddType(TypeDef, Action{Exception})" />) </summary>
@@ -225,13 +244,13 @@ namespace Coberec.ExprCS
                     mutableModule.AddType(vtype);
                     return vtype;
                 }).ToArray();
-            var handlers = this.waitingTypes.ToDictionary(t => t.type.Signature, t => t.errorHandler);
+            var meta = this.waitingTypes.ToDictionary(t => t.type.Signature, t => t);
             foreach (var (type, vtype) in sortedTypes.ZipTuples(types))
             {
-                var errorHandler = handlers[type.Signature];
+                var (_, errorHandler, isExternal) = meta[type.Signature];
                 try
                 {
-                    MetadataDefiner.DefineTypeMembers(vtype, this, type);
+                    MetadataDefiner.DefineTypeMembers(vtype, this, type, isExternal);
                 }
                 catch (Exception ex) when (errorHandler != null)
                 {

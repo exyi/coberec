@@ -157,7 +157,7 @@ namespace Coberec.ExprCS
                 defaultValue: p.HasDefaultValue ? p.DefaultValue : null
             );
 
-        static VirtualMethod CreateMethodDefinition(MetadataContext cx, MethodDef m, string name, bool isHidden = false)
+        internal static VirtualMethod CreateMethodDefinition(MetadataContext cx, MethodDef m, string name, bool isHidden = false)
         {
             var sgn = m.Signature;
             var declType = cx.GetTypeDef(sgn.DeclaringType);
@@ -188,7 +188,7 @@ namespace Coberec.ExprCS
 
         }
 
-        static (VirtualProperty, VirtualMethod, VirtualMethod) CreatePropertyDefinition(MetadataContext cx, PropertyDef property, string name)
+        internal static (VirtualProperty, VirtualMethod, VirtualMethod) CreatePropertyDefinition(MetadataContext cx, PropertyDef property, string name)
         {
             Assert.Equal(property.Signature.Getter == null, property.Getter == null);
             Assert.Equal(property.Signature.Setter == null, property.Setter == null);
@@ -225,7 +225,7 @@ namespace Coberec.ExprCS
             return (prop, getter, setter);
         }
 
-        static VirtualField CreateFieldDefinition(MetadataContext cx, FieldDef field, string name)
+        internal static VirtualField CreateFieldDefinition(MetadataContext cx, FieldDef field, string name)
         {
             var sgn = field.Signature;
             var declType = cx.GetTypeDef(sgn.DeclaringType);
@@ -259,8 +259,10 @@ namespace Coberec.ExprCS
             return () => CodeTranslation.CodeTranslator.CreateBody(method, resultMethod, cx);
         }
 
-        public static void DefineTypeMembers(VirtualType type, MetadataContext cx, TypeDef definition)
+        public static void DefineTypeMembers(VirtualType type, MetadataContext cx, TypeDef definition, bool isHidden)
         {
+            if (isHidden) type.IsHidden = true;
+
             definition = ImplementationResolver.AutoResolveImplementations(definition, cx);
 
             if (definition.Extends is object)
@@ -286,14 +288,15 @@ namespace Coberec.ExprCS
                     Assert.Equal(definition.Signature, method.Signature.DeclaringType);
                     var d = CreateMethodDefinition(cx, method, name);
                     type.Methods.Add(d);
-                    d.BodyFactory = CreateBodyFactory(d, method, cx);
+                    d.BodyFactory = isHidden ? null : CreateBodyFactory(d, method, cx);
                 }
                 else if (member is TypeDef typeMember)
                 {
                     // Assert.Equal(definition.Signature, typeMember.Signature.Parent);
                     var d = CreateTypeDefinition(cx, typeMember, type.FullTypeName.NestedType(name, typeMember.Signature.GenericParamCount));
+                    if (isHidden) d.IsHidden = true;
                     type.NestedTypes.Add(d);
-                    DefineTypeMembers(d, cx, typeMember);
+                    DefineTypeMembers(d, cx, typeMember, isHidden);
                 }
                 else if (member is FieldDef field)
                 {
@@ -309,9 +312,9 @@ namespace Coberec.ExprCS
                     setter?.ApplyAction(type.Methods.Add);
                     type.Properties.Add(p);
                     if (getter != null)
-                        getter.BodyFactory = CreateBodyFactory(getter, prop.Getter, cx);
+                        getter.BodyFactory = isHidden ? null : CreateBodyFactory(getter, prop.Getter, cx);
                     if (setter != null)
-                        setter.BodyFactory = CreateBodyFactory(setter, prop.Setter, cx);
+                        setter.BodyFactory = isHidden ? null : CreateBodyFactory(setter, prop.Setter, cx);
                 }
                 else throw new NotImplementedException($"Member '{member}' of type '{member.GetType().Name}'");
             }

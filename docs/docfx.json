@@ -40,8 +40,8 @@
       },
       {
         "files": [
-          "articles/**.md",
-          "articles/**/toc.yml",
+          "*.md",
+          "**/toc.yml",
           "toc.yml",
           "*.md"
         ],
@@ -83,8 +83,8 @@
     "noLangKeyword": false,
     "keepFileLink": false,
     "cleanupCacheHistory": false,
-    "xref": [
-      "https://docs.microsoft.com/dotnet/xrefmap.yml"
-    ]
+    //"xref": [
+    //  "https://docs.microsoft.com/dotnet/xrefmap.yml"
+    //]
   }
 }

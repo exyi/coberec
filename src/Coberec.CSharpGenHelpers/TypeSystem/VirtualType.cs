@@ -100,7 +100,7 @@ namespace Coberec.CSharpGen.TypeSystem
 
         public ICompilation Compilation => this.ParentModule.Compilation;
 
-        public bool IsHidden { get; }
+        public bool IsHidden { get; set; }
 
         public Nullability Nullability => Nullability.Oblivious;
 
