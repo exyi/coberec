@@ -5,6 +5,7 @@ using System.Linq;
 
 namespace Coberec.ExprCS
 {
+    /// <summary> A type reference to a signature with filled in type parameters. </summary>
     public partial class SpecializedType
     {
         public SpecializedType(TypeSignature type, params TypeReference[] genericArgs)

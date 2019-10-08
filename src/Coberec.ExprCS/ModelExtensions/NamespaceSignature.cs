@@ -10,6 +10,7 @@ namespace Coberec.ExprCS
         public override string ToString() =>
             Parent == Global || Parent == null ? Name :
             $"{Parent}.{Name}";
+        /// <summary> The global namespace that contains everything. This is the only case when NamespaceSignature has Parent=null </summary>
         public static NamespaceSignature Global = new NamespaceSignature("", null);
         public static NamespaceSignature System = new NamespaceSignature("System", Global);
 

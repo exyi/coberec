@@ -13,6 +13,7 @@ namespace Coberec.ExprCS
 		public static Accessibility AProtectedInternal = new Accessibility(false, true, true);
 		public static Accessibility APrivateProtected = new Accessibility(true, false, false);
 
+		/// <summary> Returns the "most public" of the two accessibilities. </summary>
 		public static Accessibility Max(Accessibility a, Accessibility b)
 		{
 			if (a == null) return b;

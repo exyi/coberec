@@ -7,13 +7,20 @@ namespace Coberec.ExprCS
 {
     public partial class TypeSignature
     {
+        /// <summary> Signature of <see cref="System.Void" /> </summary>
         public static TypeSignature Void = Struct("Void", NamespaceSignature.System, Accessibility.APublic);
+        /// <summary> Signature of <see cref="System.Int32" /> </summary>
         public static TypeSignature Int32 = Struct("Int32", NamespaceSignature.System, Accessibility.APublic);
+        /// <summary> Signature of <see cref="System.TimeSpan" /> </summary>
         public static TypeSignature TimeSpan = Struct("TimeSpan", NamespaceSignature.System, Accessibility.APublic);
+        /// <summary> Signature of <see cref="System.Object" /> </summary>
         public static TypeSignature Object = Class("Object", NamespaceSignature.System, Accessibility.APublic);
+        /// <summary> Signature of <see cref="System.Boolean" /> </summary>
         public static TypeSignature Boolean = Struct("Boolean", NamespaceSignature.System, Accessibility.APublic);
+        /// <summary> Signature of <see cref="System.String" /> </summary>
         public static TypeSignature String = SealedClass("String", NamespaceSignature.System, Accessibility.APublic);
 
+        /// <summary> Creates a new signature of a `class`. </summary>
         public static TypeSignature Class(string name, TypeOrNamespace parent, Accessibility accessibility, bool canOverride = true, bool isAbstract = false, int genericParamCount = 0) =>
             new TypeSignature(name, parent, "class",
                 accessibility: accessibility,
@@ -23,12 +30,15 @@ namespace Coberec.ExprCS
                 genericParamCount: genericParamCount
             );
 
+        /// <summary> Creates a new signature of a `static class`. </summary>
         public static TypeSignature StaticClass(string name, TypeOrNamespace parent, Accessibility accessibility, int genericParamCount = 0) =>
             Class(name, parent, accessibility, canOverride: false, isAbstract: true, genericParamCount);
 
+        /// <summary> Creates a new signature of a `sealed class` (i.e. class that can not be extended). </summary>
         public static TypeSignature SealedClass(string name, TypeOrNamespace parent, Accessibility accessibility, int genericParamCount = 0) =>
             Class(name, parent, accessibility, canOverride: false, isAbstract: false, genericParamCount);
 
+        /// <summary> Creates a new signature of a `struct` (i.e. a value type) </summary>
         public static TypeSignature Struct(string name, TypeOrNamespace parent, Accessibility accessibility, int genericParamCount = 0) =>
             new TypeSignature(name, parent, "struct",
                 accessibility: accessibility,
@@ -39,6 +49,7 @@ namespace Coberec.ExprCS
             );
 
 
+        /// <summary> Creates a new signature of a `interface`. </summary>
         public static TypeSignature Interface(string name, TypeOrNamespace parent, Accessibility accessibility, int genericParamCount = 0) =>
             new TypeSignature(name, parent, "interface",
                 accessibility: accessibility,
@@ -48,6 +59,7 @@ namespace Coberec.ExprCS
                 genericParamCount: genericParamCount
             );
 
+        /// <summary> Gets a <see cref="TypeSignature"/> of the specified reflection <se cref="System.Type" />. If the type is generic, it must be the definition without the generic parameters instantiated. All the important metadata is copied from the reflection type, it can be used on any type even though it may not be valid in the specific <see cref="MetadataContext" />. </summary>
         public static TypeSignature FromType(Type type)
         {
             // TODO: asserts it's a definition not reference

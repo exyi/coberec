@@ -9,6 +9,7 @@ namespace Coberec.ExprCS
 {
     public partial class Expression
     {
+        /// <summary> Does nothing and returns void. </summary>
         public static readonly Expression Nop = Expression.Default(TypeSignature.Void);
         public TypeReference Type() =>
             this.Match<TypeReference>(
@@ -40,6 +41,7 @@ namespace Coberec.ExprCS
         static TypeReference ExtractFunctionReturnType(TypeReference type) =>
             Assert.IsType<TypeReference.FunctionTypeCase>(type).Item.ResultType;
 
+        /// <summary> Conditionally executes the <paramref name="body" />. <paramref name="condition" /> must return bool, <paramref name="body" /> must return void and the result always returns void. </summary>
         public static Expression IfThen(Expression condition, Expression body)
         {
             if (body.Type() != TypeSignature.Void)
@@ -48,6 +50,7 @@ namespace Coberec.ExprCS
             return Expression.Conditional(condition, body, Expression.Nop);
         }
 
+        /// <summary> Executes the <paramref name="body" /> until the <paramref name="condition" /> is true. <paramref name="condition" /> must return bool, <paramref name="body" /> must return void and the result always returns void. </summary>
         public static Expression While(Expression condition, params Expression[] body)
         {
             var label = LabelTarget.New("cycleBreak");
