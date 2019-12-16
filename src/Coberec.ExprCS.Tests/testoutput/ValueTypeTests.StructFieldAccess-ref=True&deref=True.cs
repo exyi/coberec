@@ -1,6 +1,6 @@
 using System;
 
-namespace MyNs
+namespace NS
 {
 	public struct MyStruct
 	{

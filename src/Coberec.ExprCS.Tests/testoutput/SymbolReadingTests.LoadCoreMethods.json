@@ -1,67 +1,71 @@
 {
 	"toUpperInvariantM": {
-		"DeclaringType": {
-			"Name": "String",
-			"Parent": {
-				"Item": {
-					"Name": "System",
-					"Parent": {
-						"Name": "",
-						"Parent": null
+		"Signature": {
+			"DeclaringType": {
+				"Name": "String",
+				"Parent": {
+					"Item": {
+						"Name": "System",
+						"Parent": {
+							"Name": "",
+							"Parent": null
+						}
 					}
-				}
+				},
+				"Kind": "class",
+				"IsValueType": false,
+				"CanOverride": false,
+				"IsAbstract": false,
+				"Accessibility": {
+					"Public": true,
+					"DerivedVisible": true,
+					"InternalVisible": true
+				},
+				"TypeParameters": []
 			},
-			"Kind": "class",
-			"IsValueType": false,
-			"CanOverride": false,
-			"IsAbstract": false,
+			"Params": [],
+			"Name": "ToUpperInvariant",
+			"ResultType": {
+				"Item": {
+					"Type": {
+						"Name": "String",
+						"Parent": {
+							"Item": {
+								"Name": "System",
+								"Parent": {
+									"Name": "",
+									"Parent": null
+								}
+							}
+						},
+						"Kind": "class",
+						"IsValueType": false,
+						"CanOverride": false,
+						"IsAbstract": false,
+						"Accessibility": {
+							"Public": true,
+							"DerivedVisible": true,
+							"InternalVisible": true
+						},
+						"TypeParameters": []
+					},
+					"GenericParameters": []
+				},
+				"IsReferenceType": true
+			},
+			"IsStatic": false,
 			"Accessibility": {
 				"Public": true,
 				"DerivedVisible": true,
 				"InternalVisible": true
 			},
-			"GenericParamCount": 0
+			"IsVirtual": false,
+			"IsOverride": false,
+			"IsAbstract": false,
+			"HasSpecialName": false,
+			"TypeParameters": []
 		},
-		"Params": [],
-		"Name": "ToUpperInvariant",
-		"ResultType": {
-			"Item": {
-				"Type": {
-					"Name": "String",
-					"Parent": {
-						"Item": {
-							"Name": "System",
-							"Parent": {
-								"Name": "",
-								"Parent": null
-							}
-						}
-					},
-					"Kind": "class",
-					"IsValueType": false,
-					"CanOverride": false,
-					"IsAbstract": false,
-					"Accessibility": {
-						"Public": true,
-						"DerivedVisible": true,
-						"InternalVisible": true
-					},
-					"GenericParamCount": 0
-				},
-				"GenericParameters": []
-			},
-			"IsReferenceType": true
-		},
-		"IsStatic": false,
-		"Accessibility": {
-			"Public": true,
-			"DerivedVisible": true,
-			"InternalVisible": true
-		},
-		"IsVirtual": false,
-		"IsOverride": false,
-		"IsAbstract": false,
-		"HasSpecialName": false,
-		"TypeParameters": []
+		"TypeParameters": [],
+		"MethodParameters": []
 	}
 }

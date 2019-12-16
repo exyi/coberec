@@ -13,7 +13,7 @@ namespace Coberec.ExprCS.Tests
         MetadataContext cx = MetadataContext.Create("MyModule");
 
         static TypeSignature GuidType = TypeSignature.Struct("Guid", NamespaceSignature.System, Accessibility.APublic);
-        static TypeSignature MyStruct = TypeSignature.Struct("MyStruct", NamespaceSignature.Parse("MyNs"), Accessibility.APublic);
+        static TypeSignature MyStruct = TypeSignature.Struct("MyStruct", NamespaceSignature.Parse("NS"), Accessibility.APublic);
         static FieldSignature MyStruct_GuidField = new FieldSignature(MyStruct, "id", Accessibility.APublic, GuidType, false, false);
         static FieldSignature MyStruct_IntField = new FieldSignature(MyStruct, "count", Accessibility.APublic, TypeSignature.Int32, false, false);
         static TypeDef MyStructDef = new TypeDef(
@@ -125,7 +125,7 @@ namespace Coberec.ExprCS.Tests
             var p = ParameterExpression.Create(MyStruct, "p");
             cx.AddTestExpr(Expression.ReferenceConversion(p, TypeSignature.Object), p);
             cx.AddTestExpr(Expression.MethodCall(
-                cx.GetMemberMethods(TypeSignature.Object).Single(m => m.Name == "GetHashCode"),
+                cx.GetMemberMethods(TypeSignature.Object.NotGeneric()).Single(m => m.Signature.Name == "GetHashCode"),
                 args: ImmutableArray<Expression>.Empty,
                 Expression.ReferenceConversion(p, TypeSignature.Object)
             ), p);
@@ -135,14 +135,14 @@ namespace Coberec.ExprCS.Tests
         [Fact]
         public void StructInterface()
         {
-            var icloneable = cx.FindTypeDef(typeof(ICloneable));
+            var icloneable = TypeSignature.FromType(typeof(ICloneable));
             var method = new MethodSignature(MyStruct, ImmutableArray<MethodParameter>.Empty, "Clone", TypeSignature.Object, false, Accessibility.APublic, false, false, false, false, ImmutableArray<GenericParameter>.Empty);
             var thisP = ParameterExpression.CreateThisParam(method);
             var methodDef = new MethodDef(method, ImmutableArray.Create(thisP), Expression.ReferenceConversion(thisP, TypeSignature.Object));
 
             cx.AddType(MyStructDef.AddMember(methodDef).AddImplements(new SpecializedType(icloneable, ImmutableArray<TypeReference>.Empty)));
 
-            var interfaceClone = cx.GetMemberMethods(icloneable).Single(m => m.Name == "Clone");
+            var interfaceClone = cx.GetMemberMethods(icloneable.NotGeneric()).Single(m => m.Signature.Name == "Clone");
 
             var p = ParameterExpression.Create(MyStruct, "p");
             cx.AddTestExpr(Expression.MethodCall(method, ImmutableArray<Expression>.Empty, p), p);

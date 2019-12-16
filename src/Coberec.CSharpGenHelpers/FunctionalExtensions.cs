@@ -87,5 +87,30 @@ namespace Coberec.CSharpGen
 
         public static HashSet<T> ToHashSet<T>(this IEnumerable<T> xs, IEqualityComparer<T> eq) => new HashSet<T>(xs, eq);
         public static HashSet<T> ToHashSet<T>(this IEnumerable<T> xs) => new HashSet<T>(xs);
+
+
+        public static ImmutableArray<U> EagerSelect<T, U>(this ImmutableArray<T> arr, Func<T, U> fn)
+        {
+            if (arr.IsEmpty) return ImmutableArray<U>.Empty;
+
+            var builder = ImmutableArray.CreateBuilder<U>(initialCapacity: arr.Length);
+            for (int i = 0; i < arr.Length; i++)
+            {
+                builder.Add(fn(arr[i]));
+            }
+            return builder.MoveToImmutable();
+        }
+
+        public static IReadOnlyList<T> NullIfEmpty<T>(this ImmutableArray<T> array) =>
+            array.IsEmpty ? null : (IReadOnlyList<T>)array;
+
+        public static IEnumerable<(T, U)> ZipSelectMany<T, U>(this IEnumerable<T> xs, Func<T, IEnumerable<U>> fn)
+        {
+            foreach (var x in xs)
+            {
+                foreach (var y in fn(x))
+                    yield return (x, y);
+            }
+        }
     }
 }

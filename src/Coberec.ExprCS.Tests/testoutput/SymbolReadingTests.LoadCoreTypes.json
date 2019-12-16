@@ -19,7 +19,7 @@
 			"DerivedVisible": true,
 			"InternalVisible": true
 		},
-		"GenericParamCount": 0
+		"TypeParameters": []
 	},
 	"dateTimeT": {
 		"Name": "DateTime",
@@ -41,7 +41,7 @@
 			"DerivedVisible": true,
 			"InternalVisible": true
 		},
-		"GenericParamCount": 0
+		"TypeParameters": []
 	},
 	"enumerableT": {
 		"Name": "IEnumerable",
@@ -69,6 +69,11 @@
 			"DerivedVisible": true,
 			"InternalVisible": true
 		},
-		"GenericParamCount": 1
+		"TypeParameters": [
+			{
+				"Id": "80f1211c-119f-41eb-9b93-920070f09ad1",
+				"Name": "T"
+			}
+		]
 	}
 }

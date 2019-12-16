@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Text;
 using Xunit;
 
 namespace Coberec.ExprCS
@@ -11,6 +12,14 @@ namespace Coberec.ExprCS
         public MethodParameter(TypeReference type, string name)
             : this(type, name, false, null) { }
 
+        public MethodParameter SubstituteGenerics(
+            IEnumerable<GenericParameter> parameters,
+            IEnumerable<TypeReference> arguments) =>
+            SubstituteGenerics(parameters.ToImmutableArray(), arguments.ToImmutableArray());
+        public MethodParameter SubstituteGenerics(
+            ImmutableArray<GenericParameter> parameters,
+            ImmutableArray<TypeReference> arguments) =>
+            this.With(type: this.Type.SubstituteGenerics(parameters, arguments));
 
         public override string ToString()
         {

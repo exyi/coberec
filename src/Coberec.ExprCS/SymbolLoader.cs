@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -44,7 +45,7 @@ namespace Coberec.ExprCS
                            t.Kind == TypeKind.Enum ? "enum" :
                            t.Kind == TypeKind.Delegate ? "delegate" :
                            throw new NotSupportedException($"Type kind {t.Kind} is not supported.");
-                return new TypeSignature(type.Name, parent, kind, isValueType: !(bool)type.IsReferenceType, canOverride: !type.IsSealed && !type.IsStatic, isAbstract: type.IsAbstract || type.IsStatic, TranslateAccessibility(type.Accessibility), type.TypeParameterCount);
+                return new TypeSignature(type.Name, parent, kind, isValueType: !(bool)type.IsReferenceType, canOverride: !type.IsSealed && !type.IsStatic, isAbstract: type.IsAbstract || type.IsStatic, TranslateAccessibility(type.Accessibility), type.TypeParameters.Select(GenericParameter).ToImmutableArray());
             });
 
         static readonly ConditionalWeakTable<IMethod, MethodSignature> methodSignatureCache = new ConditionalWeakTable<IMethod, MethodSignature>();
@@ -94,7 +95,8 @@ namespace Coberec.ExprCS
 
         static readonly ConditionalWeakTable<ITypeParameter, GenericParameter> typeParameterCache = new ConditionalWeakTable<ITypeParameter, GenericParameter>();
         public static GenericParameter GenericParameter(ITypeParameter parameter) =>
-            typeParameterCache.GetValue(parameter, p => new GenericParameter(Guid.NewGuid(), p.Name));
+            typeParameterCache.GetValue(parameter, p => ExprCS.GenericParameter.Get(parameter.Owner.ReflectionName, parameter.Name));
+
 
         public static Accessibility TranslateAccessibility(TS.Accessibility a) =>
             a == TS.Accessibility.Internal ? Accessibility.AInternal :
@@ -117,7 +119,9 @@ namespace Coberec.ExprCS
         public static MethodParameter Parameter(IParameter parameter) =>
             new MethodParameter(
                 TypeRef(parameter.Type),
-                parameter.Name
+                parameter.Name,
+                parameter.HasConstantValueInSignature,
+                parameter.HasConstantValueInSignature ? parameter.GetConstantValue() : null
             );
 
         public static TypeReference TypeRef(IType type) =>

@@ -9,7 +9,7 @@ namespace Coberec.ExprCS
     public partial class MethodDef
     {
         public MethodDef(MethodSignature signature, IEnumerable<ParameterExpression> args, Expression body)
-            : this(signature, args?.ToImmutableArray() ?? ImmutableArray<ParameterExpression>.Empty, body, ImmutableArray<MethodSignature>.Empty) { }
+            : this(signature, args?.ToImmutableArray() ?? ImmutableArray<ParameterExpression>.Empty, body, ImmutableArray<MethodReference>.Empty) { }
 
         /// <summary> Creates a method definition of a static method without arguments. </summary>
         public static MethodDef Create(MethodSignature signature, Expression body)

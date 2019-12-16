@@ -6,7 +6,7 @@ type MethodDef implements MemberDef {
     signature: MethodSignature
     argumentParams: [ParameterExpression]
     body: Expression!
-    implements: [MethodSignature]
+    implements: [MethodReference]
 }
 
 type FieldDef implements MemberDef {
@@ -17,7 +17,7 @@ type PropertyDef implements MemberDef {
     signature: PropertySignature
     getter: MethodDef!
     setter: MethodDef!
-    implements: [PropertySignature]
+    implements: [PropertyReference]
 }
 
 type TypeDef implements MemberDef {

@@ -9,20 +9,20 @@ type NotExpression {
 }
 
 type MethodCallExpression {
-    method: MethodSignature
+    method: MethodReference
     args: [Expression]
     # automatically adjusts reference on the target (unwraps reference for objects, makes reference for structs)
     target: Expression!
 }
 
 type NewObjectExpression {
-    ctor: MethodSignature
+    ctor: MethodReference
     args: [Expression]
 }
 
 # Gets a reference to the field
 type FieldAccessExpression {
-    field: FieldSignature
+    field: FieldReference
     # automatically adjusts reference on the target (unwraps reference for objects, makes reference for structs)
     target: Expression!
 }

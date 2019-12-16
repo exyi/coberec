@@ -15,9 +15,9 @@ namespace Coberec.ExprCS
             this.Match<TypeReference>(
                 e => e.Item.Left.Type(),
                 e => e.Item.Expr.Type(),
-                e => e.Item.Method.ResultType,
-                e => e.Item.Ctor.DeclaringType,
-                fieldAccess: e => TypeReference.ByReferenceType(e.Item.Field.ResultType),
+                e => e.Item.Method.ResultType(),
+                e => e.Item.Ctor.DeclaringType(),
+                fieldAccess: e => TypeReference.ByReferenceType(e.Item.Field.ResultType()),
                 referenceAssign: e => TypeSignature.Void,
                 dereference: e => ((TypeReference.ByReferenceTypeCase)e.Item.Expr.Type()).Item.Type,
                 variableReference: e => TypeReference.ByReferenceType(e.Item.Variable.Type),

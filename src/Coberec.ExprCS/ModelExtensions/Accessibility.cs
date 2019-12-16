@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Coberec.ExprCS
 {
-	public sealed partial class Accessibility : IEquatable<Accessibility>
+	public sealed partial class Accessibility
 	{
 		public static Accessibility AInternal = new Accessibility(false, false, true);
 		public static Accessibility APublic = new Accessibility(true, true, true);

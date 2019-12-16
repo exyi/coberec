@@ -15,17 +15,17 @@ namespace Coberec.ExprCS.Tests
         [Fact]
         public void LoadCoreTypes()
         {
-            var stringT = cx.FindTypeDef(typeof(string));
+            var stringT = TypeSignature.FromType(typeof(string));
             var dateTimeT = cx.FindTypeDef("System.DateTime");
 
             Assert.False(stringT.CanOverride);
-            Assert.Equal(0, stringT.GenericParamCount);
+            Assert.Empty(stringT.TypeParameters);
             Assert.Equal("String", stringT.Name);
             Assert.Equal("DateTime", dateTimeT.Name);
             Assert.Equal(TypeOrNamespace.NamespaceSignature(NamespaceSignature.System), dateTimeT.Parent);
             Assert.Equal(dateTimeT.Parent, stringT.Parent);
 
-            var enumerableT = cx.FindTypeDef(typeof(IEnumerable<>));
+            var enumerableT = TypeSignature.FromType(typeof(IEnumerable<>));
 
             check.CheckJsonObject(new { stringT, dateTimeT, enumerableT });
         }
@@ -36,7 +36,7 @@ namespace Coberec.ExprCS.Tests
         public void LoadReflectionType(Type t)
         {
             var signature = TypeSignature.FromType(t);
-            var methods = cx.GetMemberMethods(signature).Where(m => m.Accessibility == Accessibility.APublic).Select(m => m.Name).Distinct().OrderBy(a => a).ToArray();
+            var methods = cx.GetMemberMethodDefs(signature).Where(m => m.Accessibility == Accessibility.APublic).Select(m => m.Name).Distinct().OrderBy(a => a).ToArray();
             var reflectionMethods = t.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)
                                      .Where(m => !m.IsSpecialName)
                                      .Select(m => m.Name).Distinct().OrderBy(a => a).ToArray();
@@ -46,11 +46,11 @@ namespace Coberec.ExprCS.Tests
         [Fact]
         public void LoadCoreMethods()
         {
-            var stringT = cx.FindTypeDef(typeof(string));
+            var stringT = TypeSignature.FromType(typeof(string));
 
-            var methods = cx.GetMemberMethods(stringT).ToArray();
+            var methods = cx.GetMemberMethods(stringT.NotGeneric()).ToArray();
 
-            var toUpperInvariantM = methods.Single(s => s.Name == "ToUpperInvariant");
+            var toUpperInvariantM = methods.Single(s => s.Name() == "ToUpperInvariant");
 
             check.CheckJsonObject(new { toUpperInvariantM });
         }

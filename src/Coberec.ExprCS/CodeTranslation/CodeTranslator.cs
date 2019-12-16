@@ -324,7 +324,7 @@ namespace Coberec.ExprCS.CodeTranslation
                         breakStmt
                     ))
                 );
-            };
+            }
         }
 
         Result TranslateConditional(ConditionalExpression item)
@@ -460,8 +460,8 @@ namespace Coberec.ExprCS.CodeTranslation
         Result TranslateFieldAccess(FieldAccessExpression e)
         {
             if (e.Target is object)
-                Assert.Equal((TypeReference)e.Field.DeclaringType, e.Target.Type().UnwrapReference());
-            //                                                                      ^ auto-reference is allowed for targets
+                Assert.Equal(e.Field.DeclaringType(), e.Target.Type().UnwrapReference());
+            //                                                        ^ auto-reference is allowed for targets
 
             // TODO: unit test (static field)
             var field = this.Metadata.GetField(e.Field);
@@ -557,12 +557,13 @@ namespace Coberec.ExprCS.CodeTranslation
 
         Result TranslateMethodCall(MethodCallExpression e)
         {
-            Assert.Equal(e.Method.IsStatic, e.Target == null);
+            var signature = e.Method.Signature;
+            Assert.Equal(signature.IsStatic, e.Target == null);
             // check types, no implicit conversions are allowed
-            Assert.Equal(e.Method.Params.Select(p => p.Type), e.Args.Select(a => a.Type()));
+            Assert.Equal(signature.Params.Select(p => p.Type), e.Args.Select(a => a.Type()));
             if (e.Target is object)
-                Assert.Equal((TypeReference)e.Method.DeclaringType, e.Target.Type().UnwrapReference());
-            //                                                                      ^ except auto-reference is allowed for targets
+                Assert.Equal(e.Method.DeclaringType(), e.Target.Type().UnwrapReference());
+            //                                                         ^ except auto-reference is allowed for targets
 
             var method = this.Metadata.GetMethod(e.Method);
 
@@ -577,7 +578,7 @@ namespace Coberec.ExprCS.CodeTranslation
 
             var call = method.IsStatic ? new Call(method) : (CallInstruction)new CallVirt(method) { Arguments = { new LdLoc(target.Output) } };
             call.Arguments.AddRange(args.Select(a => new LdLoc(a.Output)));
-            var isVoid = e.Method.ResultType == TypeSignature.Void;
+            var isVoid = e.Method.Signature.ResultType == TypeSignature.Void;
             result.Add(isVoid ?
                        new Result(new ExpressionStatement(call)) :
                        Result.Expression(method.ReturnType, call));

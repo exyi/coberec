@@ -182,19 +182,9 @@ namespace Coberec.ExprCS.CodeTranslation
 
         IType FindAppropriateDelegate(FunctionType type)
         {
-            // TODO: weird delegates (ref parameters, ...)
-            if (type.ResultType == TypeSignature.Void)
-            {
-                var actionSig = TypeSignature.SealedClass("Action", NamespaceSignature.System, Accessibility.APublic, type.Params.Length);
-                var actionRef = TypeReference.SpecializedType(actionSig, type.Params.Select(p => p.Type).ToImmutableArray());
-                return this.Metadata.GetTypeReference(actionRef);
-            }
-            else
-            {
-                var actionSig = TypeSignature.SealedClass("Func", NamespaceSignature.System, Accessibility.APublic, type.Params.Length + 1);
-                var actionRef = TypeReference.SpecializedType(actionSig, type.Params.Select(p => p.Type).Append(type.ResultType).ToImmutableArray());
-                return this.Metadata.GetTypeReference(actionRef);
-            }
+            return this.Metadata.GetTypeReference(
+                type.TryGetDelegate() ?? throw new NotSupportedException($"Could not translate {type} into a delegate")
+            );
         }
     }
 }

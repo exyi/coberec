@@ -25,6 +25,11 @@ interface MemberSignature {
     accessibility: Accessibility
 }
 
+interface MemberReference {
+    signature: MemberSignature
+    typeParameters: [TypeReference]
+}
+
 type TypeSignature implements MemberSignature {
     name: String
     parent: TypeOrNamespace
@@ -33,7 +38,7 @@ type TypeSignature implements MemberSignature {
     canOverride: Boolean
     isAbstract: Boolean
     accessibility: Accessibility
-    genericParamCount: Int
+    typeParameters: [GenericParameter] # TODO: document how nested types work
 }
 
 type SpecializedType {
@@ -84,6 +89,12 @@ type MethodSignature implements MemberSignature {
     typeParameters: [GenericParameter]
 }
 
+type MethodReference implements MemberReference {
+    signature: MethodSignature
+    typeParameters: [TypeReference]
+    methodParameters: [TypeReference]
+}
+
 type FieldSignature implements MemberSignature {
     declaringType: TypeSignature
     name: String
@@ -91,6 +102,11 @@ type FieldSignature implements MemberSignature {
     resultType: TypeReference
     isStatic: Boolean
     isReadonly: Boolean
+}
+
+type FieldReference implements MemberReference {
+    signature: FieldSignature
+    typeParameters: [TypeReference]
 }
 
 type PropertySignature implements MemberSignature {
@@ -101,4 +117,8 @@ type PropertySignature implements MemberSignature {
     isStatic: Boolean
     getter: MethodSignature!
     setter: MethodSignature!
+}
+type PropertyReference implements MemberReference {
+    signature: PropertySignature
+    typeParameters: [TypeReference]
 }

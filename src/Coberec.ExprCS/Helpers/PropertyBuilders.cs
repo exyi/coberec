@@ -18,13 +18,13 @@ namespace Coberec.ExprCS.Helpers
             accessibility = accessibility ?? Accessibility.APublic;
 
             var field = new FieldSignature(declType, string.Format(AutoPropertyField, name), Accessibility.APrivate, propertyType, isStatic, isReadOnly);
+            var fieldRef = field.SpecializeFromDeclaringType();
             var prop = PropertySignature.Create(name, declType, propertyType, accessibility, isReadOnly ? null : accessibility, isStatic);
 
-
-            var getter = MethodDef.Create(prop.Getter, thisP => Expression.Dereference(Expression.FieldAccess(field, thisP)));
+            var getter = MethodDef.Create(prop.Getter, thisP => Expression.Dereference(Expression.FieldAccess(fieldRef, thisP)));
             // getter.Attributes.Add(declaringType.Compilation.CompilerGeneratedAttribute());
             var setter = isReadOnly ? null :
-                         MethodDef.Create(prop.Setter, (thisP, valueP) => Expression.ReferenceAssign(Expression.FieldAccess(field, thisP), valueP));
+                         MethodDef.Create(prop.Setter, (thisP, valueP) => Expression.ReferenceAssign(Expression.FieldAccess(fieldRef, thisP), valueP));
             return (new FieldDef(field),
                     new PropertyDef(prop, getter, setter));
         }

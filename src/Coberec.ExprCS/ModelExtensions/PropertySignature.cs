@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Coberec.CSharpGen;
+using Xunit;
 
 namespace Coberec.ExprCS
 {
@@ -19,5 +20,20 @@ namespace Coberec.ExprCS
         }
 
         public bool IsOverride => (Getter ?? Setter).IsOverride;
+
+
+        /// <summary> Fills in the generic parameters. </summary>
+        public PropertyReference Specialize(IEnumerable<TypeReference> typeArgs) =>
+            new PropertyReference(this, typeArgs.ToImmutableArray());
+
+        /// <summary> Fills in the generic parameters from the declaring type. Useful when using the property inside it's declaring type. </summary>
+        public PropertyReference SpecializeFromDeclaringType() =>
+            new PropertyReference(this, this.DeclaringType.TypeParameters.EagerSelect(TypeReference.GenericParameter));
+
+        public static implicit operator PropertyReference(PropertySignature signature)
+        {
+            Assert.Empty(signature.DeclaringType.TypeParameters);
+            return new PropertyReference(signature, ImmutableArray<TypeReference>.Empty);
+        }
     }
 }

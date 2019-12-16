@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Metadata;
 using ICSharpCode.Decompiler.TypeSystem;
+using ICSharpCode.Decompiler.TypeSystem.Implementation;
 
 namespace Coberec.CSharpGen.TypeSystem
 {
@@ -100,10 +101,7 @@ namespace Coberec.CSharpGen.TypeSystem
 
         public IEnumerable<IAttribute> GetAttributes() => Attributes;
 
-        public IMember Specialize(TypeParameterSubstitution substitution)
-        {
-            throw new NotImplementedException();
-        }
+        public IMember Specialize(TypeParameterSubstitution substitution) => SpecializedField.Create(this, substitution);
 
         public object GetConstantValue(bool throwOnInvalidMetadata = false)
         {

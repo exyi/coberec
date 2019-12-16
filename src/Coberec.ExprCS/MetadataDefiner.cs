@@ -15,8 +15,8 @@ namespace Coberec.ExprCS
     {
         public static FullTypeName GetFullTypeName(this TypeSignature t) =>
             t.Parent.Match(
-                ns => new FullTypeName(new TopLevelTypeName(ns.Item.ToString(), t.Name, t.GenericParamCount)),
-                parentType => GetFullTypeName(parentType.Item).NestedType(t.Name, t.GenericParamCount)
+                ns => new FullTypeName(new TopLevelTypeName(ns.Item.ToString(), t.Name, t.TypeParameters.Length)),
+                parentType => GetFullTypeName(parentType.Item).NestedType(t.Name, t.TypeParameters.Length)
             );
 
         public static TS.Accessibility GetAccessibility(Accessibility a) =>
@@ -77,6 +77,14 @@ namespace Coberec.ExprCS
             return result;
         }
 
+        public static IMethod GetMethod(this MetadataContext cx, MethodReference method)
+        {
+            var m = GetMethod(cx, method.Signature);
+            return m.Specialize(new TypeParameterSubstitution(
+                method.TypeParameters.EagerSelect(t => GetTypeReference(cx, t)).NullIfEmpty(),
+                method.MethodParameters.EagerSelect(t => GetTypeReference(cx, t)).NullIfEmpty()));
+        }
+
         public static IField GetField(this MetadataContext cx, FieldSignature field)
         {
             if (cx.DeclaredEntities.TryGetValue(field, out var declaredResult))
@@ -85,6 +93,11 @@ namespace Coberec.ExprCS
             var t = cx.GetTypeReference(field.DeclaringType); // TODO: generic methods
 
             return t.GetFields(f => f.Name == field.Name, GetMemberOptions.IgnoreInheritedMembers).Single();
+        }
+        public static IField GetField(this MetadataContext cx, FieldReference field)
+        {
+            var f = GetField(cx, field.Signature);
+            return (IField)f.Specialize(new TypeParameterSubstitution(field.TypeParameters.EagerSelect(t => GetTypeReference(cx, t)).NullIfEmpty(), null));
         }
 
         public static IProperty GetProperty(this MetadataContext cx, PropertySignature prop)
@@ -95,6 +108,12 @@ namespace Coberec.ExprCS
             var t = cx.GetTypeReference(prop.DeclaringType); // TODO: generic methods
 
             return t.GetProperties(p => p.Name == prop.Name, GetMemberOptions.IgnoreInheritedMembers).Single();
+        }
+
+        public static IProperty GetProperty(this MetadataContext cx, PropertyReference prop)
+        {
+            var p = GetProperty(cx, prop.Signature);
+            return (IProperty)p.Specialize(new TypeParameterSubstitution(prop.TypeParameters.EagerSelect(t => GetTypeReference(cx, t)).NullIfEmpty(), null));
         }
 
         public static IMember GetMember(this MetadataContext cx, MemberSignature sgn) =>
@@ -164,10 +183,10 @@ namespace Coberec.ExprCS
             var parameters = SymbolNamer.NameParameters(sgn.Params.Select(p => CreateParameter(cx, p)));
 
             foreach (var i in m.Implements)
-                if (i.DeclaringType.Kind == "interface")
-                    Assert.Contains(i.DeclaringType, cx.GetDirectImplements(sgn.DeclaringType).Select(t => t.Type));
+                if (i.Signature.DeclaringType.Kind == "interface")
+                    Assert.Contains(i.Signature.DeclaringType, cx.GetDirectImplements(sgn.DeclaringType.SpecializeByItself()).Select(t => t.Type));
                 else
-                    Assert.Contains(i.DeclaringType, cx.GetBaseTypes(sgn.DeclaringType).Select(t => t.Type));
+                    Assert.Contains(i.Signature.DeclaringType, cx.GetBaseTypes(sgn.DeclaringType.SpecializeByItself()).Select(t => t.Type));
 
             return new VirtualMethod(
                 declType,
@@ -182,7 +201,7 @@ namespace Coberec.ExprCS
                 sgn.IsStatic,
                 isHidden,
                 sgn.TypeParameters.Select<GenericParameter, ITypeParameter>(a => throw new NotImplementedException()).ToArray(),
-                explicitImplementations: m.Implements.Where(i => i.DeclaringType.Kind == "interface").Select(cx.GetMethod)
+                explicitImplementations: m.Implements.Where(i => i.Signature.DeclaringType.Kind == "interface").Select(cx.GetMethod)
             )
             .ApplyAction(mm => cx.RegisterEntity(m, mm));
 
@@ -200,10 +219,10 @@ namespace Coberec.ExprCS
             var declType = cx.GetTypeDef(sgn.DeclaringType);
 
             foreach (var i in property.Implements)
-                if (i.DeclaringType.Kind == "interface")
-                    Assert.Contains(i.DeclaringType, cx.GetDirectImplements(sgn.DeclaringType).Select(t => t.Type));
+                if (i.Signature.DeclaringType.Kind == "interface")
+                    Assert.Contains(i.Signature.DeclaringType, cx.GetDirectImplements(sgn.DeclaringType.SpecializeByItself()).Select(t => t.Type));
                 else
-                    Assert.Contains(i.DeclaringType, cx.GetBaseTypes(sgn.DeclaringType).Select(t => t.Type));
+                    Assert.Contains(i.Signature.DeclaringType, cx.GetBaseTypes(sgn.DeclaringType.SpecializeByItself()).Select(t => t.Type));
 
             var mSgn = sgn.Getter ?? sgn.Setter;
 
@@ -219,7 +238,7 @@ namespace Coberec.ExprCS
                 sgn.IsStatic,
                 mSgn.IsAbstract,
                 !mSgn.IsVirtual && mSgn.IsOverride,
-                explicitImplementations: property.Implements.Where(i => i.DeclaringType.Kind == "interface").Select(cx.GetProperty)
+                explicitImplementations: property.Implements.Where(i => i.Signature.DeclaringType.Kind == "interface").Select(cx.GetProperty)
             );
             cx.RegisterEntity(property, prop);
             return (prop, getter, setter);
@@ -293,7 +312,7 @@ namespace Coberec.ExprCS
                 else if (member is TypeDef typeMember)
                 {
                     // Assert.Equal(definition.Signature, typeMember.Signature.Parent);
-                    var d = CreateTypeDefinition(cx, typeMember, type.FullTypeName.NestedType(name, typeMember.Signature.GenericParamCount));
+                    var d = CreateTypeDefinition(cx, typeMember, type.FullTypeName.NestedType(name, typeMember.Signature.TypeParameters.Length));
                     if (isHidden) d.IsHidden = true;
                     type.NestedTypes.Add(d);
                     DefineTypeMembers(d, cx, typeMember, isHidden);

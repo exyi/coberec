@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
+using Coberec.CSharpGen;
+using Xunit;
 
 namespace Coberec.ExprCS
 {
@@ -21,42 +24,42 @@ namespace Coberec.ExprCS
         public static TypeSignature String = SealedClass("String", NamespaceSignature.System, Accessibility.APublic);
 
         /// <summary> Creates a new signature of a `class`. </summary>
-        public static TypeSignature Class(string name, TypeOrNamespace parent, Accessibility accessibility, bool canOverride = true, bool isAbstract = false, int genericParamCount = 0) =>
+        public static TypeSignature Class(string name, TypeOrNamespace parent, Accessibility accessibility, bool canOverride = true, bool isAbstract = false, params GenericParameter[] genericParameters) =>
             new TypeSignature(name, parent, "class",
                 accessibility: accessibility,
                 canOverride: canOverride,
                 isAbstract: isAbstract,
                 isValueType: false,
-                genericParamCount: genericParamCount
+                typeParameters: genericParameters.ToImmutableArray()
             );
 
         /// <summary> Creates a new signature of a `static class`. </summary>
-        public static TypeSignature StaticClass(string name, TypeOrNamespace parent, Accessibility accessibility, int genericParamCount = 0) =>
-            Class(name, parent, accessibility, canOverride: false, isAbstract: true, genericParamCount);
+        public static TypeSignature StaticClass(string name, TypeOrNamespace parent, Accessibility accessibility, params GenericParameter[] genericParameters) =>
+            Class(name, parent, accessibility, canOverride: false, isAbstract: true, genericParameters);
 
         /// <summary> Creates a new signature of a `sealed class` (i.e. class that can not be extended). </summary>
-        public static TypeSignature SealedClass(string name, TypeOrNamespace parent, Accessibility accessibility, int genericParamCount = 0) =>
-            Class(name, parent, accessibility, canOverride: false, isAbstract: false, genericParamCount);
+        public static TypeSignature SealedClass(string name, TypeOrNamespace parent, Accessibility accessibility, params GenericParameter[] genericParameters) =>
+            Class(name, parent, accessibility, canOverride: false, isAbstract: false, genericParameters);
 
         /// <summary> Creates a new signature of a `struct` (i.e. a value type) </summary>
-        public static TypeSignature Struct(string name, TypeOrNamespace parent, Accessibility accessibility, int genericParamCount = 0) =>
+        public static TypeSignature Struct(string name, TypeOrNamespace parent, Accessibility accessibility, params GenericParameter[] genericParameters) =>
             new TypeSignature(name, parent, "struct",
                 accessibility: accessibility,
                 canOverride: false,
                 isAbstract: false,
                 isValueType: true,
-                genericParamCount: genericParamCount
+                typeParameters: genericParameters.ToImmutableArray()
             );
 
 
         /// <summary> Creates a new signature of a `interface`. </summary>
-        public static TypeSignature Interface(string name, TypeOrNamespace parent, Accessibility accessibility, int genericParamCount = 0) =>
+        public static TypeSignature Interface(string name, TypeOrNamespace parent, Accessibility accessibility, params GenericParameter[] genericParameters) =>
             new TypeSignature(name, parent, "interface",
                 accessibility: accessibility,
                 canOverride: true,
                 isAbstract: true,
                 isValueType: false,
-                genericParamCount: genericParamCount
+                typeParameters: genericParameters.ToImmutableArray()
             );
 
         /// <summary> Gets a <see cref="TypeSignature"/> of the specified reflection <se cref="System.Type" />. If the type is generic, it must be the definition without the generic parameters instantiated. All the important metadata is copied from the reflection type, it can be used on any type even though it may not be valid in the specific <see cref="MetadataContext" />. </summary>
@@ -79,9 +82,27 @@ namespace Coberec.ExprCS
                                 type.IsNestedFamORAssem ? Accessibility.AProtectedInternal :
                                 type.IsNestedFamANDAssem ? Accessibility.APrivateProtected :
                                 throw new NotSupportedException("Unsupported accesibility of "+ type);
-            var typeName = type.Name.Contains('`') ? type.Name.Substring(0, type.Name.IndexOf("`")) :
+            var typeName = type.Name.Contains('`') ? type.Name.Substring(0, type.Name.IndexOf("`", StringComparison.Ordinal)) :
                                                      type.Name;
-            return new TypeSignature(typeName, parent, kind, type.IsValueType, !type.IsSealed, type.IsAbstract, accessibility, type.GetGenericArguments().Length);
+            return new TypeSignature(typeName, parent, kind, type.IsValueType, !type.IsSealed, type.IsAbstract, accessibility, type.GetGenericArguments().Select(GenericParameter.FromType).ToImmutableArray());
+        }
+
+        /// <summary> Returns a specialized with the generic parameter form itself filled in. You probably don't want to use that to create expression, but may be quite useful to get base types with generic parameters from this type. </summary>
+        public SpecializedType SpecializeByItself() => new SpecializedType(this, this.TypeParameters.EagerSelect(TypeReference.GenericParameter));
+
+        /// <summary> Asserts that the type signature is not generic and then makes a <see cref="SpecializedType" /> from itself. </summary>
+        public SpecializedType NotGeneric()
+        {
+            Assert.Empty(this.TypeParameters);
+            return new SpecializedType(this, ImmutableArray<TypeReference>.Empty);
+        }
+
+        /// <summary> Returns a specialized with the generic parameter form itself filled in. You probably don't want to use that to create expression, but may be quite useful to get base types with generic parameters from this type. </summary>
+        public SpecializedType Specialize(IEnumerable<TypeReference> args)
+        {
+            var argsA = args.ToImmutableArray();
+            Assert.Equal(argsA.Length, this.TypeParameters.Length); // TODO: does it work for nested types?
+            return new SpecializedType(this, argsA);
         }
 
 

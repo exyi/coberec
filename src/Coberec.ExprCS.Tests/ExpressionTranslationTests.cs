@@ -12,7 +12,8 @@ namespace Coberec.ExprCS.Tests
     {
         public static void AddTestExpr(this MetadataContext cx, Expression expr, params ParameterExpression[] parameters)
         {
-            var name = cx.DefinedTypes.Count < 3 ? ((char)('C' + cx.DefinedTypes.Count)).ToString() : "C" + cx.DefinedTypes.Count;
+            var typeCount = cx.DefinedTypes.Count + cx.WaitingTypes.Count();
+            var name = typeCount < 3 ? ((char)('C' + typeCount)).ToString() : "C" + typeCount;
             var ns = ((TypeOrNamespace.NamespaceSignatureCase)cx.DefinedTypes.FirstOrDefault()?.Signature.Parent)?.Item ??
                     new NamespaceSignature("NS", NamespaceSignature.Global);
             var type = TypeSignature.Class(name, ns, Accessibility.APublic);
@@ -21,6 +22,7 @@ namespace Coberec.ExprCS.Tests
             var typeDef = TypeDef.Empty(type).With(members: ImmutableArray.Create<MemberDef>(methodDef));
 
             cx.AddType(typeDef);
+            cx.CommitWaitingTypes();
         }
     }
 
@@ -58,8 +60,8 @@ namespace Coberec.ExprCS.Tests
         [Fact]
         public void MethodInvocation()
         {
-            var intParse = cx.GetMemberMethods(TypeSignature.Int32).Single(m => m.Name == "Parse" && m.Params.Length == 1 && m.Params[0].Type == TypeSignature.String);
-            var stringConcat = cx.GetMemberMethods(TypeSignature.String).Single(m => m.Name == "Concat" && m.Params.Length == 2 && m.Params[0].Type == TypeSignature.String);
+            var intParse = cx.GetMemberMethods(TypeSignature.Int32.NotGeneric()).Single(m => m.Name() == "Parse" && m.Signature.Params.Length == 1 && m.Signature.Params[0].Type == TypeSignature.String);
+            var stringConcat = cx.GetMemberMethods(TypeSignature.String.NotGeneric()).Single(m => m.Name() == "Concat" && m.Signature.Params.Length == 2 && m.Signature.Params[0].Type == TypeSignature.String);
 
             var concatCall = Expression.MethodCall(stringConcat, ImmutableArray.Create(Expression.Constant("123456789", TypeSignature.String), pString1), null);
             var intMethod = Expression.MethodCall(intParse, ImmutableArray.Create(concatCall), null);
@@ -94,7 +96,7 @@ namespace Coberec.ExprCS.Tests
 
         static Expression ExampleMethodCall(MetadataContext cx)
         {
-            var intParse = cx.GetMemberMethods(TypeSignature.Int32).Single(m => m.Name == "Parse" && m.Params.Length == 1 && m.Params[0].Type == TypeSignature.String);
+            var intParse = cx.GetMemberMethods(TypeSignature.Int32.NotGeneric()).Single(m => m.Signature.Name == "Parse" && m.Signature.Params.Length == 1 && m.Signature.Params[0].Type == TypeSignature.String);
             return Expression.MethodCall(intParse, ImmutableArray.Create(Expression.Constant("123456789", TypeSignature.String)), null);
         }
 
@@ -116,9 +118,9 @@ namespace Coberec.ExprCS.Tests
 
         static Expression ExampleCondition(MetadataContext cx)
         {
-            var thread = cx.FindTypeDef(typeof(System.Threading.Thread));
-            var currentThread = cx.GetMemberProperties(thread).Single(m => m.Name == "CurrentThread").Getter;
-            var isBackground = cx.GetMemberProperties(((TypeReference.SpecializedTypeCase)currentThread.ResultType).Item.Type).Single(m => m.Name == "IsBackground").Getter;
+            var thread = TypeSignature.FromType(typeof(System.Threading.Thread)).NotGeneric();
+            var currentThread = cx.GetMemberProperty(thread, "CurrentThread").Getter();
+            var isBackground = cx.GetMemberProperty(((TypeReference.SpecializedTypeCase)currentThread.ResultType()).Item, "IsBackground").Getter();
             var condition = Expression.MethodCall(isBackground, ImmutableArray<Expression>.Empty, Expression.MethodCall(currentThread, ImmutableArray<Expression>.Empty, null));
             return condition;
         }
@@ -159,7 +161,7 @@ namespace Coberec.ExprCS.Tests
             check.CheckOutput(cx);
         }
 
-        MethodSignature toStringMethod => cx.GetMemberMethods(TypeSignature.Object).Single(m => m.Name == "ToString");
+        MethodReference toStringMethod => cx.GetMemberMethods(TypeSignature.Object.NotGeneric()).Single(m => m.Signature.Name == "ToString");
 
         [Fact]
         public void ValueBoxing()
@@ -228,13 +230,6 @@ namespace Coberec.ExprCS.Tests
             );
             check.CheckOutput(cx);
         }
-        TypeReference makeFunc(FunctionType type)
-        {
-            var actionSig = TypeSignature.SealedClass("Func", NamespaceSignature.System, Accessibility.APublic, type.Params.Length + 1);
-            var actionRef = TypeReference.SpecializedType(actionSig, type.Params.Select(p => p.Type).Append(type.ResultType).ToImmutableArray());
-            return actionRef;
-        }
-
 
         [Fact]
         public void ReturnLambdaFunction()
@@ -248,17 +243,17 @@ namespace Coberec.ExprCS.Tests
                         ),
                         pBool1);
 
-            cx.AddTestExpr(Expression.FunctionConversion(fn1, makeFunc(new FunctionType(ImmutableArray<MethodParameter>.Empty, TypeSignature.Int32))));
-            cx.AddTestExpr(Expression.FunctionConversion(Expression.Function(Expression.Constant("abc", TypeSignature.String)), makeFunc(new FunctionType(ImmutableArray<MethodParameter>.Empty, TypeSignature.Object))));
-            cx.AddTestExpr(Expression.FunctionConversion(fn2, makeFunc(new FunctionType(ImmutableArray.Create(new MethodParameter(TypeSignature.Boolean, "a")), TypeSignature.Object))));
+            cx.AddTestExpr(Expression.FunctionConversion(fn1, new FunctionType(ImmutableArray<MethodParameter>.Empty, TypeSignature.Int32).TryGetDelegate()));
+            cx.AddTestExpr(Expression.FunctionConversion(Expression.Function(Expression.Constant("abc", TypeSignature.String)), new FunctionType(ImmutableArray<MethodParameter>.Empty, TypeSignature.Object).TryGetDelegate()));
+            cx.AddTestExpr(Expression.FunctionConversion(fn2, new FunctionType(ImmutableArray.Create(new MethodParameter(TypeSignature.Boolean, "a")), TypeSignature.Object).TryGetDelegate()));
             check.CheckOutput(cx);
         }
 
         [Fact]
         public void TrivialFunctionConversions()
         {
-            var stringFunc = makeFunc(new FunctionType(ImmutableArray<MethodParameter>.Empty, TypeSignature.String));
-            var objectFunc = makeFunc(new FunctionType(ImmutableArray<MethodParameter>.Empty, TypeSignature.Object));
+            var stringFunc = new FunctionType(ImmutableArray<MethodParameter>.Empty, TypeSignature.String).TryGetDelegate();
+            var objectFunc = new FunctionType(ImmutableArray<MethodParameter>.Empty, TypeSignature.Object).TryGetDelegate();
             var pStringFunc = ParameterExpression.Create(stringFunc, "stringFunc");
             cx.AddTestExpr(Expression.ReferenceConversion(pStringFunc, objectFunc), pStringFunc);
             cx.AddTestExpr(Expression.FunctionConversion(pStringFunc, objectFunc), pStringFunc);

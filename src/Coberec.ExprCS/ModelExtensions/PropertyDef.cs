@@ -9,7 +9,7 @@ namespace Coberec.ExprCS
     public partial class PropertyDef
     {
         public PropertyDef(PropertySignature signature, MethodDef getter, MethodDef setter)
-            : this(signature, getter, setter, ImmutableArray<PropertySignature>.Empty) { }
+            : this(signature, getter, setter, ImmutableArray<PropertyReference>.Empty) { }
 
         /// <summary> Creates an empty property definition. Useful when declaring an interface. </summary>
         public static PropertyDef InterfaceDef(PropertySignature signature) =>

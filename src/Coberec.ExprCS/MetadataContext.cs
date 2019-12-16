@@ -108,7 +108,7 @@ namespace Coberec.ExprCS
         internal ITypeDefinition GetTypeDef(TypeSignature type) =>
             declaredEntities.TryGetValue(type, out var result) ? (ITypeDefinition)result :
             type.Parent.Match(
-                ns => GetNamespace(ns.Item).GetTypeDefinition(type.Name, type.GenericParamCount) ?? throw new InvalidOperationException($"Type {type.GetFullTypeName()} could not be found"),
+                ns => GetNamespace(ns.Item).GetTypeDefinition(type.Name, type.TypeParameters.Length) ?? throw new InvalidOperationException($"Type {type.GetFullTypeName()} could not be found"),
                 parentType => GetTypeDef(parentType.Item).GetNestedTypes(t => t.Name == type.Name).Single().GetDefinition());
 
         /// <summary> Finds a type signature by a <paramref name="name" />. Will only look for type definitions (e.g. <see cref="String" />), not type references (<see cref="String[]" /> or <see cref="List{String}" />). </summary>
@@ -174,31 +174,106 @@ namespace Coberec.ExprCS
                    .Concat(ns.Types.Select(SymbolLoader.Type).Select(TypeOrNamespace.TypeSignature));
         }
 
-        /// <summary> Lists all methods of the specified <paramref name="type" />. Only includes the methods declared in this type, not the inherited ones. </summary>
-        public IEnumerable<MethodSignature> GetMemberMethods(TypeSignature type) =>
+        /// <summary> Lists all method signatures of the specified <paramref name="type" />. Only includes the methods declared in this type, not the inherited ones. </summary>
+        public IEnumerable<MethodSignature> GetMemberMethodDefs(TypeSignature type) =>
             GetTypeDef(type).GetMethods(null, GetMemberOptions.IgnoreInheritedMembers).Select(SymbolLoader.Method);
 
-        /// <summary> Lists all fields of the specified <paramref name="type" />. Only includes the fields declared in this type, not the inherited ones. </summary>
-        public IEnumerable<FieldSignature> GetMemberFields(TypeSignature type) =>
+        /// <summary> Lists all method signatures of the specified <paramref name="type" /> with specified <paramref name="name" />. Only includes the methods declared in this type, not the inherited ones. </summary>
+        public IEnumerable<MethodSignature> GetMemberMethodDefs(TypeSignature type, string name) =>
+            GetTypeDef(type).GetMethods(m => m.Name == name, GetMemberOptions.IgnoreInheritedMembers).Select(SymbolLoader.Method);
+
+        /// <summary> Lists all field signatures of the specified <paramref name="type" />. Only includes the fields declared in this type, not the inherited ones. </summary>
+        public IEnumerable<FieldSignature> GetMemberFieldDefs(TypeSignature type) =>
             GetTypeDef(type).GetFields(null, GetMemberOptions.IgnoreInheritedMembers).Select(SymbolLoader.Field);
 
-        /// <summary> Lists all properties of the specified <paramref name="type" />. Only includes the properties declared in this type, not the inherited ones. </summary>
-        public IEnumerable<PropertySignature> GetMemberProperties(TypeSignature type) =>
+        /// <summary> Gets the member field of the specified <paramref name="type" /> with specified <paramref name="name" />. Only includes the fields declared in this type, not the inherited ones. </summary>
+        public FieldSignature GetMemberFieldDef(TypeSignature type, string name) =>
+            GetTypeDef(type).GetFields(f => f.Name == name, GetMemberOptions.IgnoreInheritedMembers).Select(SymbolLoader.Field).SingleOrDefault();
+
+        /// <summary> Lists all property signatures of the specified <paramref name="type" />. Only includes the properties declared in this type, not the inherited ones. </summary>
+        public IEnumerable<PropertySignature> GetMemberPropertyDefs(TypeSignature type) =>
             GetTypeDef(type).GetProperties(null, GetMemberOptions.IgnoreInheritedMembers).Select(SymbolLoader.Property);
 
-        /// <summary> Gets all base types of the specified <paramref name="type" />. </summary>
-        public IEnumerable<SpecializedType> GetBaseTypes(TypeSignature type) =>
-            GetTypeDef(type).GetAllBaseTypes().Select(SymbolLoader.TypeRef).Select(t => Assert.IsType<TypeReference.SpecializedTypeCase>(t).Item);
-
-        /// <summary> Gets all implemented interfaces of this specific <paramref name="type" />. Does not include the transitively implemented ones from its base types. </summary>
-        public IEnumerable<SpecializedType> GetDirectImplements(TypeSignature type) =>
-            GetTypeDef(type).DirectBaseTypes.Where(b => b.Kind == TypeKind.Interface).Select(SymbolLoader.TypeRef).Select(t => Assert.IsType<TypeReference.SpecializedTypeCase>(t).Item);
+        /// <summary> Gets the member property signature of the specified <paramref name="type" /> with specified <paramref name="name" />. Only includes the properties declared in this type, not the inherited ones. </summary>
+        public PropertySignature GetMemberPropertyDef(TypeSignature type, string name) =>
+            GetTypeDef(type).GetProperties(p => p.Name == name, GetMemberOptions.IgnoreInheritedMembers).Select(SymbolLoader.Property).SingleOrDefault();
 
         /// <summary> Lists all members of the specified <paramref name="type" />. Only includes the members declared in this type, not the inherited ones. </summary>
-        public IEnumerable<MemberSignature> GetMembers(TypeSignature type) =>
-            GetMemberMethods(type).AsEnumerable<MemberSignature>()
+        public IEnumerable<MemberSignature> GetMemberDefs(TypeSignature type) =>
+            GetMemberMethodDefs(type).AsEnumerable<MemberSignature>()
+            .Concat(GetMemberPropertyDefs(type))
+            .Concat(GetMemberFieldDefs(type));
+
+        /// <summary> Lists all method references of the specified <paramref name="type" />. Only includes the methods declared in this type, not the inherited ones. </summary>
+        public IEnumerable<MethodReference> GetMemberMethods(SpecializedType type, params TypeReference[] typeArgs) =>
+            GetMemberMethodDefs(type.Type)
+            .Where(m => m.TypeParameters.Length == typeArgs.Length)
+            .Select(m => new MethodReference(m, type.GenericParameters, typeArgs.ToImmutableArray()));
+
+        /// <summary> Lists all method references of the specified <paramref name="type" /> of the specified <paramref name="name" />. Only includes the methods declared in this type, not the inherited ones. </summary>
+        public IEnumerable<MethodReference> GetMemberMethods(SpecializedType type, string name, params TypeReference[] typeArgs) =>
+            GetMemberMethodDefs(type.Type, name)
+            .Where(m => m.TypeParameters.Length == typeArgs.Length)
+            .Select(m => new MethodReference(m, type.GenericParameters, typeArgs.ToImmutableArray()));
+
+        /// <summary> Lists all field references of the specified <paramref name="type" />. Only includes the fields declared in this type, not the inherited ones. </summary>
+        public IEnumerable<FieldReference> GetMemberFields(SpecializedType type) =>
+            GetMemberFieldDefs(type.Type)
+            .Select(f => new FieldReference(f, type.GenericParameters));
+
+        /// <summary> Get the member field of the specified <paramref name="type" />with specified <paramref name="name" />. Only includes the fields declared in this type, not the inherited ones. </summary>
+        public FieldReference GetMemberField(SpecializedType type, string name) =>
+            GetMemberFieldDef(type.Type, name)
+            ?.Apply(f => new FieldReference(f, type.GenericParameters));
+
+        /// <summary> Lists all property references of the specified <paramref name="type" />. Only includes the properties declared in this type, not the inherited ones. </summary>
+        public IEnumerable<PropertyReference> GetMemberProperties(SpecializedType type) =>
+            GetMemberPropertyDefs(type.Type)
+            .Select(p => new PropertyReference(p, type.GenericParameters));
+
+        /// <summary> Get the member property of the specified <paramref name="type" /> with specified <paramref name="name" />. Only includes the properties declared in this type, not the inherited ones. </summary>
+        public PropertyReference GetMemberProperty(SpecializedType type, string name) =>
+            GetMemberPropertyDef(type.Type, name)
+            ?.Apply(p => new PropertyReference(p, type.GenericParameters));
+
+        /// <summary> Lists all member references of the specified <paramref name="type" />. Only includes the members declared in this type, not the inherited ones. Note that only methods without generic arguments are returned, if you want to get to them, use <see cref="GetMemberMethods(SpecializedType, TypeReference[])" /> </summary>
+        public IEnumerable<MemberReference> GetMembers(SpecializedType type) =>
+            GetMemberMethods(type).AsEnumerable<MemberReference>()
             .Concat(GetMemberProperties(type))
             .Concat(GetMemberFields(type));
+
+        // /// <summary> Lists all method references of the specified <paramref name="type" />. Only includes the methods declared in this type, not the inherited ones. </summary>
+        // public IEnumerable<MethodReference> GetMemberMethods(TypeReference type, params TypeReference[] typeArgs) =>
+        //     type is TypeReference.SpecializedTypeCase st ? GetMemberMethods(st) :
+        //     Enumerable.Empty<MethodReference>();
+
+        // /// <summary> Lists all field references of the specified <paramref name="type" />. Only includes the fields declared in this type, not the inherited ones. </summary>
+        // public IEnumerable<FieldReference> GetMemberFields(TypeReference type) =>
+        //     GetMemberFieldDefs(type.Type)
+        //     .Select(f => new FieldReference(f, type.GenericParameters));
+
+        // /// <summary> Lists all property references of the specified <paramref name="type" />. Only includes the properties declared in this type, not the inherited ones. </summary>
+        // public IEnumerable<PropertyReference> GetMemberProperties(TypeReference type) =>
+        //     GetMemberPropertyDefs(type.Type)
+        //     .Select(p => new PropertyReference(p, type.GenericParameters));
+
+        // /// <summary> Lists all member references of the specified <paramref name="type" />. Only includes the members declared in this type, not the inherited ones. Note that only methods without generic arguments are returned, if you want to get to them, use <see cref="GetMemberMethods(SpecializedType, TypeReference[])" /> </summary>
+        // public IEnumerable<MemberReference> GetMembers(TypeReference type) =>
+        //     GetMemberMethods(type).AsEnumerable<MemberReference>()
+        //     .Concat(GetMemberProperties(type))
+        //     .Concat(GetMemberFields(type));
+
+
+
+        /// <summary> Gets all implemented interfaces of this specific <paramref name="type" />. Does not include the transitively implemented ones from its base types. </summary>
+        public IEnumerable<SpecializedType> GetDirectImplements(SpecializedType type) =>
+            type.GenericParameters.Length > 0 ? throw new NotImplementedException() : // TODO
+            GetTypeDef(type.Type).DirectBaseTypes.Where(b => b.Kind == TypeKind.Interface).Select(SymbolLoader.TypeRef).Select(t => Assert.IsType<TypeReference.SpecializedTypeCase>(t).Item);
+
+        /// <summary> Gets all base type signatures of the specified <paramref name="type" />. </summary>
+        public IEnumerable<SpecializedType> GetBaseTypes(SpecializedType type) =>
+            type.GenericParameters.Length > 0 ? throw new NotImplementedException() : // TODO
+            GetTypeDef(type.Type).GetAllBaseTypes().Select(SymbolLoader.TypeRef).Select(t => Assert.IsType<TypeReference.SpecializedTypeCase>(t).Item);
 
 
         private Dictionary<TypeSignature, List<ILSpyArbitraryTypeModification>> typeMods = new Dictionary<TypeSignature, List<ILSpyArbitraryTypeModification>>();
@@ -226,6 +301,8 @@ namespace Coberec.ExprCS
 
         private List<(TypeDef type, Action<Exception> errorHandler, bool isExternal)> waitingTypes = new List<(TypeDef, Action<Exception>, bool)>();
 
+        public IEnumerable<TypeDef> WaitingTypes => waitingTypes.Select(t => t.type);
+
         /// <summary> Adds a top level type definition that will be included in the generated code. </summary>
         /// <param name="errorHandler">The error handler will be invoked when an exception occurs during creating of this type. If not null, it will always catch the exception, so you may want to rethrow it with some more information about the generated type.</param>
         /// <param name="isExternal">If true, the type will not be included in the generated config. It will be however treated as already present in the code, so the generated code will be aware that it exists.</param>
@@ -234,7 +311,7 @@ namespace Coberec.ExprCS
             waitingTypes.Add((type, errorHandler, isExternal));
         }
 
-        /// <summary> Generates the "real" types from the symbolic <see cref="TypeDef" />s. When this method is called, all symbols used in the metadata must be already added to the context (using <see cref="AddType(TypeDef, Action{Exception})" />) </summary>
+        /// <summary> Generates the "real" types from the symbolic <see cref="TypeDef" />s. When this method is called, all symbols used in the metadata must be already added to the context (using <see cref="AddType(TypeDef,Action{Exception},bool)" />) </summary>
         public void CommitWaitingTypes()
         {
             var sortedTypes = MetadataDefiner.SortDefinitions(this.waitingTypes.Select(t => t.type).ToArray());

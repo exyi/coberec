@@ -13,7 +13,7 @@ namespace Coberec.ExprCS.Tests
             if (Debugger.IsAttached) return;
             var x = Type.GetType("System.Diagnostics.DebugProvider, System.Private.CoreLib");
             var field = x.GetField("s_FailCore", BindingFlags.Static | BindingFlags.NonPublic);
-            Action<string, string, string, string> fail = (a, b, c, d) => throw new Exception($"{a} {b} {c} {d}");
+            Action<string, string, string, string> fail = (a, b, c, d) => throw new Exception($"Assertion failed ({a} {b} {c} {d})");
             field.SetValue(null, fail);
         }
     }

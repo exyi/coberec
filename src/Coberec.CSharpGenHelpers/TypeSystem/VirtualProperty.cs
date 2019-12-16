@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using ICSharpCode.Decompiler.TypeSystem;
+using ICSharpCode.Decompiler.TypeSystem.Implementation;
 
 namespace Coberec.CSharpGen.TypeSystem
 {
@@ -109,9 +110,6 @@ namespace Coberec.CSharpGen.TypeSystem
         public readonly List<IAttribute> Attributes = new List<IAttribute>();
         public IEnumerable<IAttribute> GetAttributes() => Attributes;
 
-        public IMember Specialize(TypeParameterSubstitution substitution)
-        {
-            throw new NotImplementedException();
-        }
+        public IMember Specialize(TypeParameterSubstitution substitution) => SpecializedProperty.Create(this, substitution);
     }
 }

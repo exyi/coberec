@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using Coberec.CSharpGen;
+using Xunit;
 
 namespace Coberec.ExprCS
 {
@@ -26,23 +28,41 @@ namespace Coberec.ExprCS
             new MethodSignature(declaringType, parameters.ToImmutableArray(), name, returnType, isStatic: false, accessibility, isVirtual: false, isOverride: false, isAbstract: false, hasSpecialName: false, ImmutableArray<GenericParameter>.Empty);
 
 
-        public override string ToString()
+        /// <summary> Fills in the generic parameters. </summary>
+        public MethodReference Specialize(IEnumerable<TypeReference> typeArgs, IEnumerable<TypeReference> methodArgs) =>
+            new MethodReference(this, typeArgs.ToImmutableArray(), methodArgs.ToImmutableArray());
+
+        /// <summary> Fills in the generic parameters from the declaring type. Useful when using the method inside it's declaring type. </summary>
+        public MethodReference SpecializeFromDeclaringType(IEnumerable<TypeReference> methodArgs) =>
+            new MethodReference(this, this.DeclaringType.TypeParameters.EagerSelect(TypeReference.GenericParameter), methodArgs.ToImmutableArray());
+
+        public static implicit operator MethodReference(MethodSignature signature)
+        {
+            Assert.Empty(signature.TypeParameters);
+            Assert.Empty(signature.DeclaringType.TypeParameters);
+            return new MethodReference(signature, ImmutableArray<TypeReference>.Empty, ImmutableArray<TypeReference>.Empty);
+        }
+
+        public override string ToString() =>
+            ToString(this, this.TypeParameters, this.Params, this.ResultType);
+
+        internal static string ToString(MethodSignature s, IEnumerable<object> typeArgs, ImmutableArray<MethodParameter> parameters, TypeReference resultType)
         {
             var sb = new System.Text.StringBuilder();
-            if (this.Accessibility != Accessibility.APublic) sb.Append(this.Accessibility).Append(" ");
-            if (this.IsStatic) sb.Append("static ");
-            if (this.HasSpecialName) sb.Append("[specialname] ");
-            if (this.IsVirtual && !this.IsOverride) sb.Append("virtual ");
-            if (this.IsOverride && !this.IsVirtual) sb.Append("sealed ");
-            if (this.IsOverride) sb.Append("override ");
-            if (this.IsAbstract) sb.Append("abstract ");
-            sb.Append(this.Name);
-            if (!this.TypeParameters.IsEmpty)
-                sb.Append("<").Append(string.Join(", ", this.TypeParameters)).Append(">");
+            if (s.Accessibility != Accessibility.APublic) sb.Append(s.Accessibility).Append(" ");
+            if (s.IsStatic) sb.Append("static ");
+            if (s.HasSpecialName) sb.Append("[specialname] ");
+            if (s.IsVirtual && !s.IsOverride) sb.Append("virtual ");
+            if (s.IsOverride && !s.IsVirtual) sb.Append("sealed ");
+            if (s.IsOverride) sb.Append("override ");
+            if (s.IsAbstract) sb.Append("abstract ");
+            sb.Append(s.Name);
+            if (!s.TypeParameters.IsEmpty)
+                sb.Append("<").Append(string.Join(", ", typeArgs)).Append(">");
             sb.Append("(");
-            sb.Append(string.Join(", ", this.Params));
+            sb.Append(string.Join(", ", parameters));
             sb.Append("): ");
-            sb.Append(this.ResultType);
+            sb.Append(resultType);
             return sb.ToString();
         }
 

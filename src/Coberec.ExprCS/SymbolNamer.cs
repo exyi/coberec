@@ -25,7 +25,6 @@ namespace Coberec.ExprCS
             {
                 if (!existingNames.Contains(desiredName + i)) return desiredName + i;
             }
-            throw new Exception("wtf");
         }
 
         public static string NameMember(ITypeDefinition type, string desiredName, bool? lowerCase) =>
@@ -100,7 +99,6 @@ namespace Coberec.ExprCS
             {
                 if (!collides(desiredName + i)) return desiredName + i;
             }
-            throw new Exception("wtf");
         }
 
         public static IEnumerable<string> BlacklistedTypeNames(TypeDef typeDef)
@@ -167,7 +165,7 @@ namespace Coberec.ExprCS
         {
             var blacklist = BlacklistedTypeNames(type);
             var ns = ((TypeOrNamespace.NamespaceSignatureCase)type.Signature.Parent).Item.ToString();
-            return NameType(ns, type.Signature.Name, type.Signature.GenericParamCount, compilation, blacklist);
+            return NameType(ns, type.Signature.Name, type.Signature.TypeParameters.Length, compilation, blacklist);
         }
     }
 }
