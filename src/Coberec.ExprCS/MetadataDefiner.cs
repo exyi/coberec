@@ -11,6 +11,7 @@ using Coberec.CSharpGen;
 
 namespace Coberec.ExprCS
 {
+    /// <summary> Converts ExprCS metadata to ILSpy's typesystem classes. </summary>
     public static class MetadataDefiner
     {
         public static FullTypeName GetFullTypeName(this TypeSignature t) =>

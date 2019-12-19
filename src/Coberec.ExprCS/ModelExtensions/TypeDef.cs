@@ -5,6 +5,7 @@ using System.Linq;
 
 namespace Coberec.ExprCS
 {
+	/// <summary> Represents a definition of a type. Apart from the (<see cref="TypeDef.Signature" />) contains the type members (<see cref="TypeDef.Members" />), attributes (TODO) and list of interface implementations (<see cref="Implements" />). </summary>
 	public sealed partial class TypeDef
 	{
 		public static TypeDef Empty(TypeSignature signature) => new TypeDef(signature, null, ImmutableArray<SpecializedType>.Empty, ImmutableArray<MemberDef>.Empty);

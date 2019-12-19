@@ -4,6 +4,7 @@ using System.Linq;
 
 namespace Coberec.ExprCS
 {
+    /// <summary> Special code fragment (not an expression) that represents ID of a <see cref="BreakExpression" /> target. </summary>
     public partial class LabelTarget
     {
         /// <summary> Creates new label target with unique id. Its type is void. </summary>

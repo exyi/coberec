@@ -8,6 +8,7 @@ using Xunit;
 
 namespace Coberec.ExprCS
 {
+    /// <summary> Basic metadata about a type - <see cref="Name" />, <see cref="Kind" />, <see cref="Accessibility" />, ... </summary>
     public partial class TypeSignature
     {
         /// <summary> Signature of <see cref="System.Void" /> </summary>

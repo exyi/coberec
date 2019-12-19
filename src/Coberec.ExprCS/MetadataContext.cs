@@ -20,11 +20,11 @@ using Xunit;
 
 namespace Coberec.ExprCS
 {
-    /// Holds all the information needed to generate the C# code
+    /// <summary> Holds all the information needed to generate the C# code </summary>
     public class MetadataContext
     {
         private readonly HackedSimpleCompilation hackedCompilation;
-        /// <summary> ILSpy's ICompilation object </summary>
+        /// <summary> ILSpy expose: ILSpy's ICompilation object </summary>
 #if ExposeILSpy
         public
 #else
@@ -49,7 +49,7 @@ namespace Coberec.ExprCS
         }
 
         /// <summary> Creates new empty context. </summary>
-        /// <param name="references"> A list of assembly paths that will be included in the compilation. </param>
+        /// <param name="references"> A list of assembly paths that will be included in the compilation. When null a default list is used (that contains some standard libraries) </param>
         public static MetadataContext Create(
             string mainModuleName,
             IEnumerable<string> references = null,
@@ -71,12 +71,12 @@ namespace Coberec.ExprCS
         public ImmutableArray<ModuleSignature> Modules { get; }
         /// <summary> The .NET module which contains the code that is being generated. </summary>
         public ModuleSignature MainModule { get; }
-        /// <summary> The main module from ILSpy's type system which contains the code that is being generated. </summary>
+        /// <summary> ILSpy expose: The main module from ILSpy's type system which contains the code that is being generated. </summary>
         internal IModule MainILSpyModule => mutableModule;
         readonly VirtualModule mutableModule;
         private readonly Dictionary<ModuleSignature, IModule> moduleMap;
         private readonly Dictionary<MemberSignature, IEntity> declaredEntities = new Dictionary<MemberSignature, IEntity>();
-        /// <summary> A dictionary of all entities (type, methods, fields, ...) that have declaring so far. Maps from ExprCS's signature into ILSpy's entities. </summary>
+        /// <summary> ILSpy expose: A dictionary of all entities (type, methods, fields, ...) that have declaring so far. Maps from ExprCS's signature into ILSpy's entities. </summary>
         public IReadOnlyDictionary<MemberSignature, IEntity> DeclaredEntities => declaredEntities;
         private Dictionary<TypeSignature, TypeDef> definedTypes = new Dictionary<TypeSignature, TypeDef>();
         public IReadOnlyCollection<TypeDef> DefinedTypes => definedTypes.Values;
@@ -134,6 +134,11 @@ namespace Coberec.ExprCS
 
 
         /// <summary> Finds a type reference by a <paramref name="name" />. Will look for both type definitions (e.g. <see cref="String" />) and for type references (<see cref="String[]" /> or <see cref="List{String}" />). Returns null if the type can not be found. </summary>
+        /// <remarks>
+		/// Expected syntax: <c>NamespaceName '.' TopLevelTypeName ['`'#] { '+' NestedTypeName ['`'#] }</c>
+		/// where # are type parameter counts
+		/// </remarks>
+
         public TypeReference TryFindType(string name)
         {
             var fullTypeName = new FullTypeName(name);

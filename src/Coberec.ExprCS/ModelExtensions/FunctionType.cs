@@ -5,8 +5,11 @@ using System.Linq;
 
 namespace Coberec.ExprCS
 {
+    /// <summary> Represents a type of a function not bound to any delegate. </summary>
     public partial class FunctionType
     {
+        /// <summary> Converts the function to a matching delegate, if possible (returns null otherwise). </summary>
+        /// <param name="cx">If specified, tries to find the matching delegate in this MetadataContext. If null, uses only standard delegates. </param>
         public TypeReference TryGetDelegate(MetadataContext cx = null)
         {
             // TODO: weird delegates (ref parameters, ...), many many arguments

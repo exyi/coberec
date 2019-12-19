@@ -4,13 +4,20 @@ using System.Linq;
 
 namespace Coberec.ExprCS
 {
+	/// <summary> Defines accessibility of a metadata member </summary>
 	public sealed partial class Accessibility
 	{
+		/// <summary> `internal` </summary>
 		public static Accessibility AInternal = new Accessibility(false, false, true);
+		/// <summary> `public` </summary>
 		public static Accessibility APublic = new Accessibility(true, true, true);
+		/// <summary> `private` </summary>
 		public static Accessibility APrivate = new Accessibility(false, false, false);
+		/// <summary> `protected` </summary>
 		public static Accessibility AProtected = new Accessibility(false, true, false);
+		/// <summary> `protected internal` </summary>
 		public static Accessibility AProtectedInternal = new Accessibility(false, true, true);
+		/// <summary> `private protected` </summary>
 		public static Accessibility APrivateProtected = new Accessibility(true, false, false);
 
 		/// <summary> Returns the "most public" of the two accessibilities. </summary>

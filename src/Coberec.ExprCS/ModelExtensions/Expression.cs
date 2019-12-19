@@ -7,10 +7,12 @@ using Xunit;
 
 namespace Coberec.ExprCS
 {
+    /// <summary> Represents a code fragment - a single expression. May have many forms, see the nested classes for more information. </summary>
     public partial class Expression
     {
         /// <summary> Does nothing and returns void. </summary>
         public static readonly Expression Nop = Expression.Default(TypeSignature.Void);
+        /// <summary> Gets the result type of the expression. </summary>
         public TypeReference Type() =>
             this.Match<TypeReference>(
                 e => e.Item.Left.Type(),

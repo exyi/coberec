@@ -7,6 +7,7 @@ using Xunit;
 
 namespace Coberec.ExprCS
 {
+    /// <summary> Represents a reference to a type. May be a type (with filled in generic arguments), array, pointer, ... </summary>
     public partial class TypeReference
     {
         /// <summary> Says if the type is object-like. Says `true` for classes, arrays, functions. Says `false` for value types, pointers. And says `null` for stuff that is unknown - generic parameters and by-ref types. </summary>

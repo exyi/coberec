@@ -10,6 +10,7 @@ using TS=ICSharpCode.Decompiler.TypeSystem;
 
 namespace Coberec.ExprCS
 {
+    /// <summary> Converts ILSpy typesystem member to ExprCS metadata. </summary>
     public static class SymbolLoader
     {
         internal static void RegisterDeclaredEntity(IEntity entity, MemberSignature member)

@@ -6,6 +6,7 @@ using Coberec.CSharpGen;
 
 namespace Coberec.ExprCS
 {
+	/// <summary> Represents a complete definition of a property. Apart from the (<see cref="TypeDef.Signature" />) contains the implementation (<see cref="Getter" />, <see cref="Setter" />) and attributes </summary>
     public partial class PropertyDef
     {
         public PropertyDef(PropertySignature signature, MethodDef getter, MethodDef setter)

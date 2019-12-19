@@ -5,7 +5,7 @@ using ICSharpCode.Decompiler.IL;
 
 namespace Coberec.ExprCS.CodeTranslation
 {
-    public static class ILAstHelpers
+    static class ILAstHelpers
     {
         public static void AddLeaveInstruction(this Block b, Block nextBlock)
         {

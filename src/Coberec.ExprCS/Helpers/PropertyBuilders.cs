@@ -7,12 +7,14 @@ namespace Coberec.ExprCS.Helpers
     public static class PropertyBuilders
     {
         public const string AutoPropertyField = "<{0}>k__BackingField";
-        public static TypeDef AddAutoProperty(this TypeDef t, string name, TypeReference propertyType, Accessibility accessibility = null, bool isReadOnly = true, bool isStatic = false)
+        /// <summary> Add a C# automatic property to the <paramref name="declaringType" /> (i.e. `public bool X { get; }` or `public string Y { get; set; }`). </summary>
+        public static TypeDef AddAutoProperty(this TypeDef declaringType, string name, TypeReference propertyType, Accessibility accessibility = null, bool isReadOnly = true, bool isStatic = false)
         {
-            var (f, p) = CreateAutoProperty(t.Signature, name, propertyType,accessibility, isReadOnly, isStatic);
-            return t.AddMember(f, p);
+            var (f, p) = CreateAutoProperty(declaringType.Signature, name, propertyType,accessibility, isReadOnly, isStatic);
+            return declaringType.AddMember(f, p);
 
         }
+        /// <summary> Creates a C# automatic property (i.e. `public bool X { get; }` or `public string Y { get; set; }`). Returns the property and its backing field. </summary>
         public static (FieldDef, PropertyDef) CreateAutoProperty(TypeSignature declType, string name, TypeReference propertyType, Accessibility accessibility = null, bool isReadOnly = true, bool isStatic = false)
         {
             accessibility = accessibility ?? Accessibility.APublic;

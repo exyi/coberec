@@ -8,6 +8,7 @@ using Coberec.CSharpGen.TypeSystem;
 
 namespace Coberec.ExprCS
 {
+    /// <summary> Names metadata so the names are safe to use in C# programs. </summary>
     public static class SymbolNamer
     {
         public static string NameType(string @namespace, string desiredName, int genericArgCount, ICompilation compilation, IEnumerable<string> blacklist = null)

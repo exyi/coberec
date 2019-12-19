@@ -5,6 +5,7 @@ using System.Linq;
 
 namespace Coberec.ExprCS
 {
+    /// <summary> Represents a reference to a property. The generic parameters of the parent class are substituted - this class is basically <see cref="PropertySignature" /> + generic arguments </summary>
     public partial class PropertyReference
     {
         public SpecializedType DeclaringType() => new SpecializedType(this.Signature.DeclaringType, this.TypeParameters);

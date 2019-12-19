@@ -6,6 +6,7 @@ using System.Text;
 
 namespace Coberec.ExprCS
 {
+    /// <summary> Sanitizes metadata names for use in C# programs. </summary>
     public static class NameSanitizer
     {
         static bool IsValidChar(char a, bool firstChar)

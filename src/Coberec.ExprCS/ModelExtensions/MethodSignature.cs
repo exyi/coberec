@@ -7,6 +7,7 @@ using Xunit;
 
 namespace Coberec.ExprCS
 {
+    /// <summary> Basic metadata about a method - <see cref="Name">, <see cref="Accessibility" />, <see cref="Params" />, <see cref="DeclaringType" />, ... </summary>
     public partial class MethodSignature
     {
         /// <summary> Creates new method signature that is a constructor </summary>

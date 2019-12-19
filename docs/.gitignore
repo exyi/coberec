@@ -1,4 +1,4 @@
-/_site/
-/obj/
-/api/
-/doxygen
+/docfx-maybe/_site/
+/docfx-maybe/obj/
+/docfx-maybe/api/
+

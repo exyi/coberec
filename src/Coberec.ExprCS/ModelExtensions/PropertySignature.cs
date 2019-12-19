@@ -7,6 +7,7 @@ using Xunit;
 
 namespace Coberec.ExprCS
 {
+    /// <summary> Basic metadata about a property - <see cref="Name">, <see cref="Accessibility" />, <see cref="DeclaringType" />, ... </summary>
     public partial class PropertySignature
     {
         public static PropertySignature Create(string name, TypeSignature declaringType, TypeReference type, Accessibility getter, Accessibility setter, bool isStatic = false, bool isVirtual = false, bool isOverride = false, bool isAbstract = false)

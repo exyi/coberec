@@ -6,6 +6,7 @@ using Xunit;
 
 namespace Coberec.ExprCS
 {
+	/// <summary> Represents a complete definition of a method. Apart from the (<see cref="TypeDef.Signature" />) contains the implementation (<see cref="Body" />) and attributes </summary>
     public partial class MethodDef
     {
         public MethodDef(MethodSignature signature, IEnumerable<ParameterExpression> args, Expression body)

@@ -7,6 +7,7 @@ using Xunit;
 
 namespace Coberec.ExprCS
 {
+    /// <summary> Basic metadata about a field - <see cref="Name">, <see cref="Accessibility" />, <see cref="DeclaringType" />, ... </summary>
     public partial class FieldSignature
     {
         /// <summary> Fills in the generic parameters. </summary>

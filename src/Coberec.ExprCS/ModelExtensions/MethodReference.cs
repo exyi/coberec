@@ -6,6 +6,7 @@ using Coberec.CSharpGen;
 
 namespace Coberec.ExprCS
 {
+    /// <summary> Represents a reference to a method. The generic parameters of the parent class and the method are substituted - this class is basically <see cref="MethodSignature" /> + generic arguments </summary>
     public partial class MethodReference
     {
         public SpecializedType DeclaringType() => new SpecializedType(this.Signature.DeclaringType, this.TypeParameters);
