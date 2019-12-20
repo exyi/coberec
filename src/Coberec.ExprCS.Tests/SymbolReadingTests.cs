@@ -10,7 +10,7 @@ namespace Coberec.ExprCS.Tests
     public class SymbolReadingTests
     {
         MetadataContext cx = MetadataContext.Create("MyMainModule");
-        OutputChecker check = new OutputChecker("testoutput");
+        OutputChecker check = new OutputChecker("testoutput", sanitizeGuids: true);
 
         [Fact]
         public void LoadCoreTypes()
