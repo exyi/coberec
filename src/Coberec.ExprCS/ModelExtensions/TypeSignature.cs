@@ -66,10 +66,13 @@ namespace Coberec.ExprCS
         /// <summary> Gets a <see cref="TypeSignature"/> of the specified reflection <se cref="System.Type" />. If the type is generic, it must be the definition without the generic parameters instantiated. All the important metadata is copied from the reflection type, it can be used on any type even though it may not be valid in the specific <see cref="MetadataContext" />. </summary>
         public static TypeSignature FromType(Type type)
         {
-            Assert.True(!type.IsGenericType || type.IsGenericTypeDefinition);
+            // Assert.True(!type.IsGenericType || type.IsGenericTypeDefinition);
             Assert.True(!type.IsArray);
             Assert.True(!type.IsByRef);
             Assert.True(!type.IsPointer);
+
+            if (type.IsGenericType && !type.IsGenericTypeDefinition)
+                type = type.GetGenericTypeDefinition();
 
             var parent = type.DeclaringType is object ? FromType(type.DeclaringType) : (TypeOrNamespace)NamespaceSignature.Parse(type.Namespace);
             var kind =
@@ -101,6 +104,9 @@ namespace Coberec.ExprCS
             return new SpecializedType(this, ImmutableArray<TypeReference>.Empty);
         }
 
+        /// <summary> Returns a specialized with the generic parameter form itself filled in. You probably don't want to use that to create expression, but may be quite useful to get base types with generic parameters from this type. </summary>
+        public SpecializedType Specialize(params TypeReference[] args) =>
+            Specialize(args.AsEnumerable());
         /// <summary> Returns a specialized with the generic parameter form itself filled in. You probably don't want to use that to create expression, but may be quite useful to get base types with generic parameters from this type. </summary>
         public SpecializedType Specialize(IEnumerable<TypeReference> args)
         {

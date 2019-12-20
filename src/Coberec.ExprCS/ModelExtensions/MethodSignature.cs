@@ -67,5 +67,39 @@ namespace Coberec.ExprCS
             return sb.ToString();
         }
 
+        public static MethodSignature FromReflection(System.Reflection.MethodInfo method)
+        {
+            var declaringType = TypeSignature.FromType(method.DeclaringType);
+            var accessibility = method.IsPublic ? Accessibility.APublic :
+                                method.IsAssembly ? Accessibility.AInternal :
+                                method.IsPrivate ? Accessibility.APrivate :
+                                method.IsFamily ? Accessibility.AProtected :
+                                method.IsFamilyOrAssembly ? Accessibility.AProtectedInternal :
+                                method.IsFamilyAndAssembly ? Accessibility.APrivateProtected :
+                                throw new NotSupportedException("Unsupported accesibility of " + method);
+            var parameters = method.GetParameters().EagerSelect(p =>
+                new MethodParameter(TypeReference.FromType(p.ParameterType),
+                                    p.Name,
+                                    p.HasDefaultValue,
+                                    p.HasDefaultValue ? p.DefaultValue : null
+            ));
+            var genericParameters =
+                method.IsGenericMethodDefinition ? method.GetGenericArguments() :
+                method.IsGenericMethod           ? method.GetGenericMethodDefinition().GetGenericArguments() :
+                                                   Type.EmptyTypes;
+            return new MethodSignature(declaringType,
+                                       parameters,
+                                       method.Name,
+                                       TypeReference.FromType(method.ReturnType),
+                                       method.IsStatic,
+                                       accessibility,
+                                       method.IsVirtual,
+                                       method.GetBaseDefinition() != method,
+                                       method.IsAbstract,
+                                       method.IsSpecialName,
+                                       genericParameters.EagerSelect(GenericParameter.FromType)
+            );
+        }
+
     }
 }

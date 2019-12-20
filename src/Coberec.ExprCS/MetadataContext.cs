@@ -257,10 +257,16 @@ namespace Coberec.ExprCS
         //     GetMemberFieldDefs(type.Type)
         //     .Select(f => new FieldReference(f, type.GenericParameters));
 
-        // /// <summary> Lists all property references of the specified <paramref name="type" />. Only includes the properties declared in this type, not the inherited ones. </summary>
-        // public IEnumerable<PropertyReference> GetMemberProperties(TypeReference type) =>
-        //     GetMemberPropertyDefs(type.Type)
-        //     .Select(p => new PropertyReference(p, type.GenericParameters));
+        /// <summary> Lists all property references of the specified <paramref name="type" />. Only includes the properties declared in this type, not the inherited ones. </summary>
+        public IEnumerable<PropertyReference> GetMemberProperties(TypeReference type) =>
+            type.Match(
+                GetMemberProperties,
+                array => throw new NotImplementedException(),
+                byRef => throw new NotImplementedException(),
+                pointer => throw new NotImplementedException(),
+                generic => throw new NotImplementedException(),
+                function => Enumerable.Empty<PropertyReference>()
+            );
 
         // /// <summary> Lists all member references of the specified <paramref name="type" />. Only includes the members declared in this type, not the inherited ones. Note that only methods without generic arguments are returned, if you want to get to them, use <see cref="GetMemberMethods(SpecializedType, TypeReference[])" /> </summary>
         // public IEnumerable<MemberReference> GetMembers(TypeReference type) =>

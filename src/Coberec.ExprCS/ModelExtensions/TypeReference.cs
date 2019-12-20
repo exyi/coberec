@@ -84,6 +84,8 @@ namespace Coberec.ExprCS
                 return TypeReference.PointerType(FromType(type.GetElementType()));
             else if (type.IsByRef)
                 return TypeReference.ByReferenceType(FromType(type.GetElementType()));
+            else if (type.IsGenericParameter)
+                return Coberec.ExprCS.GenericParameter.FromType(type);
             else if (type.IsGenericType)
             {
                 Assert.True(type.IsConstructedGenericType);

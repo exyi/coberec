@@ -16,5 +16,6 @@ namespace Coberec.ExprCS
         public MethodReference Setter() =>
             Signature.Setter == null ? null :
             new MethodReference(Signature.Setter, this.TypeParameters, ImmutableArray<TypeReference>.Empty);
+        public string Name() => Signature.Name;
     }
 }

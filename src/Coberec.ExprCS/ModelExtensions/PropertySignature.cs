@@ -36,5 +36,18 @@ namespace Coberec.ExprCS
             Assert.Empty(signature.DeclaringType.TypeParameters);
             return new PropertyReference(signature, ImmutableArray<TypeReference>.Empty);
         }
+
+        // public static PropertySignature FromReflection(System.Reflection.PropertyInfo property)
+        // {
+        //     var declaringType = TypeSignature.FromType(property.DeclaringType);
+        //     var accessibility = property. || property.IsNestedPublic ? Accessibility.APublic :
+        //                         type.IsNestedAssembly ? Accessibility.AInternal :
+        //                         type.IsNestedPrivate ? Accessibility.APrivate :
+        //                         type.IsNestedFamily ? Accessibility.AProtected :
+        //                         type.IsNestedFamORAssem ? Accessibility.AProtectedInternal :
+        //                         type.IsNestedFamANDAssem ? Accessibility.APrivateProtected :
+        //                         throw new NotSupportedException("Unsupported accesibility of "+ type);
+        //     return new PropertySignature(declaringType, TypeReference.FromType(property.PropertyType), property.Name, Accessibility.ty
+        // }
     }
 }
