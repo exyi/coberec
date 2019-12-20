@@ -269,9 +269,9 @@ namespace Coberec.ExprCS.Tests
         [Fact]
         public void TransdelegateFunctionConversion()
         {
-            var predicate = cx.FindType(typeof(Predicate<string>));
+            var predicate = TypeReference.FromType(typeof(Predicate<string>));
             var predicateP = ParameterExpression.Create(predicate, "predicateP");
-            cx.AddTestExpr(Expression.FunctionConversion(predicateP, cx.FindType(typeof(Func<string, bool>))), predicateP);
+            cx.AddTestExpr(Expression.FunctionConversion(predicateP, TypeReference.FromType(typeof(Func<string, bool>))), predicateP);
             check.CheckOutput(cx);
         }
     }

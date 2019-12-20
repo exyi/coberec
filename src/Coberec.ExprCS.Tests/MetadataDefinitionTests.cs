@@ -55,9 +55,9 @@ namespace Coberec.ExprCS.Tests
             var ns = NamespaceSignature.Parse("MyNamespace");
             var type = isStruct ? TypeSignature.Struct("MyType", ns, Accessibility.APublic)
                                 : TypeSignature.Class("MyType", ns, Accessibility.APublic);
-            var iequatableT = cx.FindTypeDef(typeof(IEquatable<>));
-            var method = new MethodSignature(type, ImmutableArray.Create(new MethodParameter(type, "obj")), "Equals", cx.FindType(typeof(bool)), false, Accessibility.APublic, false, false, false, false, ImmutableArray<GenericParameter>.Empty);
-            var methodDef = MethodDef.Create(method, (_thisP, _objP) => new ConstantExpression(true, cx.FindType(typeof(bool))));
+            var iequatableT = TypeSignature.FromType(typeof(IEquatable<>));
+            var method = new MethodSignature(type, ImmutableArray.Create(new MethodParameter(type, "obj")), "Equals", TypeReference.FromType(typeof(bool)), false, Accessibility.APublic, false, false, false, false, ImmutableArray<GenericParameter>.Empty);
+            var methodDef = MethodDef.Create(method, (_thisP, _objP) => new ConstantExpression(true, TypeReference.FromType(typeof(bool))));
             var typeDef = TypeDef.Empty(type).With(
                 implements: ImmutableArray.Create(new SpecializedType(iequatableT, ImmutableArray.Create<TypeReference>(type))),
                 members: ImmutableArray.Create<MemberDef>(methodDef));
@@ -71,9 +71,9 @@ namespace Coberec.ExprCS.Tests
         [Fact]
         public void FewFields()
         {
-            var stringT = cx.FindType(typeof(string));
-            var stringArr = cx.FindType(typeof(string[]));
-            var someTuple = cx.FindType(typeof((List<int>, System.Threading.Tasks.Task)));
+            var stringT = TypeReference.FromType(typeof(string));
+            var stringArr = TypeReference.FromType(typeof(string[]));
+            var someTuple = TypeReference.FromType(typeof((List<int>, System.Threading.Tasks.Task)));
 
             var ns = NamespaceSignature.Parse("MyNamespace");
             var type = TypeSignature.Class("MyType", ns, Accessibility.APublic);
@@ -125,7 +125,7 @@ namespace Coberec.ExprCS.Tests
         [Fact]
         public void NameSanitization()
         {
-            var stringT = cx.FindType(typeof(string));
+            var stringT = TypeReference.FromType(typeof(string));
 
             var type = TypeSignature.Class("MyType", NamespaceSignature.Parse("MyNamespace"), Accessibility.APublic);
             cx.AddType(TypeDef.Empty(type).AddMember(

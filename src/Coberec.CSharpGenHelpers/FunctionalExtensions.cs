@@ -101,6 +101,18 @@ namespace Coberec.CSharpGen
             return builder.MoveToImmutable();
         }
 
+        public static ImmutableArray<U> EagerSelect<T, U>(this T[] arr, Func<T, U> fn)
+        {
+            if (arr.Length == 0) return ImmutableArray<U>.Empty;
+
+            var builder = ImmutableArray.CreateBuilder<U>(initialCapacity: arr.Length);
+            for (int i = 0; i < arr.Length; i++)
+            {
+                builder.Add(fn(arr[i]));
+            }
+            return builder.MoveToImmutable();
+        }
+
         public static IReadOnlyList<T> NullIfEmpty<T>(this ImmutableArray<T> array) =>
             array.IsEmpty ? null : (IReadOnlyList<T>)array;
 

@@ -75,5 +75,24 @@ namespace Coberec.ExprCS
                         t.Item.ResultType.SubstituteGenerics(parameters, arguments))
             );
         }
+
+        public static TypeReference FromType(System.Type type)
+        {
+            if (type.IsArray)
+                return TypeReference.ArrayType(FromType(type.GetElementType()), type.GetArrayRank());
+            else if (type.IsPointer)
+                return TypeReference.PointerType(FromType(type.GetElementType()));
+            else if (type.IsByRef)
+                return TypeReference.ByReferenceType(FromType(type.GetElementType()));
+            else if (type.IsGenericType)
+            {
+                Assert.True(type.IsConstructedGenericType);
+                var args = type.GenericTypeArguments.EagerSelect(FromType);
+                var signature = TypeSignature.FromType(type.GetGenericTypeDefinition());
+                return TypeReference.SpecializedType(signature, args);
+            }
+            else
+                return TypeSignature.FromType(type);
+        }
     }
 }
