@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Coberec.ExprCS.Helpers
+namespace Coberec.ExprCS
 {
     public static class PropertyBuilders
     {

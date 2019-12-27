@@ -47,3 +47,25 @@ Expression.ArrayIndex(
     Expression.Constant(13)
 ).ReferenceAssign(Expression.Constant("abc"));
 ```
+
+### Initializing arrays
+
+As equivalent to the C# array initialization feature, we offer a `Coberec.ExprCS.ExpressionFactory.MakeArray` method. It simply creates an array with the specified elements. For example, equivalent of `new [] { 1, 2 }` is:
+
+```csharp
+ExpressionFactory.MakeArray(
+    Expression.Constant(1),
+    Expression.Constant(2)
+)
+```
+
+The items must have the same type, no implicit conversions are performed (as usual). As in C#, this does not work when the number of items is zero since the return type can't be inferred. You can create empty arrays using the `NewArray` function showed above or be explicit about the result type.
+
+
+```csharp
+string[] values = LoadValues(); // we are not sure about the count - it may be zero. But we know the type
+Expression array = ExpressionFactory.MakeArray(
+    TypeSignature.String,
+    values.Select(Expression.Constant)
+)
+```
