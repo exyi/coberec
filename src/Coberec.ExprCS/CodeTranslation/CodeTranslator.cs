@@ -126,7 +126,7 @@ namespace Coberec.ExprCS.CodeTranslation
             if (block.HasReachableEndpoint())
             {
                 if (isVoid) block.Instructions.Add(new IL.Leave(container));
-                else        block.Instructions.Add(new IL.Leave(container, value: new LdLoc(r.Output)));
+                else        block.Instructions.Add(new IL.Leave(container, value: r.LdOutput()));
             }
 
             container.Blocks.Add(block);
@@ -166,7 +166,7 @@ namespace Coberec.ExprCS.CodeTranslation
 
         Result TranslateExpression(Expression expr)
         {
-            var result = expr.Match(
+            Result result = expr.Match(
                 e => TranslateBinary(e.Item),
                 e => TranslateNot(e.Item),
                 e => TranslateMethodCall(e.Item),
@@ -189,6 +189,8 @@ namespace Coberec.ExprCS.CodeTranslation
                 e => TranslateBreakable(e.Item),
                 e => TranslateLoop(e.Item),
                 e => TranslateLetIn(e.Item),
+                e => TranslateNewArray(e.Item),
+                e => TranslateArrayIndex(e.Item),
                 e => TranslateBlock(e.Item),
                 e => TranslateLowerable(e.Item));
             var expectedType = expr.Type();
@@ -219,7 +221,7 @@ namespace Coberec.ExprCS.CodeTranslation
         {
             var r = this.TranslateExpression(item.Expr);
             Assert.NotNull(r.Output);
-            var expr = Comp.LogicNot(new LdLoc(r.Output));
+            var expr = Comp.LogicNot(r.LdOutput());
             return Result.Concat(
                 r,
                 Result.Expression(r.Output.Type, expr)
@@ -250,7 +252,7 @@ namespace Coberec.ExprCS.CodeTranslation
             this.Parameters.Remove(e.Variable.Id);
             return Result.Concat(
                 value,
-                new Result(ImmutableList.Create<Statement>(new ExpressionStatement(new StLoc(ilVar, new LdLoc(value.Output))))),
+                new Result(ImmutableList.Create<Statement>(new ExpressionStatement(new StLoc(ilVar, value.LdOutput())))),
                 target);
         }
 
@@ -320,7 +322,7 @@ namespace Coberec.ExprCS.CodeTranslation
                 return Result.Concat(
                     value,
                     new Result(ImmutableList.Create(
-                        new ExpressionStatement(output: resultVar, instruction: new LdLoc(value.Output)),
+                        new ExpressionStatement(output: resultVar, instruction: value.LdOutput()),
                         breakStmt
                     ))
                 );
@@ -346,7 +348,7 @@ namespace Coberec.ExprCS.CodeTranslation
                 condition,
                 new Result(
                     output: resultVar,
-                    new ExpressionStatement(new IfInstruction(new LdLoc(condition.Output), ifTrueC, ifFalseC)))
+                    new ExpressionStatement(new IfInstruction(condition.LdOutput(), ifTrueC, ifFalseC)))
             );
 
             // var elseBlock = new Block();
@@ -409,7 +411,7 @@ namespace Coberec.ExprCS.CodeTranslation
             if (!conversion.IsReferenceConversion && !conversion.IsBoxingConversion && !conversion.IsUnboxingConversion)
                 throw new Exception($"There is not a reference conversion from {value.Output.Type} to {to}, but an '{conversion}' was found");
 
-            var input = new LdLoc(value.Output);
+            var input = value.LdOutput();
             var instruction =
                 conversion.IsBoxingConversion ? new Box(input, to) :
                 conversion.IsUnboxingConversion ? new UnboxAny(input, to) :
@@ -432,7 +434,7 @@ namespace Coberec.ExprCS.CodeTranslation
 
             var value = this.TranslateExpression(e.Value);
 
-            var expr = new Conv(new LdLoc(value.Output), targetPrimitive, e.Checked, value.Output.Type.GetSign());
+            var expr = new Conv(value.LdOutput(), targetPrimitive, e.Checked, value.Output.Type.GetSign());
 
             return Result.Concat(
                 value,
@@ -442,11 +444,12 @@ namespace Coberec.ExprCS.CodeTranslation
 
         Result TranslateReferenceAssign(ReferenceAssignExpression e)
         {
-            // TODO: unit test
             var target = this.TranslateExpression(e.Target);
             var value = this.TranslateExpression(e.Value);
 
             var type = Assert.IsType<TS.ByReferenceType>(target.Output.Type).ElementType;
+
+            Assert.Equal(type, value.Output.Type);
 
             var load = new StObj(new LdLoc(target.Output), new LdLoc(value.Output), type);
 
@@ -476,10 +479,27 @@ namespace Coberec.ExprCS.CodeTranslation
             );
         }
 
+        Result TranslateArrayIndex(ArrayIndexExpression e)
+        {
+            var array = this.TranslateExpression(e.Array);
+            var indices = e.Indices.Select(this.TranslateExpression).ToArray();
+            var elementType = Assert.IsType<TS.ArrayType>(array.Output.Type).ElementType;
+            var r = new IL.LdElema(
+                elementType,
+                array.LdOutput(),
+                indices.Select(i => i.LdOutput()).ToArray()
+            );
+            return Result.Concat(
+                array,
+                Result.Concat(indices),
+                Result.Expression(new TS.ByReferenceType(elementType), r)
+            );
+        }
+
         Result TranslateAddressOf(AddressOfExpression e)
         {
             var r = TranslateExpression(e.Expr);
-            var addr = new AddressOf(new LdLoc(r.Output), r.Output.Type);
+            var addr = new AddressOf(r.LdOutput(), r.Output.Type);
             var type = new TS.ByReferenceType(r.Output.Type);
             return Result.Concat(
                 r,
@@ -502,7 +522,7 @@ namespace Coberec.ExprCS.CodeTranslation
             var type = Assert.IsType<TS.ByReferenceType>(r.Output.Type).ElementType;
             return Result.Concat(
                 r,
-                Result.Expression(type, new LdObj(new LdLoc(r.Output), type))
+                Result.Expression(type, new LdObj(r.LdOutput(), type))
             );
         }
 
@@ -514,9 +534,26 @@ namespace Coberec.ExprCS.CodeTranslation
             var args = e.Args.Select(this.TranslateExpression).ToArray();
 
             var call = new NewObj(method);
-            call.Arguments.AddRange(args.Select(a => new LdLoc(a.Output)));
+            call.Arguments.AddRange(args.Select(a => a.LdOutput()));
 
             return Result.Concat(args.Append(Result.Expression(method.DeclaringType, call)));
+        }
+
+        Result TranslateNewArray(NewArrayExpression e)
+        {
+            Assert.Equal(e.Type.Dimensions, e.Dimensions.Length);
+
+            var elementType = this.Metadata.GetTypeReference(e.Type.Type);
+            var indices = e.Dimensions.Select(TranslateExpression).ToArray();
+
+            // TODO: validate indices
+
+            var r = new IL.NewArr(elementType, indices.Select(i => i.LdOutput()).ToArray());
+
+            return Result.Concat(
+                Result.Concat(indices),
+                Result.Expression(new TS.ArrayType(this.Metadata.Compilation, elementType, e.Type.Dimensions), r)
+            );
         }
 
         static Result AdjustReference(ILVariable v, bool wantReference, bool isReadonly)
@@ -576,8 +613,8 @@ namespace Coberec.ExprCS.CodeTranslation
             target?.ApplyAction(result.Add);
             result.AddRange(args);
 
-            var call = method.IsStatic ? new Call(method) : (CallInstruction)new CallVirt(method) { Arguments = { new LdLoc(target.Output) } };
-            call.Arguments.AddRange(args.Select(a => new LdLoc(a.Output)));
+            var call = method.IsStatic ? new Call(method) : (CallInstruction)new CallVirt(method) { Arguments = { target.LdOutput() } };
+            call.Arguments.AddRange(args.Select(a => a.LdOutput()));
             var isVoid = e.Method.Signature.ResultType == TypeSignature.Void;
             result.Add(isVoid ?
                        new Result(new ExpressionStatement(call)) :
@@ -626,6 +663,8 @@ namespace Coberec.ExprCS.CodeTranslation
         {
             public readonly ImmutableList<Statement> Statements;
             public readonly ILVariable Output;
+
+            public LdLoc LdOutput() => new LdLoc(this.Output);
 
             public static Result Nop = new Result();
             public bool IsNop => this.Statements.Count == 0 && Output is null;

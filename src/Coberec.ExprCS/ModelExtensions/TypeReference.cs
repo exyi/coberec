@@ -22,7 +22,8 @@ namespace Coberec.ExprCS
 
         public static implicit operator TypeReference(TypeSignature signature)
         {
-            Assert.Empty(signature.TypeParameters);
+            if (signature.TypeParameters.Any())
+                throw new Exception($"Implicit conversion TypeSignature -> TypeReference expects that the type does not have generic parameters. However, {signature} has parameters [{string.Join(", ", signature.TypeParameters.Select(p => p.Name))}]");
             return new SpecializedType(signature, ImmutableArray<TypeReference>.Empty);
         }
 
@@ -75,6 +76,10 @@ namespace Coberec.ExprCS
                         t.Item.ResultType.SubstituteGenerics(parameters, arguments))
             );
         }
+
+        // public T MatchST<T>(Func<SpecializedType, T> specializedType, Func<TypeReference, T> otherwise) =>
+        //     this is SpecializedTypeCase s ? specializedType(s.Item) :
+        //     otherwise(this);
 
         public static TypeReference FromType(System.Type type)
         {

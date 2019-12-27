@@ -40,8 +40,8 @@ namespace Coberec.ExprCS.Tests
             var method = MethodDef.Create(methodSignature, (thisP, idP, countP) =>
                 Expression.Block(
                     ImmutableArray.Create(
-                        Expression.ReferenceAssign(Expression.FieldAccess(MyStruct_GuidField, thisP), idP),
-                        Expression.ReferenceAssign(Expression.FieldAccess(MyStruct_IntField, thisP), countP)
+                        Expression.FieldAccess(MyStruct_GuidField, thisP).ReferenceAssign(idP),
+                        Expression.FieldAccess(MyStruct_IntField, thisP).ReferenceAssign(countP)
                     ),
                     result: Expression.Nop
                 )
@@ -78,9 +78,9 @@ namespace Coberec.ExprCS.Tests
             var thisP = ParameterExpression.Create(OptionallyReference(MyStruct, reference), "this");
 
             var target = dereference ? Expression.Dereference(thisP) : thisP;
-            var body = Expression.ReferenceAssign(
-                Expression.FieldAccess(MyStruct_IntField, target),
-                Expression.Constant(0, TypeSignature.Int32));
+            var body =
+                Expression.FieldAccess(MyStruct_IntField, target)
+                .ReferenceAssign(Expression.Constant(0));
 
             cx.AddTestExpr(body, thisP);
             check.CheckOutput(cx, $"ref={reference}&deref={dereference}");
@@ -94,7 +94,7 @@ namespace Coberec.ExprCS.Tests
 
             var thisP = ParameterExpression.Create(TypeReference.ByReferenceType(MyStruct), "this");
 
-            var body = Expression.Dereference(Expression.FieldAccess(roField, thisP));
+            var body = Expression.FieldAccess(roField, thisP).Dereference();
 
             cx.AddTestExpr(body, thisP);
             check.CheckOutput(cx);

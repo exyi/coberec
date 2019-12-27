@@ -29,16 +29,16 @@ namespace Coberec.ExprCS
             a == Accessibility.APublic ? TS.Accessibility.Public :
             throw new NotImplementedException();
 
-        public static TS.ITypeDefinition GetTypeDefinition(this MetadataContext c, TypeSignature t) =>
-            (TS.ITypeDefinition)c.DeclaredEntities.GetValueOrDefault(t) ??
-            c.Compilation.FindType(t.GetFullTypeName()).GetDefinition() ??
-            throw new Exception($"Could not resolve {t.GetFullTypeName()} for some reason.");
+        // public static TS.ITypeDefinition GetTypeDefinition(this MetadataContext c, TypeSignature t) =>
+        //     (TS.ITypeDefinition)c.DeclaredEntities.GetValueOrDefault(t) ??
+        //     c.Compilation.FindType(t.GetFullTypeName()).GetDefinition() ??
+        //     throw new Exception($"Could not resolve {t.GetFullTypeName()} for some reason.");
 
         public static TS.IType GetTypeReference(this MetadataContext c, TypeReference tref) =>
             tref.Match(
                 specializedType =>
-                    specializedType.Item.GenericParameters.IsEmpty ? (IType)GetTypeDefinition(c, specializedType.Item.Type) :
-                    new ParameterizedType(GetTypeDefinition(c, specializedType.Item.Type),
+                    specializedType.Item.GenericParameters.IsEmpty ? (IType)c.GetTypeDef(specializedType.Item.Type) :
+                    new ParameterizedType(c.GetTypeDef(specializedType.Item.Type),
                         specializedType.Item.GenericParameters.Select(p => GetTypeReference(c, p))),
                 arrayType => new TS.ArrayType(c.Compilation, GetTypeReference(c, arrayType.Item.Type), arrayType.Item.Dimensions),
                 byrefType => new TS.ByReferenceType(GetTypeReference(c, byrefType.Item.Type)),
@@ -52,7 +52,7 @@ namespace Coberec.ExprCS
             if (cx.DeclaredEntities.TryGetValue(method, out var declaredResult))
                 return (IMethod)declaredResult;
 
-            var t = cx.GetTypeReference(method.DeclaringType); // TODO: generic methods
+            var t = cx.GetTypeDef(method.DeclaringType);
 
             bool filter(IMethod m) => m.Name == method.Name &&
                                       m.Parameters.Count == method.Params.Length &&
@@ -91,7 +91,7 @@ namespace Coberec.ExprCS
             if (cx.DeclaredEntities.TryGetValue(field, out var declaredResult))
                 return (IField)declaredResult;
 
-            var t = cx.GetTypeReference(field.DeclaringType); // TODO: generic methods
+            var t = cx.GetTypeDef(field.DeclaringType);
 
             return t.GetFields(f => f.Name == field.Name, GetMemberOptions.IgnoreInheritedMembers).Single();
         }
@@ -106,7 +106,7 @@ namespace Coberec.ExprCS
             if (cx.DeclaredEntities.TryGetValue(prop, out var declaredResult))
                 return (IProperty)declaredResult;
 
-            var t = cx.GetTypeReference(prop.DeclaringType); // TODO: generic methods
+            var t = cx.GetTypeDef(prop.DeclaringType);
 
             return t.GetProperties(p => p.Name == prop.Name, GetMemberOptions.IgnoreInheritedMembers).Single();
         }

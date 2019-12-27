@@ -106,10 +106,10 @@ namespace Coberec.ExprCS
 
         /// <summary> Finds ILSpy's ITypeDefinition based on ExprCS TypeSignature. The ITypeDefinition has access to the module contents, so it's much stronger than TypeSignature. </summary>
         internal ITypeDefinition GetTypeDef(TypeSignature type) =>
-            declaredEntities.TryGetValue(type, out var result) ? (ITypeDefinition)result :
+            (ITypeDefinition)declaredEntities.GetValueOrDefault(type) ??
             type.Parent.Match(
-                ns => GetNamespace(ns.Item).GetTypeDefinition(type.Name, type.TypeParameters.Length) ?? throw new InvalidOperationException($"Type {type.GetFullTypeName()} could not be found"),
-                parentType => GetTypeDef(parentType.Item).GetNestedTypes(t => t.Name == type.Name).Single().GetDefinition());
+                ns => GetNamespace(ns.Item).GetTypeDefinition(type.Name, type.TypeParameters.Length) ?? throw new InvalidOperationException($"Type {type.GetFullTypeName()} could not be found, namespace {ns.Item} does not exist"),
+                parentType => GetTypeDef(parentType.Item).GetNestedTypes(t => t.Name == type.Name && t.TypeParameterCount == type.TypeParameters.Length).Single().GetDefinition());
 
         /// <summary> Finds a type signature by a <paramref name="name" />. Will only look for type definitions (e.g. <see cref="String" />), not type references (<see cref="String[]" /> or <see cref="List{String}" />). </summary>
         public TypeSignature TryFindTypeDef(string name)

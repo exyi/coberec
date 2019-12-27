@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using Coberec.CSharpGen;
 using Xunit;
+using R = System.Reflection;
 
 namespace Coberec.ExprCS
 {
@@ -22,6 +23,41 @@ namespace Coberec.ExprCS
         {
             Assert.Empty(signature.DeclaringType.TypeParameters);
             return new FieldReference(signature, ImmutableArray<TypeReference>.Empty);
+        }
+
+        public override string ToString() =>
+            ToString(this, this.ResultType);
+
+        internal static string ToString(FieldSignature s, TypeReference resultType)
+        {
+            var sb = new System.Text.StringBuilder();
+            if (s.Accessibility != Accessibility.APublic) sb.Append(s.Accessibility).Append(" ");
+            if (s.IsStatic) sb.Append("static ");
+            if (s.IsReadonly) sb.Append("readonly ");
+            sb.Append(s.Name);
+            sb.Append(": ");
+            sb.Append(resultType);
+            return sb.ToString();
+        }
+
+        public static FieldSignature FromReflection(R.FieldInfo field)
+        {
+            var declaringType = TypeSignature.FromType(field.DeclaringType);
+            var accessibility = field.IsPublic ? Accessibility.APublic :
+                                field.IsAssembly ? Accessibility.AInternal :
+                                field.IsPrivate ? Accessibility.APrivate :
+                                field.IsFamily ? Accessibility.AProtected :
+                                field.IsFamilyOrAssembly ? Accessibility.AProtectedInternal :
+                                field.IsFamilyAndAssembly ? Accessibility.APrivateProtected :
+                                throw new NotSupportedException("Unsupported accesibility of " + field);
+
+            var resultType = TypeReference.FromType(field.FieldType);
+            return new FieldSignature(declaringType,
+                                      field.Name,
+                                      accessibility,
+                                      resultType,
+                                      field.IsStatic,
+                                      field.IsInitOnly);
         }
     }
 }

@@ -11,6 +11,13 @@ namespace Coberec.ExprCS
         public SpecializedType(TypeSignature type, params TypeReference[] genericArgs)
             : this(type, genericArgs.ToImmutableArray()) {}
 
+        /// <summary> Gets a declaring type (parent type) if it exists. If the type is global (directly in a namespace), `null` is returned. </summary>
+        public SpecializedType DeclaringType() =>
+            this.Type.Parent.Match(
+                ns => null,
+                t => t.Item.Specialize(this.GenericParameters.Take(t.Item.TypeParameters.Length).ToImmutableArray())
+            );
+
         public override string ToString() =>
             this.GenericParameters.IsEmpty
                 ? this.Type.ToString()

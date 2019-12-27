@@ -22,7 +22,7 @@ namespace NS
 			int.Parse("123456789" + pString1);
 		}
 	}
-	public class C3
+	public class F
 	{
 		public static void M(string pString1)
 		{

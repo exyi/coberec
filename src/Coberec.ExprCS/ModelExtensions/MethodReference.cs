@@ -22,7 +22,7 @@ namespace Coberec.ExprCS
         public override string ToString() =>
             MethodSignature.ToString(Signature, this.MethodParameters, this.Params(), this.ResultType());
 
-        public static MethodReference FromReflection(System.Reflection.MethodInfo method)
+        public static MethodReference FromReflection(System.Reflection.MethodBase method)
         {
             Assert.False(method.IsGenericMethodDefinition);
             var signature = MethodSignature.FromReflection(method);
@@ -33,7 +33,7 @@ namespace Coberec.ExprCS
             return new MethodReference(signature, declaringType.GenericParameters, methodArgs);
         }
 
-        /// <summary> Gets the top most invoked method from the expression. For example `(String a) => a.Trim(anything)` will return descriptor of the Trim method. The function also supports properties (it will return the getter). </summary>
+        /// <summary> Gets the top most invoked method from the expression. For example `(String a) => a.Trim(anything)` will return descriptor of the Trim method. The function also supports properties (it will return the getter) and constuctors (using the `new XXX()` syntax). </summary>
         public static MethodReference FromLambda<T>(LE.Expression<Func<T, object>> expr)
         {
             var b = expr.Body;
@@ -50,8 +50,18 @@ namespace Coberec.ExprCS
                         return FromReflection(prop.GetMethod);
                     else
                         throw new NotSupportedException($"Can't get method reference from member {memberExpr.Member}");
+                case LE.NewExpression newExpr:
+                    return FromReflection(newExpr.Constructor);
+                // this actually does not work:
+                // case LE.NewArrayExpression newArrExpr: {
+                //     var array = newArrExpr.Type;
+                //     var dim = newArrExpr.Expressions.Count;
+                //     Assert.Equal(array.GetArrayRank(), dim);
+                //     var ctor = array.GetConstructors().Single(c => c.GetParameters().Length == dim);
+                //     return FromReflection(ctor);
+                // }
                 default:
-                    throw new NotSupportedException($"Can't get method reference from member {b}");
+                    throw new NotSupportedException($"Can't get method reference from expression {b}");
             }
         }
     }

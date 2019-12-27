@@ -23,7 +23,7 @@ namespace NS
 			return stringFunc;
 		}
 	}
-	public class C3
+	public class F
 	{
 		public static Func<object> M(Func<string> stringFunc)
 		{

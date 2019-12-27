@@ -10,7 +10,7 @@ namespace Coberec.ExprCS
     public partial class MethodParameter
     {
         public MethodParameter(TypeReference type, string name)
-            : this(type, name, false, null) { }
+            : this(type, name, false, null, isParams: false) { }
 
         public MethodParameter SubstituteGenerics(
             IEnumerable<GenericParameter> parameters,
@@ -20,6 +20,9 @@ namespace Coberec.ExprCS
             ImmutableArray<GenericParameter> parameters,
             ImmutableArray<TypeReference> arguments) =>
             this.With(type: this.Type.SubstituteGenerics(parameters, arguments));
+
+        public MethodParameter WithDefault(object defaultValue) =>
+            this.With(hasDefaultValue: true, defaultValue: defaultValue);
 
         public override string ToString()
         {

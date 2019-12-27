@@ -12,14 +12,14 @@ namespace Coberec.ExprCS
     {
         public Func<IMethod, MetadataContext, ILFunction> BuildBody { get; }
 
-        public override TResult Match<TResult>(Func<BinaryCase, TResult> binary, Func<NotCase, TResult> not, Func<MethodCallCase, TResult> methodCall, Func<NewObjectCase, TResult> newObject, Func<FieldAccessCase, TResult> fieldAccess, Func<ReferenceAssignCase, TResult> referenceAssign, Func<DereferenceCase, TResult> dereference, Func<VariableReferenceCase, TResult> variableReference, Func<AddressOfCase, TResult> addressOf, Func<NumericConversionCase, TResult> numericConversion, Func<ReferenceConversionCase, TResult> referenceConversion, Func<ConstantCase, TResult> constant, Func<DefaultCase, TResult> @default, Func<ParameterCase, TResult> parameter, Func<ConditionalCase, TResult> conditional, Func<FunctionCase, TResult> function, Func<FunctionConversionCase, TResult> functionConversion, Func<InvokeCase, TResult> invoke, Func<BreakCase, TResult> @break, Func<BreakableCase, TResult> breakable, Func<LoopCase, TResult> loop, Func<LetInCase, TResult> letIn, Func<BlockCase, TResult> block, Func<LowerableCase, TResult> lowerable)
-        {
-            throw new NotSupportedException();
-        }
-
         private protected override bool EqualsCore(Expression b)
         {
             return object.ReferenceEquals(this, b);
+        }
+
+        public override TResult Match<TResult>(Func<BinaryCase, TResult> binary, Func<NotCase, TResult> not, Func<MethodCallCase, TResult> methodCall, Func<NewObjectCase, TResult> newObject, Func<FieldAccessCase, TResult> fieldAccess, Func<ReferenceAssignCase, TResult> referenceAssign, Func<DereferenceCase, TResult> dereference, Func<VariableReferenceCase, TResult> variableReference, Func<AddressOfCase, TResult> addressOf, Func<NumericConversionCase, TResult> numericConversion, Func<ReferenceConversionCase, TResult> referenceConversion, Func<ConstantCase, TResult> constant, Func<DefaultCase, TResult> @default, Func<ParameterCase, TResult> parameter, Func<ConditionalCase, TResult> conditional, Func<FunctionCase, TResult> function, Func<FunctionConversionCase, TResult> functionConversion, Func<InvokeCase, TResult> invoke, Func<BreakCase, TResult> @break, Func<BreakableCase, TResult> breakable, Func<LoopCase, TResult> loop, Func<LetInCase, TResult> letIn, Func<NewArrayCase, TResult> newArray, Func<ArrayIndexCase, TResult> arrayIndex, Func<BlockCase, TResult> block, Func<LowerableCase, TResult> lowerable)
+        {
+            throw new NotImplementedException();
         }
 
         public ILSpyMethodBody(Func<IMethod, MetadataContext, ILFunction> buildBody)

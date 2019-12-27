@@ -12,17 +12,25 @@ namespace Coberec.ExprCS
     public partial class TypeSignature
     {
         /// <summary> Signature of <see cref="System.Void" /> </summary>
-        public static TypeSignature Void = Struct("Void", NamespaceSignature.System, Accessibility.APublic);
+        public static readonly TypeSignature Void = Struct("Void", NamespaceSignature.System, Accessibility.APublic);
         /// <summary> Signature of <see cref="System.Int32" /> </summary>
-        public static TypeSignature Int32 = Struct("Int32", NamespaceSignature.System, Accessibility.APublic);
+        public static readonly TypeSignature Int32 = Struct("Int32", NamespaceSignature.System, Accessibility.APublic);
         /// <summary> Signature of <see cref="System.TimeSpan" /> </summary>
-        public static TypeSignature TimeSpan = Struct("TimeSpan", NamespaceSignature.System, Accessibility.APublic);
+        public static readonly TypeSignature TimeSpan = Struct("TimeSpan", NamespaceSignature.System, Accessibility.APublic);
         /// <summary> Signature of <see cref="System.Object" /> </summary>
-        public static TypeSignature Object = Class("Object", NamespaceSignature.System, Accessibility.APublic);
+        public static readonly TypeSignature Object = Class("Object", NamespaceSignature.System, Accessibility.APublic);
         /// <summary> Signature of <see cref="System.Boolean" /> </summary>
-        public static TypeSignature Boolean = Struct("Boolean", NamespaceSignature.System, Accessibility.APublic);
+        public static readonly TypeSignature Boolean = Struct("Boolean", NamespaceSignature.System, Accessibility.APublic);
         /// <summary> Signature of <see cref="System.String" /> </summary>
-        public static TypeSignature String = SealedClass("String", NamespaceSignature.System, Accessibility.APublic);
+        public static readonly TypeSignature String = SealedClass("String", NamespaceSignature.System, Accessibility.APublic);
+        /// <summary> Signature of <see cref="System.Collections.IEnumerable" /> </summary>
+        public static readonly TypeSignature IEnumerable = FromType(typeof(System.Collections.IEnumerable));
+        /// <summary> Signature of <see cref="System.Collections.IEnumerable" /> </summary>
+        public static readonly TypeSignature IEnumerator = FromType(typeof(System.Collections.IEnumerator));
+        /// <summary> Signature of <see cref="System.Collections.Generic.IEnumerable{T}" /> </summary>
+        public static readonly TypeSignature IEnumerableOfT = FromType(typeof(IEnumerable<>));
+        /// <summary> Signature of <see cref="System.Collections.Generic.IEnumerator{T}" /> </summary>
+        public static readonly TypeSignature IEnumeratorOfT = FromType(typeof(IEnumerable<>));
 
         /// <summary> Creates a new signature of a `class`. </summary>
         public static TypeSignature Class(string name, TypeOrNamespace parent, Accessibility accessibility, bool canOverride = true, bool isAbstract = false, params GenericParameter[] genericParameters) =>

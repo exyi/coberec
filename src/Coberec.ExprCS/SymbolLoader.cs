@@ -122,7 +122,8 @@ namespace Coberec.ExprCS
                 TypeRef(parameter.Type),
                 parameter.Name,
                 parameter.HasConstantValueInSignature,
-                parameter.HasConstantValueInSignature ? parameter.GetConstantValue() : null
+                parameter.HasConstantValueInSignature ? parameter.GetConstantValue() : null,
+                parameter.IsParams
             );
 
         public static TypeReference TypeRef(IType type) =>

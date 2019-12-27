@@ -37,6 +37,8 @@ namespace Coberec.ExprCS
                 e => e.Item.Expression.Type(),
                 e => TypeSignature.Void,
                 e => e.Item.Target.Type(),
+                e => e.Item.Type,
+                e => new ByReferenceType(((TypeReference.ArrayTypeCase)e.Item.Array.Type()).Item.Type),
                 e => e.Item.Result.Type(),
                 e => e.Item.Type);
 
@@ -70,5 +72,22 @@ namespace Coberec.ExprCS
             return bb;
         }
 
+
+        public static Expression Constant<T>(T obj)
+        {
+            var type = TypeReference.FromType(typeof(T));
+
+            return Constant(obj, type);
+        }
+
+        public static Expression NewArray(ArrayType type, params Expression[] dimensions)
+        {
+            return NewArray(type, dimensions.ToImmutableArray());
+        }
+
+        public static Expression ArrayIndex(Expression array, params Expression[] dimensions)
+        {
+            return ArrayIndex(array, dimensions.ToImmutableArray());
+        }
     }
 }

@@ -73,6 +73,7 @@ type MethodParameter {
     name: String
     hasDefaultValue: Boolean
     defaultValue: Any!
+    isParams: Boolean
 }
 
 type MethodSignature implements MemberSignature {

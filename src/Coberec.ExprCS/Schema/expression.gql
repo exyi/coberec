@@ -136,6 +136,17 @@ type LabelTarget {
 #    target: LabelTarget
 #}
 
+type NewArrayExpression {
+    type: ArrayType
+    dimensions: [Expression]
+}
+
+# returns a reference to the specified array element
+type ArrayIndexExpression {
+    array: Expression
+    indices: [Expression]
+}
+
 type BreakExpression {
     value: Expression
     target: LabelTarget
@@ -185,5 +196,7 @@ union Expression =
     | BreakableExpression
     | LoopExpression
     | LetInExpression
+    | NewArrayExpression
+    | ArrayIndexExpression
     | BlockExpression
     | LowerableExpression

@@ -111,8 +111,8 @@ namespace Coberec.ExprCS.Tests
             var ns = NamespaceSignature.Parse("MyNamespace");
             var type = TypeSignature.Interface("MyInterface2", ns, Accessibility.APublic);
 
-            var method1 = MethodSignature.Instance("StringMethod", type, Accessibility.APublic, TypeSignature.Int32, new MethodParameter(TypeSignature.String, "myParameter", hasDefaultValue: true, "default value"));
-            var method2 = MethodSignature.Instance("ValueTypeMethod", type, Accessibility.APublic, TypeSignature.Int32, new MethodParameter(TypeSignature.FromType(typeof(Guid)), "myParameter", hasDefaultValue: true, null));
+            var method1 = MethodSignature.Instance("StringMethod", type, Accessibility.APublic, TypeSignature.Int32, new MethodParameter(TypeSignature.String, "myParameter").WithDefault("default value"));
+            var method2 = MethodSignature.Instance("ValueTypeMethod", type, Accessibility.APublic, TypeSignature.Int32, new MethodParameter(TypeSignature.FromType(typeof(Guid)), "myParameter").WithDefault(null));
             var typeDef = TypeDef.Empty(type)
                 .AddMember(MethodDef.InterfaceDef(method1))
                 .AddMember(MethodDef.InterfaceDef(method2));
@@ -138,7 +138,7 @@ namespace Coberec.ExprCS.Tests
                 new MethodDef(
                     MethodSignature.Instance("Equals", type2, Accessibility.APublic, TypeSignature.Boolean),
                     ImmutableArray.Create(ParameterExpression.CreateThisParam(type2)),
-                    Expression.Constant(true, TypeSignature.Boolean)
+                    Expression.Constant(true)
                 )
             ));
             var type3 = TypeSignature.Class("MyType3", NamespaceSignature.Parse("MyNamespace"), Accessibility.APublic);
@@ -147,7 +147,7 @@ namespace Coberec.ExprCS.Tests
                 new MethodDef(
                     MethodSignature.Instance("Equals", type3, Accessibility.APublic, TypeSignature.Boolean, new MethodParameter(TypeSignature.Object, "obj2")),
                     ImmutableArray.Create(ParameterExpression.CreateThisParam(type3), ParameterExpression.Create(TypeSignature.Object, "obj2")),
-                    Expression.Constant(true, TypeSignature.Boolean)
+                    Expression.Constant(true)
                 )
             ));
             var type4 = TypeSignature.Class("MyType4", NamespaceSignature.Parse("MyNamespace"), Accessibility.APublic);
@@ -156,7 +156,7 @@ namespace Coberec.ExprCS.Tests
                 new MethodDef(
                     MethodSignature.Static("Equals", type4, Accessibility.APublic, TypeSignature.Boolean, new MethodParameter(TypeSignature.Object, "obj2")),
                     ImmutableArray.Create(ParameterExpression.Create(TypeSignature.Object, "obj2")),
-                    Expression.Constant(true, TypeSignature.Boolean)
+                    Expression.Constant(true)
                 )
             ));
             var type5 = TypeSignature.Class("MyType5", NamespaceSignature.Parse("MyNamespace"), Accessibility.APublic);
@@ -165,7 +165,7 @@ namespace Coberec.ExprCS.Tests
                 new MethodDef(
                     MethodSignature.Instance("Equals", type5, Accessibility.APublic, TypeSignature.Boolean, new MethodParameter(TypeSignature.Object, "obj2")).With(isOverride: true, isVirtual: true),
                     ImmutableArray.Create(ParameterExpression.CreateThisParam(type5), ParameterExpression.Create(TypeSignature.Object, "obj2")),
-                    Expression.Constant(true, TypeSignature.Boolean)
+                    Expression.Constant(true)
                 )
             ));
             check.CheckOutput(cx);

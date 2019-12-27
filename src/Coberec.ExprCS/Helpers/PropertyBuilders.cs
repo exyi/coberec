@@ -23,10 +23,10 @@ namespace Coberec.ExprCS.Helpers
             var fieldRef = field.SpecializeFromDeclaringType();
             var prop = PropertySignature.Create(name, declType, propertyType, accessibility, isReadOnly ? null : accessibility, isStatic);
 
-            var getter = MethodDef.Create(prop.Getter, thisP => Expression.Dereference(Expression.FieldAccess(fieldRef, thisP)));
+            var getter = MethodDef.Create(prop.Getter, thisP => Expression.FieldAccess(fieldRef, thisP).Dereference());
             // getter.Attributes.Add(declaringType.Compilation.CompilerGeneratedAttribute());
             var setter = isReadOnly ? null :
-                         MethodDef.Create(prop.Setter, (thisP, valueP) => Expression.ReferenceAssign(Expression.FieldAccess(fieldRef, thisP), valueP));
+                         MethodDef.Create(prop.Setter, (thisP, valueP) => Expression.FieldAccess(fieldRef, thisP).ReferenceAssign(valueP));
             return (new FieldDef(field),
                     new PropertyDef(prop, getter, setter));
         }

@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using Coberec.CSharpGen;
 using Xunit;
+using R = System.Reflection;
 
 namespace Coberec.ExprCS
 {
@@ -67,7 +68,7 @@ namespace Coberec.ExprCS
             return sb.ToString();
         }
 
-        public static MethodSignature FromReflection(System.Reflection.MethodInfo method)
+        public static MethodSignature FromReflection(R.MethodBase method)
         {
             var declaringType = TypeSignature.FromType(method.DeclaringType);
             var accessibility = method.IsPublic ? Accessibility.APublic :
@@ -81,20 +82,24 @@ namespace Coberec.ExprCS
                 new MethodParameter(TypeReference.FromType(p.ParameterType),
                                     p.Name,
                                     p.HasDefaultValue,
-                                    p.HasDefaultValue ? p.DefaultValue : null
+                                    p.HasDefaultValue ? p.DefaultValue : null,
+                                    p.IsDefined(typeof(ParamArrayAttribute), true)
             ));
             var genericParameters =
                 method.IsGenericMethodDefinition ? method.GetGenericArguments() :
-                method.IsGenericMethod           ? method.GetGenericMethodDefinition().GetGenericArguments() :
+                method.IsGenericMethod           ? ((R.MethodInfo)method).GetGenericMethodDefinition().GetGenericArguments() :
                                                    Type.EmptyTypes;
+            var returnType =
+                method is R.MethodInfo mi ? TypeReference.FromType(mi.ReturnType) :
+                                            TypeSignature.Void;
             return new MethodSignature(declaringType,
                                        parameters,
                                        method.Name,
-                                       TypeReference.FromType(method.ReturnType),
+                                       returnType,
                                        method.IsStatic,
                                        accessibility,
                                        method.IsVirtual,
-                                       method.GetBaseDefinition() != method,
+                                       isOverride: (method as R.MethodInfo)?.GetBaseDefinition() != method,
                                        method.IsAbstract,
                                        method.IsSpecialName,
                                        genericParameters.EagerSelect(GenericParameter.FromType)
