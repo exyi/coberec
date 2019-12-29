@@ -44,5 +44,29 @@ namespace Coberec.ExprCS
 
         /// <summary> Creates new array from the specified items. It is roughly equivalent to C# array initializers. This overload can create empty arrays. </summary>
         public static Expression MakeArray(TypeReference type, params Expression[] items) => MakeArray(type, items.AsEnumerable());
+
+        public static Expression Nullable_HasValue(Expression target)
+        {
+            if (target.Type().UnwrapNullableValueType() is TypeReference elementType)
+            {
+                return target.CallMethod(
+                    PropertySignature.Nullable_HasValue.Specialize(elementType).Getter()
+                );
+            }
+            else
+                throw new ArgumentException($"Target `{target}` must be of type Nullable<...>, not {target.Type()}.", nameof(target));
+        }
+
+        public static Expression Nullable_Value(Expression target)
+        {
+            if (target.Type().UnwrapNullableValueType() is TypeReference elementType)
+            {
+                return target.CallMethod(
+                    PropertySignature.Nullable_Value.Specialize(elementType).Getter()
+                );
+            }
+            else
+                throw new ArgumentException($"Target `{target}` must be of type Nullable<...>, not {target.Type()}.", nameof(target));
+        }
     }
 }

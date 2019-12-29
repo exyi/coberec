@@ -408,6 +408,8 @@ namespace Coberec.ExprCS.CodeTranslation
             var conversion = this.Metadata.CSharpConversions.ExplicitConversion(value.Output.Type, to);
             if (!conversion.IsValid)
                 throw new Exception($"There isn't any valid conversion from {value.Output.Type} to {to}.");
+            if (conversion.IsIdentityConversion)
+                return value;
             if (!conversion.IsReferenceConversion && !conversion.IsBoxingConversion && !conversion.IsUnboxingConversion)
                 throw new Exception($"There is not a reference conversion from {value.Output.Type} to {to}, but an '{conversion}' was found");
 
@@ -592,12 +594,23 @@ namespace Coberec.ExprCS.CodeTranslation
                 AdjustReference(r.Output, wantReference, isReadonly)
             );
 
+        static bool IsMethodReadonly(MethodReference m, IMethod m_)
+        {
+            if (m_.DeclaringType.GetDefinition()?.IsReadOnly == true)
+                return true;
+            if (m.Signature == PropertySignature.Nullable_HasValue.Getter ||
+                m.Signature == PropertySignature.Nullable_Value.Getter)
+                return true;
+
+            return false;
+        }
+
         Result TranslateMethodCall(MethodCallExpression e)
         {
             var signature = e.Method.Signature;
             Assert.Equal(signature.IsStatic, e.Target == null);
             // check types, no implicit conversions are allowed
-            Assert.Equal(signature.Params.Select(p => p.Type), e.Args.Select(a => a.Type()));
+            Assert.Equal(e.Method.Params().Select(p => p.Type), e.Args.Select(a => a.Type()));
             if (e.Target is object)
                 Assert.Equal(e.Method.DeclaringType(), e.Target.Type().UnwrapReference());
             //                                                         ^ except auto-reference is allowed for targets
@@ -606,8 +619,7 @@ namespace Coberec.ExprCS.CodeTranslation
 
             var args = e.Args.Select(TranslateExpression).ToArray();
             var target = e.Target?.Apply(TranslateExpression);
-            target = AdjustReference(target, !(bool)method.DeclaringType.IsReferenceType, isReadonly: false);
-            //                                                                                          ^ TODO readonly structs
+            target = AdjustReference(target, !(bool)method.DeclaringType.IsReferenceType, isReadonly: IsMethodReadonly(e.Method, method));
 
             var result = new List<Result>();
             target?.ApplyAction(result.Add);

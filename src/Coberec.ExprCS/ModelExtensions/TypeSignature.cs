@@ -31,6 +31,8 @@ namespace Coberec.ExprCS
         public static readonly TypeSignature IEnumerableOfT = FromType(typeof(IEnumerable<>));
         /// <summary> Signature of <see cref="System.Collections.Generic.IEnumerator{T}" /> </summary>
         public static readonly TypeSignature IEnumeratorOfT = FromType(typeof(IEnumerable<>));
+        /// <summary> Signature of <see cref="System.Nullable{T}" /> </summary>
+        public static readonly TypeSignature NullableOfT = FromType(typeof(Nullable<>));
 
         /// <summary> Creates a new signature of a `class`. </summary>
         public static TypeSignature Class(string name, TypeOrNamespace parent, Accessibility accessibility, bool canOverride = true, bool isAbstract = false, params GenericParameter[] genericParameters) =>
@@ -75,9 +77,9 @@ namespace Coberec.ExprCS
         public static TypeSignature FromType(Type type)
         {
             // Assert.True(!type.IsGenericType || type.IsGenericTypeDefinition);
-            Assert.True(!type.IsArray);
-            Assert.True(!type.IsByRef);
-            Assert.True(!type.IsPointer);
+            if (type.IsArray) throw new ArgumentException($"Can not create TypeSignature from array ({type})", nameof(type));
+            if (type.IsByRef) throw new ArgumentException($"Can not create TypeSignature from reference ({type})", nameof(type));
+            if (type.IsPointer) throw new ArgumentException($"Can not create TypeSignature from pointer ({type})", nameof(type));
 
             if (type.IsGenericType && !type.IsGenericTypeDefinition)
                 type = type.GetGenericTypeDefinition();
@@ -133,8 +135,12 @@ namespace Coberec.ExprCS
 
             var sb = new System.Text.StringBuilder();
             if (this.Accessibility != Accessibility.APublic) sb.Append(this.Accessibility).Append(" ");
-            if (this.IsAbstract) sb.Append("abstract ");
-            if (this.Kind == "class" && !this.CanOverride) sb.Append("sealed ");
+            if (this.IsAbstract && !this.CanOverride) sb.Append("static ");
+            else
+            {
+                if (this.IsAbstract) sb.Append("abstract ");
+                if (this.Kind == "class" && !this.CanOverride) sb.Append("sealed ");
+            }
             if (this.Kind != "class") sb.Append(this.Kind).Append(" ");
             sb.Append(this.GetFullTypeName());
             return sb.ToString();

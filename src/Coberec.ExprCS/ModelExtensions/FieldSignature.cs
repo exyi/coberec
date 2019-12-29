@@ -8,7 +8,7 @@ using R = System.Reflection;
 
 namespace Coberec.ExprCS
 {
-    /// <summary> Basic metadata about a field - <see cref="Name">, <see cref="Accessibility" />, <see cref="DeclaringType" />, ... </summary>
+    /// <summary> Basic metadata about a field - <see cref="Name"/>, <see cref="Accessibility" />, <see cref="DeclaringType" />, ... </summary>
     public partial class FieldSignature
     {
         /// <summary> Fills in the generic parameters. </summary>
@@ -21,6 +21,7 @@ namespace Coberec.ExprCS
 
         public static implicit operator FieldReference(FieldSignature signature)
         {
+            if (signature == null) return null;
             Assert.Empty(signature.DeclaringType.TypeParameters);
             return new FieldReference(signature, ImmutableArray<TypeReference>.Empty);
         }

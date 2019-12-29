@@ -280,7 +280,7 @@ namespace Coberec.ExprCS.Tests
         public void ListConstructorCall()
         {
             cx.AddTestExpr(Expression.NewObject(
-                MethodReference.FromLambda<object>(a => new List<String>()),
+                MethodReference.FromLambda(() => new List<String>()),
                 ImmutableArray<Expression>.Empty
             ));
 

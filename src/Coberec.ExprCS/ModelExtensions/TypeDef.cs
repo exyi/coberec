@@ -12,7 +12,7 @@ namespace Coberec.ExprCS
 
 		public TypeDef AddMember(params MemberDef[] members) =>
 			this.With(
-				members: this.Members.AddRange(members));
+				members: this.Members.AddRange(members.Where(m => m is object)));
 		public TypeDef AddImplements(params SpecializedType[] interfaces) =>
 			this.With(
 				implements: this.Implements.AddRange(interfaces));

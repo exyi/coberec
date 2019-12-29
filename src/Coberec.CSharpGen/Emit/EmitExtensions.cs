@@ -166,6 +166,16 @@ namespace Coberec.CSharpGen.Emit
             p is IField field ? (IL.ILInstruction)new IL.StObj(new IL.LdFlda(target, field), value, field.ReturnType) :
             throw new NotSupportedException($"{p.GetType()}");
 
+        public static E.Expression AccessMember(this E.Expression target, E.MemberReference p) =>
+            p is E.PropertyReference property ? E.Expression.MethodCall(property.Getter(), ImmutableArray<E.Expression>.Empty, target) :
+            p is E.FieldReference field ? E.Expression.Dereference(E.Expression.FieldAccess(field, target)) :
+            throw new NotSupportedException($"{p.GetType()}");
+
+        public static E.Expression AssignMember(this E.Expression target, E.MemberReference p, E.Expression value) =>
+            p is E.PropertyReference property ? E.Expression.MethodCall(property.Setter(), ImmutableArray.Create(value), target) :
+            p is E.FieldReference field ? E.Expression.ReferenceAssign(E.Expression.FieldAccess(field, target), value) :
+            throw new NotSupportedException($"{p.GetType()}");
+
         public static IL.ILFunction CreateOneBlockFunction(IMethod method, params IL.ILInstruction[] instructions)
         {
             var isVoid = method.ReturnType.FullName == "System.Void";

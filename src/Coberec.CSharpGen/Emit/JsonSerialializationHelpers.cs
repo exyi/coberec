@@ -26,7 +26,7 @@ namespace Coberec.CSharpGen.Emit
             property.Attributes.Add(GetJsonPropertyAttribute(property.Compilation, fieldName));
         }
 
-        public static void AddParameterAttributes(VirtualMethod ctor, IEnumerable<string> fieldNames)
+        public static void AddParameterAttributes(IMethod ctor, IEnumerable<string> fieldNames)
         {
             Debug.Assert(ctor.IsConstructor);
 

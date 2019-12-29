@@ -1,4 +1,4 @@
-Syntax Error GraphQL (3:12) Json token of type String is not supported when type System.Int32 is expected.
+Syntax Error GraphQL (3:12) Value 'a' is not supported when type int is expected.
 2: type A {
 3:     f: Int @validateRange(low: "a", high: "b")
               ^

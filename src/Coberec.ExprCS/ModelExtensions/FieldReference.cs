@@ -34,9 +34,9 @@ namespace Coberec.ExprCS
                     if (memberExpr.Member is R.FieldInfo field)
                         return FromReflection(field);
                     else
-                        throw new NotSupportedException($"Can't get method reference from member {memberExpr.Member}");
+                        throw new NotSupportedException($"Can't get field reference from member {memberExpr.Member}");
                 default:
-                    throw new NotSupportedException($"Can't get method reference from expression {b}");
+                    throw new NotSupportedException($"Can't get field reference from expression {b}");
             }
         }
     }

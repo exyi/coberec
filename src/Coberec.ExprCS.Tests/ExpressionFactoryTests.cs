@@ -24,5 +24,16 @@ namespace Coberec.ExprCS.Tests
                 () => ExpressionFactory.MakeArray(Expression.Constant(true), Expression.Constant(1))
             );
         }
+
+        [Fact]
+        public void Nullable_Read()
+        {
+            var p = ParameterExpression.Create(TypeReference.FromType(typeof(int?)), "a");
+
+            cx.AddTestExpr(ExpressionFactory.Nullable_HasValue(p), p);
+            cx.AddTestExpr(ExpressionFactory.Nullable_Value(p), p);
+
+            check.CheckOutput(cx);
+        }
     }
 }

@@ -8,7 +8,7 @@ using R = System.Reflection;
 
 namespace Coberec.ExprCS
 {
-    /// <summary> Basic metadata about a method - <see cref="Name">, <see cref="Accessibility" />, <see cref="Params" />, <see cref="DeclaringType" />, ... </summary>
+    /// <summary> Basic metadata about a method - <see cref="Name" />, <see cref="Accessibility" />, <see cref="Params" />, <see cref="DeclaringType" />, ... </summary>
     public partial class MethodSignature
     {
         /// <summary> Creates new method signature that is a constructor </summary>
@@ -32,14 +32,15 @@ namespace Coberec.ExprCS
 
         /// <summary> Fills in the generic parameters. </summary>
         public MethodReference Specialize(IEnumerable<TypeReference> typeArgs, IEnumerable<TypeReference> methodArgs) =>
-            new MethodReference(this, typeArgs.ToImmutableArray(), methodArgs.ToImmutableArray());
+            new MethodReference(this, typeArgs?.ToImmutableArray() ?? ImmutableArray<TypeReference>.Empty, methodArgs?.ToImmutableArray() ?? ImmutableArray<TypeReference>.Empty);
 
         /// <summary> Fills in the generic parameters from the declaring type. Useful when using the method inside it's declaring type. </summary>
         public MethodReference SpecializeFromDeclaringType(IEnumerable<TypeReference> methodArgs) =>
-            new MethodReference(this, this.DeclaringType.TypeParameters.EagerSelect(TypeReference.GenericParameter), methodArgs.ToImmutableArray());
+            new MethodReference(this, this.DeclaringType.TypeParameters.EagerSelect(TypeReference.GenericParameter), methodArgs?.ToImmutableArray() ?? ImmutableArray<TypeReference>.Empty);
 
         public static implicit operator MethodReference(MethodSignature signature)
         {
+            if (signature == null) return null;
             Assert.Empty(signature.TypeParameters);
             Assert.Empty(signature.DeclaringType.TypeParameters);
             return new MethodReference(signature, ImmutableArray<TypeReference>.Empty, ImmutableArray<TypeReference>.Empty);
@@ -77,7 +78,7 @@ namespace Coberec.ExprCS
                                 method.IsFamily ? Accessibility.AProtected :
                                 method.IsFamilyOrAssembly ? Accessibility.AProtectedInternal :
                                 method.IsFamilyAndAssembly ? Accessibility.APrivateProtected :
-                                throw new NotSupportedException("Unsupported accesibility of " + method);
+                                throw new NotSupportedException("Unsupported accessibility of " + method);
             var parameters = method.GetParameters().EagerSelect(p =>
                 new MethodParameter(TypeReference.FromType(p.ParameterType),
                                     p.Name,

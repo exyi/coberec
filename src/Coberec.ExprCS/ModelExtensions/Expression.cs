@@ -42,6 +42,35 @@ namespace Coberec.ExprCS
                 e => e.Item.Result.Type(),
                 e => e.Item.Type);
 
+        public bool CanTakeReference(bool mutable) =>
+            this.Match<bool>(
+                binary: _ => false,
+                not: _ => false,
+                methodCall: e => false,
+                newObject: e => false,
+                fieldAccess: e => !mutable || !e.Item.Field.Signature.IsReadonly,
+                referenceAssign: e => false,
+                dereference: e => e.Item.Expr.CanTakeReference(mutable),
+                variableReference: e => false,
+                addressOf: e => false,
+                numericConversion: e => false,
+                referenceConversion: e => false,
+                constant: e => false,
+                @default: e => false,
+                parameter: e => !mutable || e.Item.Mutable,
+                conditional: e => false,
+                function: e => false,
+                functionConversion: e => false,
+                invoke: e => false,
+                @break: e => false,
+                breakable: e => false,
+                loop: e => false,
+                letIn: e => e.Item.Target.CanTakeReference(mutable),
+                newArray: e => false,
+                arrayIndex: e => true,
+                block: e => e.Item.Result.CanTakeReference(mutable),
+                lowerable: e => e.Item.Lowered.CanTakeReference(mutable));
+
         static TypeReference ExtractFunctionReturnType(TypeReference type) =>
             Assert.IsType<TypeReference.FunctionTypeCase>(type).Item.ResultType;
 
@@ -88,6 +117,29 @@ namespace Coberec.ExprCS
         public static Expression ArrayIndex(Expression array, params Expression[] dimensions)
         {
             return ArrayIndex(array, dimensions.ToImmutableArray());
+        }
+
+        public static Expression AndAlso(Expression a, Expression b)
+        {
+            Assert.Equal(TypeSignature.Boolean, a.Type());
+            Assert.Equal(TypeSignature.Boolean, b.Type());
+            return Expression.Conditional(a, b, Expression.Constant(false));
+        }
+
+        public static Expression AndAlso(params Expression[] clauses) => AndAlso(clauses.AsEnumerable());
+        public static Expression AndAlso(IEnumerable<Expression> clauses) =>
+            clauses.Any() ?
+            clauses.Aggregate(AndAlso) :
+            Expression.Constant(true);
+
+        public static Expression StaticMethodCall(MethodReference method, params Expression[] args) =>
+            StaticMethodCall(method, args.AsEnumerable());
+        public static Expression StaticMethodCall(MethodReference method, IEnumerable<Expression> args)
+        {
+            if (!method.Signature.IsStatic)
+                throw new ArgumentException($"Static method was expected, got {method}", nameof(method));
+            Assert.Equal(method.Params().Select(p => p.Type), args.Select(a => a.Type()));
+            return MethodCall(method, args.ToImmutableArray(), target: null);
         }
     }
 }

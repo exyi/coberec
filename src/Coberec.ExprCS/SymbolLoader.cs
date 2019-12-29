@@ -34,26 +34,26 @@ namespace Coberec.ExprCS
         }
 
         static readonly ConditionalWeakTable<ITypeDefinition, TypeSignature> typeSignatureCache = new ConditionalWeakTable<ITypeDefinition, TypeSignature>();
-        public static TypeSignature Type(ITypeDefinition t) =>
-            typeSignatureCache.GetValue(t, type => {
+        public static TypeSignature Type(IType type) =>
+            typeSignatureCache.GetValue(type.GetDefinition(), type => {
                 var parent = type.DeclaringTypeDefinition != null ?
                              TypeOrNamespace.TypeSignature(Type(type.DeclaringTypeDefinition)) :
                              TypeOrNamespace.NamespaceSignature(Namespace(type.Namespace));
-                var kind = t.Kind == TypeKind.Interface ? "interface" :
-                           t.Kind == TypeKind.Struct ? "struct" :
-                           t.Kind == TypeKind.Class ? "class" :
-                           t.Kind == TypeKind.Void ? "struct" :
-                           t.Kind == TypeKind.Enum ? "enum" :
-                           t.Kind == TypeKind.Delegate ? "delegate" :
-                           throw new NotSupportedException($"Type kind {t.Kind} is not supported.");
+                var kind = type.Kind == TypeKind.Interface ? "interface" :
+                           type.Kind == TypeKind.Struct ? "struct" :
+                           type.Kind == TypeKind.Class ? "class" :
+                           type.Kind == TypeKind.Void ? "struct" :
+                           type.Kind == TypeKind.Enum ? "enum" :
+                           type.Kind == TypeKind.Delegate ? "delegate" :
+                           throw new NotSupportedException($"Type kind {type.Kind} is not supported.");
                 return new TypeSignature(type.Name, parent, kind, isValueType: !(bool)type.IsReferenceType, canOverride: !type.IsSealed && !type.IsStatic, isAbstract: type.IsAbstract || type.IsStatic, TranslateAccessibility(type.Accessibility), type.TypeParameters.Select(GenericParameter).ToImmutableArray());
             });
 
         static readonly ConditionalWeakTable<IMethod, MethodSignature> methodSignatureCache = new ConditionalWeakTable<IMethod, MethodSignature>();
-        public static MethodSignature Method(IMethod method) =>
-            methodSignatureCache.GetValue(method, m =>
+        public static MethodSignature Method(IMethod m) =>
+            methodSignatureCache.GetValue((IMethod)m.MemberDefinition, m =>
                 new MethodSignature(
-                    Type(m.DeclaringType.GetDefinition()),
+                    Type(m.DeclaringType),
                     m.Parameters.Select(Parameter).ToImmutableArray(),
                     m.Name,
                     TypeRef(m.ReturnType),
@@ -71,7 +71,7 @@ namespace Coberec.ExprCS
         public static FieldSignature Field(IField field) =>
             fieldSignatureCache.GetValue(field, f =>
                 new FieldSignature(
-                    Type(f.DeclaringType.GetDefinition()),
+                    Type(f.DeclaringType),
                     f.Name,
                     TranslateAccessibility(field.Accessibility),
                     TypeRef(f.ReturnType),
@@ -84,7 +84,7 @@ namespace Coberec.ExprCS
         public static PropertySignature Property(IProperty property) =>
             propSignatureCache.GetValue(property, p =>
                 new PropertySignature(
-                    Type(p.DeclaringType.GetDefinition()),
+                    Type(p.DeclaringType),
                     TypeRef(p.ReturnType),
                     p.Name,
                     TranslateAccessibility(p.Accessibility),
@@ -96,7 +96,7 @@ namespace Coberec.ExprCS
 
         static readonly ConditionalWeakTable<ITypeParameter, GenericParameter> typeParameterCache = new ConditionalWeakTable<ITypeParameter, GenericParameter>();
         public static GenericParameter GenericParameter(ITypeParameter parameter) =>
-            typeParameterCache.GetValue(parameter, p => ExprCS.GenericParameter.Get(parameter.Owner.ReflectionName, parameter.Name));
+            typeParameterCache.GetValue(parameter, p => ExprCS.GenericParameter.Get(parameter.Owner, parameter.Name));
 
 
         public static Accessibility TranslateAccessibility(TS.Accessibility a) =>

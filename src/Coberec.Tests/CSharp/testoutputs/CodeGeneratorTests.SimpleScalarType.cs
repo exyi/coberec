@@ -9,11 +9,6 @@ namespace GeneratedProject.ModelNamespace
 			get;
 		}
 
-		private static ValidationErrors ValidateObject(Scalar123 obj)
-		{
-			return BasicValidators.NotNull(obj.Value).Nest("value");
-		}
-
 		private Scalar123(NoNeedForValidationSentinel _, string value)
 		{
 			Value = value;
@@ -25,10 +20,15 @@ namespace GeneratedProject.ModelNamespace
 			ValidateObject(this).ThrowErrors("Could not initialize Scalar123 due to validation errors");
 		}
 
+		private static ValidationErrors ValidateObject(Scalar123 obj)
+		{
+			return BasicValidators.NotNull(obj.Value).Nest("value");
+		}
+
 		public static ValidationResult<Scalar123> Create(string value)
 		{
-			Scalar123 scalar = new Scalar123(default(NoNeedForValidationSentinel), value);
-			return ValidationResult.CreateErrorsOrValue(ValidateObject(scalar), scalar);
+			Scalar123 result = new Scalar123(default(NoNeedForValidationSentinel), value);
+			return ValidationResult.CreateErrorsOrValue(ValidateObject(result), result);
 		}
 
 		public override int GetHashCode()

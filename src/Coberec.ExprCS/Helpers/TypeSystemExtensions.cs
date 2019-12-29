@@ -63,6 +63,24 @@ namespace Coberec.ExprCS
             );
 
         /// <summary>
+        /// Gets whether the type is specialized type with the signature <paramref name="s" />
+        /// </summary>
+        public static bool IsSpecializationOf(this TypeReference type, TypeSignature s) =>
+            type.MatchST(st => st.Type == s, otherwise: _ => false);
+
+        /// <summary>
+        /// Gets whether the type is <see cref="System.Nullable{T}" /> - i.e. a value type that is nullable
+        /// </summary>
+        public static bool IsNullableValueType(this TypeReference type) =>
+            type.UnwrapNullableValueType() is object;
+
+        /// <summary>
+        /// Gets the T from <see cref="System.Nullable{T}" /> - i.e. a value type that is nullable. Returns null if <paramref name="type" /> is not nullable value type.
+        /// </summary>
+        public static TypeReference UnwrapNullableValueType(this TypeReference type) =>
+            type.MatchST(st => st.Type == TypeSignature.NullableOfT ? st.GenericParameters.Single() : null, otherwise: _ => null);
+
+        /// <summary>
         /// Gets the invoke method for a delegate type.
         /// </summary>
         /// <remarks>

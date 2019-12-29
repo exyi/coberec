@@ -36,7 +36,7 @@ namespace Coberec.CSharpGen.Emit
                              new E.SpecializedType(E.TypeSignature.FromType(typeof(ValidationResult<>)), new [] { (E.TypeReference)new E.SpecializedType(type) }) :
                              new E.SpecializedType(type);
 
-            var method = E.MethodSignature.Instance("With", type, E.Accessibility.APublic, returnType, properties.Select((p) => new E.MethodParameter(optParamType(p.type), p.desiredName, isOptional, null)).ToArray());
+            var method = E.MethodSignature.Instance("With", type, E.Accessibility.APublic, returnType, properties.Select((p) => new E.MethodParameter(optParamType(p.type), p.desiredName, isOptional, null, isParams: false)).ToArray());
             return new E.MethodDef(method, null, null);
         }
 

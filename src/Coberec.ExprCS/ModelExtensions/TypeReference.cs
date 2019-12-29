@@ -22,6 +22,7 @@ namespace Coberec.ExprCS
 
         public static implicit operator TypeReference(TypeSignature signature)
         {
+            if (signature == null) return null;
             if (signature.TypeParameters.Any())
                 throw new Exception($"Implicit conversion TypeSignature -> TypeReference expects that the type does not have generic parameters. However, {signature} has parameters [{string.Join(", ", signature.TypeParameters.Select(p => p.Name))}]");
             return new SpecializedType(signature, ImmutableArray<TypeReference>.Empty);
@@ -59,6 +60,8 @@ namespace Coberec.ExprCS
             ImmutableArray<TypeReference> arguments)
         {
             Assert.Equal(parameters.Length, arguments.Length);
+            if (parameters.Length == 0)
+                return this;
             Assert.Equal(parameters.Length, parameters.Distinct().Count());
             return this.Match(
                 specializedType: t => t.Item.With(genericParameters: t.Item.GenericParameters.EagerSelect(t => t.SubstituteGenerics(parameters, arguments))),
@@ -77,9 +80,9 @@ namespace Coberec.ExprCS
             );
         }
 
-        // public T MatchST<T>(Func<SpecializedType, T> specializedType, Func<TypeReference, T> otherwise) =>
-        //     this is SpecializedTypeCase s ? specializedType(s.Item) :
-        //     otherwise(this);
+        public T MatchST<T>(Func<SpecializedType, T> specializedType, Func<TypeReference, T> otherwise) =>
+            this is SpecializedTypeCase s ? specializedType(s.Item) :
+            otherwise(this);
 
         public static TypeReference FromType(System.Type type)
         {
@@ -93,7 +96,9 @@ namespace Coberec.ExprCS
                 return Coberec.ExprCS.GenericParameter.FromType(type);
             else if (type.IsGenericType)
             {
-                Assert.True(type.IsConstructedGenericType);
+                // This check is probably invalid since in Reflection you encounter these type definitions even in return types...
+                // if (type.IsGenericTypeDefinition)
+                //     throw new ArgumentException($"Can not create TypeReference from open (unconstructed) generic type {type}", nameof(type));
                 var args = type.GenericTypeArguments.EagerSelect(FromType);
                 var signature = TypeSignature.FromType(type.GetGenericTypeDefinition());
                 return TypeReference.SpecializedType(signature, args);

@@ -1,0 +1,260 @@
+{
+	"genericMethod_S": "static Create<int>(value: int): struct Coberec.CoreLib.ValidationResult`1<int>",
+	"genericParent_S": "Expect(message: string): struct System.Boolean",
+	"genericMethod": {
+		"Signature": {
+			"DeclaringType": {
+				"Name": "ValidationResult",
+				"Parent": {
+					"Item": {
+						"Name": "CoreLib",
+						"Parent": {
+							"Name": "Coberec",
+							"Parent": {
+								"Name": "",
+								"Parent": null
+							}
+						}
+					}
+				},
+				"Kind": "class",
+				"IsValueType": false,
+				"CanOverride": false,
+				"IsAbstract": true,
+				"Accessibility": {
+					"Public": true,
+					"DerivedVisible": true,
+					"InternalVisible": true
+				},
+				"TypeParameters": []
+			},
+			"Params": [
+				{
+					"Type": {
+						"Item": {
+							"Id": "aaaaaaaa-bbbb-cccc-dddd-000000000001",
+							"Name": "T"
+						},
+						"IsReferenceType": null
+					},
+					"Name": "value",
+					"HasDefaultValue": false,
+					"DefaultValue": null,
+					"IsParams": false
+				}
+			],
+			"Name": "Create",
+			"ResultType": {
+				"Item": {
+					"Type": {
+						"Name": "ValidationResult",
+						"Parent": {
+							"Item": {
+								"Name": "CoreLib",
+								"Parent": {
+									"Name": "Coberec",
+									"Parent": {
+										"Name": "",
+										"Parent": null
+									}
+								}
+							}
+						},
+						"Kind": "struct",
+						"IsValueType": true,
+						"CanOverride": false,
+						"IsAbstract": false,
+						"Accessibility": {
+							"Public": true,
+							"DerivedVisible": true,
+							"InternalVisible": true
+						},
+						"TypeParameters": [
+							{
+								"Id": "aaaaaaaa-bbbb-cccc-dddd-000000000002",
+								"Name": "T"
+							}
+						]
+					},
+					"GenericParameters": [
+						{
+							"Item": {
+								"Id": "aaaaaaaa-bbbb-cccc-dddd-000000000001",
+								"Name": "T"
+							},
+							"IsReferenceType": null
+						}
+					]
+				},
+				"IsReferenceType": false
+			},
+			"IsStatic": true,
+			"Accessibility": {
+				"Public": true,
+				"DerivedVisible": true,
+				"InternalVisible": true
+			},
+			"IsVirtual": false,
+			"IsOverride": false,
+			"IsAbstract": false,
+			"HasSpecialName": false,
+			"TypeParameters": [
+				{
+					"Id": "aaaaaaaa-bbbb-cccc-dddd-000000000001",
+					"Name": "T"
+				}
+			]
+		},
+		"TypeParameters": [],
+		"MethodParameters": [
+			{
+				"Item": {
+					"Type": {
+						"Name": "Int32",
+						"Parent": {
+							"Item": {
+								"Name": "System",
+								"Parent": {
+									"Name": "",
+									"Parent": null
+								}
+							}
+						},
+						"Kind": "struct",
+						"IsValueType": true,
+						"CanOverride": false,
+						"IsAbstract": false,
+						"Accessibility": {
+							"Public": true,
+							"DerivedVisible": true,
+							"InternalVisible": true
+						},
+						"TypeParameters": []
+					},
+					"GenericParameters": []
+				},
+				"IsReferenceType": false
+			}
+		]
+	},
+	"genericParent": {
+		"Signature": {
+			"DeclaringType": {
+				"Name": "ValidationResult",
+				"Parent": {
+					"Item": {
+						"Name": "CoreLib",
+						"Parent": {
+							"Name": "Coberec",
+							"Parent": {
+								"Name": "",
+								"Parent": null
+							}
+						}
+					}
+				},
+				"Kind": "struct",
+				"IsValueType": true,
+				"CanOverride": false,
+				"IsAbstract": false,
+				"Accessibility": {
+					"Public": true,
+					"DerivedVisible": true,
+					"InternalVisible": true
+				},
+				"TypeParameters": [
+					{
+						"Id": "aaaaaaaa-bbbb-cccc-dddd-000000000002",
+						"Name": "T"
+					}
+				]
+			},
+			"Params": [
+				{
+					"Type": {
+						"Item": {
+							"Type": {
+								"Name": "String",
+								"Parent": {
+									"Item": {
+										"Name": "System",
+										"Parent": {
+											"Name": "",
+											"Parent": null
+										}
+									}
+								},
+								"Kind": "class",
+								"IsValueType": false,
+								"CanOverride": false,
+								"IsAbstract": false,
+								"Accessibility": {
+									"Public": true,
+									"DerivedVisible": true,
+									"InternalVisible": true
+								},
+								"TypeParameters": []
+							},
+							"GenericParameters": []
+						},
+						"IsReferenceType": true
+					},
+					"Name": "message",
+					"HasDefaultValue": false,
+					"DefaultValue": null,
+					"IsParams": false
+				}
+			],
+			"Name": "Expect",
+			"ResultType": {
+				"Item": {
+					"Id": "aaaaaaaa-bbbb-cccc-dddd-000000000002",
+					"Name": "T"
+				},
+				"IsReferenceType": null
+			},
+			"IsStatic": false,
+			"Accessibility": {
+				"Public": true,
+				"DerivedVisible": true,
+				"InternalVisible": true
+			},
+			"IsVirtual": false,
+			"IsOverride": false,
+			"IsAbstract": false,
+			"HasSpecialName": false,
+			"TypeParameters": []
+		},
+		"TypeParameters": [
+			{
+				"Item": {
+					"Type": {
+						"Name": "Boolean",
+						"Parent": {
+							"Item": {
+								"Name": "System",
+								"Parent": {
+									"Name": "",
+									"Parent": null
+								}
+							}
+						},
+						"Kind": "struct",
+						"IsValueType": true,
+						"CanOverride": false,
+						"IsAbstract": false,
+						"Accessibility": {
+							"Public": true,
+							"DerivedVisible": true,
+							"InternalVisible": true
+						},
+						"TypeParameters": []
+					},
+					"GenericParameters": []
+				},
+				"IsReferenceType": false
+			}
+		],
+		"MethodParameters": []
+	}
+}

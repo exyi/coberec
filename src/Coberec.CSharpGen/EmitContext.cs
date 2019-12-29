@@ -125,11 +125,12 @@ namespace Coberec.CSharpGen
         public IType FindType(Type t) => Compilation.FindType(t);
         public IType FindType<T>() => Compilation.FindType(typeof(T));
         public IType FindType(FullTypeName name) => new GetClassTypeReference(name).Resolve(new SimpleTypeResolveContext(Compilation));
-        public IMethod FindMethod(string method)
+        public E.MethodSignature FindMethod(string method)
         {
-            var type = FindType(new FullTypeName(method.Substring(0, method.LastIndexOf('.'))));
-            return type.GetMethods(m => m.FullName == method).SingleOrDefault() ??
-                   Compilation.GetAllTypeDefinitions().SelectMany(t => t.GetMethods(m => m.FullName == method)).Single();
+            // TODO: move to ExprCS
+            var type = Metadata.FindTypeDef(method.Substring(0, method.LastIndexOf('.')));
+            return Metadata.GetMemberMethodDefs(type, method.Substring(method.LastIndexOf('.') + 1)).SingleOrDefault() ??
+                   E.SymbolLoader.Method(Compilation.GetAllTypeDefinitions().SelectMany(t => t.GetMethods(m => m.FullName == method)).Single()); // TODO: it this useful for anything
         }
         public IMethod FindMethod(Expression<Action> expr)
         {

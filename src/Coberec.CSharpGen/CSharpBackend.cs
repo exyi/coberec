@@ -22,7 +22,6 @@ using ICSharpCode.Decompiler.CSharp.OutputVisitor;
 using Coberec.CoreLib;
 using System.Reflection.PortableExecutable;
 using E=Coberec.ExprCS;
-using Coberec.ExprCS.Helpers;
 
 namespace Coberec.CSharpGen
 {
@@ -81,7 +80,7 @@ namespace Coberec.CSharpGen
                 canOverride: isAbstract || typeKind == "interface",
                 isAbstract: isAbstract,
                 E.Accessibility.APublic,
-                genericParamCount: 0
+                typeParameters: ImmutableArray<E.GenericParameter>.Empty
             );
             return type;
         }
@@ -90,20 +89,20 @@ namespace Coberec.CSharpGen
             this.typeSignatures.TryGetValue(name, out var propType) ? new E.SpecializedType(propType) :
             cx.Settings.PrimitiveTypeMapping.TryGetValue(name, out var fullName) ? cx.Metadata.FindType(fullName) :
             // throw new Exception($"Could not resolve type '{name}'");
-            cx.Metadata.FindType(typeof(string));
+            E.TypeSignature.String;
 
         E.TypeReference FindType(TypeRef type) =>
             type.Match(a => FindType(a.TypeName),
                        n =>
                        {
                            var t = FindType(n.Type);
-                           if (t.IsReferenceType == false) return new E.SpecializedType(cx.Metadata.FindTypeDef(typeof(Nullable<>)), new[] { t });
+                           if (t.IsReferenceType == false) return E.TypeSignature.NullableOfT.Specialize(t);
                            else return t;
                        },
                        l =>
                        {
                            var t = FindType(l.Type);
-                           return new E.SpecializedType(cx.Metadata.FindTypeDef(typeof(ImmutableArray<>)), new[] { t });
+                           return new E.SpecializedType(E.TypeSignature.FromType(typeof(ImmutableArray<>)), new[] { t });
                        });
 
         (E.TypeDef type, TypeSymbolNameMapping mapping) BuildType(TypeDef def)
@@ -133,8 +132,14 @@ namespace Coberec.CSharpGen
             }
             this.cx.Metadata.AddType(result.type, ex => {
                 if (ex is ValidationErrorException vex)
+                {
                     handleError(vex);
-                else throw ex;
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
             });
 
 
@@ -184,25 +189,29 @@ namespace Coberec.CSharpGen
         private (E.TypeDef, TypeSymbolNameMapping) GenerateScalar(E.TypeSignature type, TypeDefCore.PrimitiveCase primitive, TypeDef typeDef)
         {
             var result = E.TypeDef.Empty(type);
-            var (valueField, valueProperty) = PropertyBuilders.CreateAutoProperty(type, "Value", new E.SpecializedType(E.TypeSignature.String));
+            var (valueField, valueProperty) = E.PropertyBuilders.CreateAutoProperty(type, "Value", new E.SpecializedType(E.TypeSignature.String));
             var typeMapping = new TypeSymbolNameMapping(type.Name, new Dictionary<string, string> {
                 ["value"] = valueProperty.Signature.Name
             });
 
             result = result.AddMember(valueField, valueProperty);
 
+            var (noValCtor, publicCtor, validateMethod) = type.AddObjectCreationStuff(
+                cx,
+                typeDef,
+                typeMapping,
+                new[] { ("value", valueField.Signature.SpecializeFromDeclaringType() ) },
+                this.GetValidators(typeDef),
+                needsNoValidationConstructor: true);
+
+            var createFn = type.AddCreateFunction(cx, validateMethod?.Signature, noValCtor.Signature);
+
             cx.Metadata.RegisterTypeMod(type, _ => { }, vtype => {
 
-                var (noValCtor, publicCtor, validateMethod) = vtype.AddObjectCreationStuff(
-                    cx,
-                    typeDef,
-                    typeMapping,
-                    new[] { ("value", E.MetadataDefiner.GetField(cx.Metadata, valueField.Signature) ) },
-                    this.GetValidators(typeDef),
-                    needsNoValidationConstructor: true);
-                vtype.AddCreateFunction(cx, validateMethod, noValCtor);
                 vtype.ImplementEquality(new[] { E.MetadataDefiner.GetProperty(cx.Metadata, valueProperty.Signature) });
             });
+
+            result = result.AddMember(noValCtor, publicCtor, validateMethod, createFn);
 
             return (result, typeMapping);
         }
@@ -215,7 +224,7 @@ namespace Coberec.CSharpGen
             foreach (var f in composite.Fields)
             {
                 var propType = FindType(f.Type);
-                var (field, prop) = PropertyBuilders.CreateAutoProperty(type, f.Name, propType);
+                var (field, prop) = E.PropertyBuilders.CreateAutoProperty(type, f.Name, propType);
                 propDictionary.Add(f.Name, (f, prop, field));
                 props.Add((f, prop, field));
             }
@@ -238,24 +247,26 @@ namespace Coberec.CSharpGen
                          .AddMember(props.Select(p => p.prop).ToArray())
                          .AddMember(props.Select(p => p.field).ToArray());
 
-            cx.Metadata.RegisterTypeMod(type, _ => { }, vtype => {
+            var (noValCtor, publicCtor, validateMethod) = type.AddObjectCreationStuff(
+                cx,
+                typeDef,
+                typeMapping,
+                props.Select(k => (k.schema.Name, k.field.Signature.SpecializeFromDeclaringType())).ToArray(),
+                this.GetValidators(typeDef),
+                needsNoValidationConstructor: true);
 
-                var (noValCtor, publicCtor, validateMethod) = vtype.AddObjectCreationStuff(
-                    cx,
-                    typeDef,
-                    typeMapping,
-                    props.Select(k => (k.schema.Name, E.MetadataDefiner.GetField(cx.Metadata, k.field.Signature))).ToArray(),
-                    this.GetValidators(typeDef),
-                    needsNoValidationConstructor: true);
+            var createFn = type.AddCreateFunction(cx, validateMethod?.Signature, noValCtor.Signature);
+
+            result = result.AddMember(noValCtor, (object)publicCtor == noValCtor ? null : publicCtor, validateMethod, createFn);
+
+            cx.Metadata.RegisterTypeMod(type, _ => { }, vtype => {
 
                 if (cx.Settings.AddJsonPropertyAttributes)
                 {
                     foreach (var (f, p, _) in props)
                         JsonSerialializationHelpers.AddPropertyAttributes((VirtualProperty)E.MetadataDefiner.GetProperty(cx.Metadata, p.Signature), f.Name);
-                    JsonSerialializationHelpers.AddParameterAttributes(publicCtor, props.Select(p => p.schema.Name));
+                    JsonSerialializationHelpers.AddParameterAttributes(E.MetadataDefiner.GetMethod(cx.Metadata, publicCtor.Signature), props.Select(p => p.schema.Name));
                 }
-
-                var createFn = vtype.AddCreateFunction(cx, validateMethod, noValCtor);
 
                 var properties = props.Select(p => E.MetadataDefiner.GetProperty(cx.Metadata, p.prop.Signature)).ToArray();
 
@@ -264,7 +275,7 @@ namespace Coberec.CSharpGen
                 IMethod withMethod = null;
                 if (cx.Settings.EmitWithMethods)
                 {
-                    withMethod = vtype.ImplementWithMethod(cx.Settings.WithMethodReturnValidationResult ? createFn : publicCtor, properties, cx.Settings.WithMethodReturnValidationResult);
+                    withMethod = vtype.ImplementWithMethod(E.MetadataDefiner.GetMethod(cx.Metadata, cx.Settings.WithMethodReturnValidationResult ? createFn.Signature : publicCtor.Signature), properties, cx.Settings.WithMethodReturnValidationResult);
                     if (cx.Settings.EmitOptionalWithMethods && properties.Length > 1)
                         vtype.ImplementOptionalWithMethod(withMethod, properties);
                 }
@@ -321,56 +332,58 @@ namespace Coberec.CSharpGen
             var caseTypes = new Dictionary<string, string>();
             var result = E.TypeDef.Empty(type);
 
-            cx.Metadata.RegisterTypeMod(type, _ => { }, vtype => {
+            string name(TypeRef t) =>
+                t.Match(
+                    actual: x => x.TypeName.EndsWith(typeDef.Name) ? x.TypeName.Remove(x.TypeName.Length - typeDef.Name.Length) :
+                                x.TypeName, // TODO: document behavior
+                    nullable: x => name(x.Type),
+                    list: x => name(x.Type) + "List"
+                );
 
+            var cases = union.Options.Select((schema, index) => {
+                var caseName = name(schema);
+
+                var caseType = E.TypeSignature.SealedClass(
+                    caseName + "Case",
+                    type,
+                    E.Accessibility.APublic
+                );
+                var def = E.TypeDef.Empty(caseType).With(extends: type.SpecializeByItself());
+                var valueType = FindType(schema);
+                var (field, prop) = E.PropertyBuilders.CreateAutoProperty(caseType, "Item", valueType);
+                var caseCtor = caseType.AddCreateConstructor(cx, new[] { ("item", field.Signature.SpecializeFromDeclaringType()) }, false);
+                return (index, schema, caseName, caseType: def.AddMember(caseCtor, field, prop), caseCtor);
+            }).ToArray();
+
+            result = result.AddMember(cases.Select(c => c.caseType).ToArray());
+
+            cx.Metadata.RegisterTypeMod(type, _ => { }, vtype => {
                 var (abstractEqCore, _) = vtype.ImplementEqualityForBase();
 
-                var cases = union.Options.Select((schema, index) =>
-                {
-                    string name(TypeRef t) =>
-                        t.Match(
-                            actual: x => x.TypeName.EndsWith(typeDef.Name) ? x.TypeName.Remove(x.TypeName.Length - typeDef.Name.Length) :
-                                        x.TypeName, // TODO: document behavior
-                            nullable: x => name(x.Type),
-                            list: x => name(x.Type) + "List"
-                        );
-                    var caseName = name(schema);
-
-                    var caseType = new VirtualType(TypeKind.Class, Accessibility.Public,
-                        vtype.FullTypeName.NestedType(E.SymbolNamer.NameMember(vtype, caseName + "Case", lowerCase: false), 0),
-                        isStatic: false,
-                        isSealed: true,
-                        isAbstract: false,
-                        declaringType: vtype
-                    );
-                    caseType.DirectBaseType = vtype;
-                    vtype.NestedTypes.Add(caseType);
-                    return (index, schema, caseName, caseType);
-                }).ToArray();
-
-                var baseMatch = vtype.ImplementMatchBase(cases.Select(c => ((IType)c.caseType, c.caseName)).ToArray());
+                var baseMatch = vtype.ImplementMatchBase(cases.Select(c => ((IType)E.MetadataDefiner.GetTypeReference(cx.Metadata, c.caseType.Signature), c.caseName)).ToArray());
 
                 var caseCtors = new List<IMethod>();
 
-                foreach (var (index, schema, caseName, caseType) in cases)
+                foreach (var (index, schema, caseName, caseType, caseCtor) in cases)
                 {
+                    var caseType_ = (VirtualType)E.MetadataDefiner.GetTypeReference(cx.Metadata, caseType.Signature);
+                    var caseCtor_ = E.MetadataDefiner.GetMethod(cx.Metadata, caseCtor.Signature);
                     var valueType = FindType(schema);
 
                     // var sealMethod = new VirtualMethod(caseType, Accessibility.ProtectedAndInternal, sealMethodName, new IParameter[0], cx.FindType(typeof(void)), isOverride: true);
                     // sealMethod.BodyFactory = () => EmitExtensions.CreateOneBlockFunction(sealMethod);
                     // caseType.Methods.Add(sealMethod);
 
-                    var valueProperty = caseType.AddAutoProperty("Item", E.MetadataDefiner.GetTypeReference(cx.Metadata, valueType));
-                    var caseCtor = caseType.AddCreateConstructor(cx, new[] { ("item", valueProperty.field) }, false);
-                    caseCtors.Add(caseCtor);
+                    var valueProperty = caseType_.AddAutoProperty("Item", E.MetadataDefiner.GetTypeReference(cx.Metadata, valueType));
+                    caseCtors.Add(caseCtor_);
 
-                    caseType.ImplementEqualityForCase(abstractEqCore, valueProperty.prop);
-                    caseType.ImplementMatchCase(baseMatch, index);
+                    caseType_.ImplementEqualityForCase(abstractEqCore, valueProperty.prop);
+                    caseType_.ImplementMatchCase(baseMatch, index);
 
-                    vtype.ImplementBasicCaseFactory(caseName, caseCtor);
-                    vtype.TryImplementForwardingCaseFactory(caseName, caseCtor); // TODO: configurable
+                    vtype.ImplementBasicCaseFactory(caseName, caseCtor_);
+                    vtype.TryImplementForwardingCaseFactory(caseName, caseCtor_); // TODO: configurable
 
-                    caseTypes.Add(caseName, caseType.Name);
+                    caseTypes.Add(caseName, caseType_.Name);
                 }
 
                 vtype.ImplementAllIntoCaseConversions(caseCtors.ToArray()); // TODO: configurable (if, if implicit)

@@ -11,8 +11,8 @@ namespace GeneratedProject.ModelNamespace
 	{
 		public static ValidationResult<A> Create()
 		{
-			A value = new A();
-			return ValidationResult.Create(value);
+			A result = new A();
+			return ValidationResult.Create(result);
 		}
 
 		public override int GetHashCode()

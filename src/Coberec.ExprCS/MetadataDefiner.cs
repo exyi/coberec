@@ -54,7 +54,8 @@ namespace Coberec.ExprCS
 
             var t = cx.GetTypeDef(method.DeclaringType);
 
-            bool filter(IMethod m) => m.Name == method.Name &&
+            bool filter(IMethod m) => m != null &&
+                                      m.Name == method.Name &&
                                       m.Parameters.Count == method.Params.Length &&
                                       m.Parameters.Select(p => SymbolLoader.TypeRef(p.Type)).SequenceEqual(method.Params.Select(a => a.Type));
 
@@ -300,6 +301,16 @@ namespace Coberec.ExprCS
             var names = cx.Settings.SanitizeSymbolNames ? SymbolNamer.NameMembers(definition, type, cx.Settings.AdjustCasing) :
                         definition.Members.ToDictionary(m => m.Signature, m => m.Signature.Name);
 
+            // declare the types first, as they may be used in the type
+            foreach (var typeMember in definition.Members.OfType<TypeDef>())
+            {
+                var name = names[typeMember.Signature];
+                var d = CreateTypeDefinition(cx, typeMember, type.FullTypeName.NestedType(name, typeMember.Signature.TypeParameters.Length));
+
+                if (isHidden) d.IsHidden = true;
+                type.NestedTypes.Add(d);
+            }
+
             foreach (var member in definition.Members)
             {
                 var name = names[member.Signature];
@@ -312,10 +323,7 @@ namespace Coberec.ExprCS
                 }
                 else if (member is TypeDef typeMember)
                 {
-                    // Assert.Equal(definition.Signature, typeMember.Signature.Parent);
-                    var d = CreateTypeDefinition(cx, typeMember, type.FullTypeName.NestedType(name, typeMember.Signature.TypeParameters.Length));
-                    if (isHidden) d.IsHidden = true;
-                    type.NestedTypes.Add(d);
+                    var d = (VirtualType)type.NestedTypes.Single(t => t.Name == name);
                     DefineTypeMembers(d, cx, typeMember, isHidden);
                 }
                 else if (member is FieldDef field)
