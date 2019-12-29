@@ -204,7 +204,8 @@ namespace Coberec.ExprCS.CodeTranslation
                 var invokeMethod = result.Output.Type.GetDelegateInvokeMethod();
                 Assert.NotNull(invokeMethod);
                 Assert.Equal(invokeMethod.Parameters.Count, fn.Item.Params.Length);
-                // TODO: more checks
+                Assert.Equal(invokeMethod.Parameters.Select(p => SymbolLoader.TypeRef(p.Type)), fn.Item.Params.Select(p => p.Type));
+                Assert.Equal(SymbolLoader.TypeRef(invokeMethod.ReturnType), fn.Item.ResultType);
             }
 
             else if (expectedType != TypeSignature.Void)
@@ -398,8 +399,6 @@ namespace Coberec.ExprCS.CodeTranslation
 
         Result TranslateReferenceConversion(ReferenceConversionExpression e)
         {
-            // TODO: validate
-
             var value = this.TranslateExpression(e.Value);
             value = AdjustReference(value, wantReference: false, false);
 
@@ -468,7 +467,6 @@ namespace Coberec.ExprCS.CodeTranslation
                 Assert.Equal(e.Field.DeclaringType(), e.Target.Type().UnwrapReference());
             //                                                        ^ auto-reference is allowed for targets
 
-            // TODO: unit test (static field)
             var field = this.Metadata.GetField(e.Field);
             var target = e.Target?.Apply(TranslateExpression);
             target = AdjustReference(target, !(bool)field.DeclaringType.IsReferenceType, isReadonly: field.IsReadOnly);
@@ -476,7 +474,7 @@ namespace Coberec.ExprCS.CodeTranslation
             var load = ILAstFactory.FieldAddr(field, target?.Output);
 
             return Result.Concat(
-                target,
+                target ?? Result.Nop,
                 Result.Expression(new TS.ByReferenceType(field.Type), load)
             );
         }
@@ -530,7 +528,6 @@ namespace Coberec.ExprCS.CodeTranslation
 
         Result TranslateNewObject(NewObjectExpression e)
         {
-            // TODO: unit test
             var method = this.Metadata.GetMethod(e.Ctor);
 
             var args = e.Args.Select(this.TranslateExpression).ToArray();

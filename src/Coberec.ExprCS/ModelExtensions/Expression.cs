@@ -141,5 +141,13 @@ namespace Coberec.ExprCS
             Assert.Equal(method.Params().Select(p => p.Type), args.Select(a => a.Type()));
             return MethodCall(method, args.ToImmutableArray(), target: null);
         }
+
+        public static Expression StaticFieldAccess(FieldReference field)
+        {
+            if (!field.Signature.IsStatic)
+                throw new ArgumentException($"Static field was expected, got {field}", nameof(field));
+
+            return Expression.FieldAccess(field, null);
+        }
     }
 }

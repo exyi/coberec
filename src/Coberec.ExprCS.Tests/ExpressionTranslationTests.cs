@@ -277,11 +277,21 @@ namespace Coberec.ExprCS.Tests
 
 
         [Fact]
-        public void ListConstructorCall()
+        public void ConstructorCall()
         {
             cx.AddTestExpr(Expression.NewObject(
                 MethodReference.FromLambda(() => new List<String>()),
                 ImmutableArray<Expression>.Empty
+            ));
+
+            cx.AddTestExpr(Expression.NewObject(
+                MethodReference.FromLambda(() => new List<String>(55)),
+                ImmutableArray.Create(Expression.Constant(1234))
+            ));
+
+            cx.AddTestExpr(Expression.NewObject(
+                MethodReference.FromLambda(() => new DateTime(55L)),
+                ImmutableArray.Create(Expression.Constant(1234L))
             ));
 
             check.CheckOutput(cx);
@@ -402,6 +412,21 @@ namespace Coberec.ExprCS.Tests
             var refP2 = ParameterExpression.Create(new ByReferenceType(TypeSignature.Int32), "r2");
             cx.AddTestExpr(refP1, refP1);
             cx.AddTestExpr(Expression.Conditional(pBool1, refP1, refP2), refP1, refP2, pBool1);
+        }
+
+        [Fact]
+        public void StaticFieldAccess()
+        {
+            var field1 = FieldReference.FromLambda<object>(_ => DateTime.MinValue);
+            var field2 = FieldReference.FromLambda<object>(_ => System.Reflection.Emit.OpCodes.Call);
+            var field3 = FieldReference.FromLambda<object>(_ => System.Runtime.InteropServices.Marshal.SystemDefaultCharSize);
+            var field4 = FieldReference.FromLambda<object>(_ => ImmutableList<int>.Empty);
+            cx.AddTestExpr(Expression.StaticFieldAccess(field1).Dereference());
+            cx.AddTestExpr(Expression.StaticFieldAccess(field2).Dereference());
+            cx.AddTestExpr(Expression.StaticFieldAccess(field3).Dereference());
+            cx.AddTestExpr(Expression.StaticFieldAccess(field4).Dereference());
+
+            check.CheckOutput(cx);
         }
     }
 }

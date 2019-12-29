@@ -69,6 +69,11 @@ namespace Coberec.ExprCS
             return sb.ToString();
         }
 
+        /// <summary> Returns true if this method is a constructor (only standard instance constructor counts, for static ones see <see cref="IsStaticConstructor" /> </summary>
+        public bool IsConstructor() => this.HasSpecialName && this.Name == ".ctor" && !this.IsStatic;
+        /// <summary> Returns true if this method is a static constructor (for instance ones see <see cref="IsConstructor" /> </summary>
+        public bool IsStaticConstructor() => this.HasSpecialName && this.Name == ".cctor" && this.IsStatic;
+
         public static MethodSignature FromReflection(R.MethodBase method)
         {
             var declaringType = TypeSignature.FromType(method.DeclaringType);
