@@ -15,11 +15,6 @@ namespace GeneratedProject.ModelNamespace
 			get;
 		}
 
-		private static ValidationErrors ValidateObject(Test123 obj)
-		{
-			return ValidationErrors.Join(BasicValidators.NotEmpty(obj.Field543).Nest("Field543"), BasicValidators.Range(1, 10, obj.AbcSS).Nest("abcSS"));
-		}
-
 		private Test123(NoNeedForValidationSentinel _, ImmutableArray<string> field543, int abcSS)
 		{
 			Field543 = field543;
@@ -32,10 +27,15 @@ namespace GeneratedProject.ModelNamespace
 			ValidateObject(this).ThrowErrors("Could not initialize Test123 due to validation errors");
 		}
 
+		private static ValidationErrors ValidateObject(Test123 obj)
+		{
+			return ValidationErrors.Join(BasicValidators.NotEmpty(obj.Field543).Nest("Field543"), BasicValidators.Range(1, 10, obj.AbcSS).Nest("abcSS"));
+		}
+
 		public static ValidationResult<Test123> Create(ImmutableArray<string> field543, int abcSS)
 		{
-			Test123 test = new Test123(default(NoNeedForValidationSentinel), field543, abcSS);
-			return ValidationResult.CreateErrorsOrValue(ValidateObject(test), test);
+			Test123 result = new Test123(default(NoNeedForValidationSentinel), field543, abcSS);
+			return ValidationResult.CreateErrorsOrValue(ValidateObject(result), result);
 		}
 
 		public override int GetHashCode()

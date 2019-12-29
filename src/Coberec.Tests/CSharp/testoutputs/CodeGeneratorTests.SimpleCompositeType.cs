@@ -23,8 +23,8 @@ namespace GeneratedProject.ModelNamespace
 
 		public static ValidationResult<Test123> Create(ImmutableArray<string> field543, int abcSS)
 		{
-			Test123 value = new Test123(field543, abcSS);
-			return ValidationResult.Create(value);
+			Test123 result = new Test123(field543, abcSS);
+			return ValidationResult.Create(result);
 		}
 
 		public override int GetHashCode()

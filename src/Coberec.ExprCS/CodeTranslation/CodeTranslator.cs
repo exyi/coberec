@@ -41,7 +41,7 @@ namespace Coberec.ExprCS.CodeTranslation
                 Assert.Equal(arg.Type, param.Type);
                 translator.Parameters.Add(
                     arg.Id,
-                    new ILVariable(VariableKind.Parameter, cx.GetTypeReference(param.Type), i) { Name = arg.Name });
+                    new ILVariable(VariableKind.Parameter, cx.GetTypeReference(param.Type), i) { Name = generatedMethod.Parameters[i].Name });
             }
             var verificationVarCopy = translator.Parameters.Keys.ToHashSet();
 

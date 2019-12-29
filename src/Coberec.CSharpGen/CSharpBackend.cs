@@ -374,10 +374,10 @@ namespace Coberec.CSharpGen
                     // sealMethod.BodyFactory = () => EmitExtensions.CreateOneBlockFunction(sealMethod);
                     // caseType.Methods.Add(sealMethod);
 
-                    var valueProperty = caseType_.AddAutoProperty("Item", E.MetadataDefiner.GetTypeReference(cx.Metadata, valueType));
+                    var valueProperty = caseType_.Properties.Single();
                     caseCtors.Add(caseCtor_);
 
-                    caseType_.ImplementEqualityForCase(abstractEqCore, valueProperty.prop);
+                    caseType_.ImplementEqualityForCase(abstractEqCore, valueProperty);
                     caseType_.ImplementMatchCase(baseMatch, index);
 
                     vtype.ImplementBasicCaseFactory(caseName, caseCtor_);
