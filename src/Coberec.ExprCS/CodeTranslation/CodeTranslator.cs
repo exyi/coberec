@@ -632,8 +632,57 @@ namespace Coberec.ExprCS.CodeTranslation
             return Result.Concat(result);
         }
 
-        Result TranslateBinary(BinaryExpression item)
+        Result TranslateBinary(BinaryExpression e)
         {
+            var op = e.Operator;
+            var type = e.Right.Type();
+            Assert.Equal(e.Left.Type(), type);
+
+            var left = TranslateExpression(e.Left);
+            var right = TranslateExpression(e.Right);
+
+            if (e.IsComparison())
+            {
+                var boolType = this.Metadata.Compilation.FindType(KnownTypeCode.Boolean);
+                // primitive comparison
+                if (op == "==" || op == "!=")
+                {
+                    if (left.Output.Type.IsReferenceType == false && left.Output.Type.GetStackType() == StackType.O)
+                        throw new Exception($"Can not use '==' and '!=' operators for non-enum and non-primitive type {left.Output.Type}. If you wanted to call an overloaded operator, please the a method call expression.");
+
+                    return Result.Concat(
+                        left, right,
+                        Result.Expression(boolType, new IL.Comp(
+                            op == "==" ? ComparisonKind.Equality : ComparisonKind.Inequality,
+                            Sign.None,
+                            left.LdOutput(),
+                            right.LdOutput()
+                        ))
+                    );
+                }
+                else
+                {
+                    var stackType = left.Output.Type.GetStackType();
+                    if (stackType == StackType.O || stackType == StackType.Ref || stackType == StackType.Unknown)
+                        throw new Exception($"Can not use comparison operators for non-integer type {left.Output.Type}. If you wanted to call an overloaded operator, please the a method call expression.");
+
+                    return Result.Concat(
+                        left, right,
+                        Result.Expression(boolType, new IL.Comp(
+                            op switch {
+                                "<" => ComparisonKind.LessThan,
+                                "<=" => ComparisonKind.LessThanOrEqual,
+                                ">" => ComparisonKind.GreaterThan,
+                                ">=" => ComparisonKind.GreaterThanOrEqual,
+                                _ => throw new NotSupportedException($"Comparison operator {op} is not supported.")
+                            },
+                            left.Output.Type.GetSign(),
+                            left.LdOutput(),
+                            right.LdOutput()
+                        ))
+                    );
+                }
+            }
             throw new NotImplementedException();
         }
 

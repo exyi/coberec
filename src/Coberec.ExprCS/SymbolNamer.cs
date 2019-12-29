@@ -108,7 +108,8 @@ namespace Coberec.ExprCS
             return typeDef.Members.OfType<MethodDef>().Where(m => m.Signature.IsOverride || m.Signature.IsVirtual).AsEnumerable<MemberDef>()
                    .Concat(typeDef.Members.OfType<PropertyDef>().Where(m => m.Signature.IsOverride || m.Signature.Getter?.IsVirtual == true))
                    .Select(m => m.Signature.Name)
-                   .Concat(new [] { "Finalize", "GetType", "ToString", "Equals", "ReferenceEquals", "GetHashCode", "MemberwiseClone" });
+                   .Concat(new [] { "Finalize", "GetType", "ToString", "Equals", "ReferenceEquals", "GetHashCode", "MemberwiseClone" })
+                   ;
         }
 
         public static Dictionary<MemberSignature, string> NameMembers(TypeDef type, VirtualType realType, bool adjustCasing)

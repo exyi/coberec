@@ -130,7 +130,7 @@ namespace Coberec.ExprCS
 
         /// <summary> Finds a type signature by a <paramref name="name" />. Will only look for type definitions (e.g. <see cref="String" />), not type references (<see cref="T:String[]" /> or <see cref="List{String}" />). </summary>
         public TypeSignature FindTypeDef(string name) =>
-            TryFindTypeDef(name) ?? throw new ArgumentException($"Type {name} could be found.", nameof(name));
+            TryFindTypeDef(name) ?? throw new ArgumentException($"Type {name} could not be found.", nameof(name));
 
         [Obsolete]
         public TypeSignature FindTypeDef(Type type) =>

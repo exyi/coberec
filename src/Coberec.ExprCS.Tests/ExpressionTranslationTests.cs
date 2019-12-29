@@ -428,5 +428,23 @@ namespace Coberec.ExprCS.Tests
 
             check.CheckOutput(cx);
         }
+
+        [Fact]
+        public void EqOperator()
+        {
+            cx.AddTestExpr(Expression.Binary("==", Expression.Constant<string>("abcd"), pString1), pString1);
+            cx.AddTestExpr(Expression.Binary("==", Expression.Constant<string>(null), pString1), pString1);
+            cx.AddTestExpr(Expression.Binary("!=", Expression.Constant<object>(null), Expression.ReferenceConversion(pString1, TypeSignature.Object)), pString1);
+            cx.AddTestExpr(Expression.Binary("==", Expression.Constant(true), pBool1), pBool1);
+            cx.AddTestExpr(Expression.Binary("==", Expression.Constant(true), Expression.Constant(false)));
+            cx.AddTestExpr(Expression.Binary("==", Expression.Constant<int>(1), Expression.Constant<int>(1)));
+            cx.AddTestExpr(Expression.Binary("==", Expression.Constant<UInt16>(1), Expression.Constant<UInt16>(1)));
+            cx.AddTestExpr(Expression.Binary("==", Expression.Constant<ulong>(1), Expression.Constant<ulong>(1)));
+            cx.AddTestExpr(Expression.Binary("==", Expression.Constant<float>(1), Expression.Constant<float>(1)));
+            cx.AddTestExpr(Expression.Binary("==", Expression.Constant<double>(1), Expression.Constant<double>(1)));
+            cx.AddTestExpr(Expression.Binary("!=", Expression.Constant<double>(1), Expression.Constant<double>(1)));
+
+            check.CheckOutput(cx);
+        }
     }
 }

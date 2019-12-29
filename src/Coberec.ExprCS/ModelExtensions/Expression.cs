@@ -15,7 +15,7 @@ namespace Coberec.ExprCS
         /// <summary> Gets the result type of the expression. </summary>
         public TypeReference Type() =>
             this.Match<TypeReference>(
-                e => e.Item.Left.Type(),
+                binary: e => e.Item.IsComparison() ? TypeSignature.Boolean : e.Item.Left.Type(),
                 e => e.Item.Expr.Type(),
                 e => e.Item.Method.ResultType(),
                 e => e.Item.Ctor.DeclaringType(),
