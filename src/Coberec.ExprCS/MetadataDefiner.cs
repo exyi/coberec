@@ -203,7 +203,11 @@ namespace Coberec.ExprCS
                 sgn.IsStatic,
                 isHidden,
                 sgn.TypeParameters.Select<GenericParameter, ITypeParameter>(a => throw new NotImplementedException()).ToArray(),
-                explicitImplementations: m.Implements.Where(i => i.Signature.DeclaringType.Kind == "interface").Select(cx.GetMethod)
+                explicitImplementations:
+                    m.Implements
+                    .Where(i => i.Signature.DeclaringType.Kind == "interface")
+                    .Select(cx.GetMethod)
+                    .Where(m => m.Name != name)
             )
             .ApplyAction(mm => cx.RegisterEntity(m, mm));
 
@@ -240,7 +244,11 @@ namespace Coberec.ExprCS
                 sgn.IsStatic,
                 mSgn.IsAbstract,
                 !mSgn.IsVirtual && mSgn.IsOverride,
-                explicitImplementations: property.Implements.Where(i => i.Signature.DeclaringType.Kind == "interface").Select(cx.GetProperty)
+                explicitImplementations:
+                    property.Implements
+                    .Where(i => i.Signature.DeclaringType.Kind == "interface")
+                    .Select(cx.GetProperty)
+                    .Where(p => p.Name != name)
             );
             cx.RegisterEntity(property, prop);
             return (prop, getter, setter);

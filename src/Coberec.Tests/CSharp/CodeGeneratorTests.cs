@@ -112,6 +112,25 @@ namespace GeneratedProject {
         }
 
         [Fact]
+        public void CustomValidator()
+        {
+            var schema = new DataSchema(Enumerable.Empty<Entity>(), new [] {
+                new TypeDef("CustomValidatorTest", Enumerable.Empty<Directive>(), TypeDefCore.Composite(
+                    new [] {
+                        new TypeField("f1", TypeRef.ActualType("String"), null, new Directive[] {
+                            new Directive("validateMySpecialStringValidator", JObject.Parse("{}"))
+                        }),
+                    },
+                    new TypeRef[] {}
+                ))
+            });
+
+            var result = CSharpBackend.Build(schema, DefaultSettings);
+            CheckItCompiles(result);
+            check.CheckString(result, fileExtension: "cs");
+        }
+
+        [Fact]
         public void SimpleUnionType()
         {
             TypeField field543 = new TypeField("Field543", TypeRef.ListType(TypeRef.ActualType("String")), null, new [] { new Directive("validateNotEmpty", JObject.Parse("{}")) });
@@ -179,6 +198,15 @@ namespace GeneratedProject {
         }
 
         [Fact]
+        public void ClassRenaming()
+        {
+            var schema = GraphqlLoader.Helpers.ParseSchema(@"scalar Equals", invertNonNull: true);
+            var result = CSharpBackend.Build(schema, DefaultSettings);
+            CheckItCompiles(result);
+            check.CheckString(result, fileExtension: "cs");
+        }
+
+        [Fact]
         public void DifferentOrderInterface()
         {
             var schema = GraphqlLoader.Helpers.ParseSchema(@"type a implements b { } interface b { }", invertNonNull: true);
@@ -225,7 +253,8 @@ namespace GeneratedProject {
         }
 
         // [Property(MaxTest = 2000, EndSize = 10_000)]
-        [Property]
+        // [Property]
+        [Property(Replay = "(802755643,296687915)")]
         public void GenerateArbitrarySchema(DataSchema schema)
         {
             // var schema = new DataSchema(Enumerable.Empty<Entity>(), new [] { typeDef });

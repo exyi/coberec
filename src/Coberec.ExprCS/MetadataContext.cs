@@ -86,11 +86,6 @@ namespace Coberec.ExprCS
         internal void RegisterEntity(MemberDef member, IEntity entity)
         {
             declaredEntities.Add(member.Signature, entity);
-            if (member is TypeDef type)
-            {
-                this.definedTypes.Add(type.Signature, type);
-                this.definedTypeNames.Add(type.Signature.GetFullTypeName(), type);
-            }
             SymbolLoader.RegisterDeclaredEntity(entity, member.Signature);
         }
 
@@ -107,13 +102,14 @@ namespace Coberec.ExprCS
         /// <summary> Finds ILSpy's ITypeDefinition based on ExprCS TypeSignature. The ITypeDefinition has access to the module contents, so it's much stronger than TypeSignature. </summary>
         internal ITypeDefinition GetTypeDef(TypeSignature type) =>
             (ITypeDefinition)declaredEntities.GetValueOrDefault(type) ??
+           (definedTypes.ContainsKey(type) ? throw new Exception($"Type {type} has been added to MetadataContext, but it hasn't been comited, so the ILSpy metadata can not be obtained.") :
             type.Parent.Match(
                 ns => GetNamespace(ns.Item).GetTypeDefinition(type.Name, type.TypeParameters.Length) ?? throw new InvalidOperationException($"Type {type.GetFullTypeName()} could not be found, namespace {ns.Item} does not exist"),
                 parentType => GetTypeDef(parentType.Item)
                               .GetNestedTypes(t => t.Name == type.Name && t.TypeParameterCount == type.TypeParameters.Length)
                               .SingleOrDefault()
                               ?.GetDefinition() ?? throw new Exception($"Nested type {type} does not exist on {parentType.Item}`")
-            );
+            ));
 
         /// <summary> Finds a type signature by a <paramref name="name" />. Will only look for type definitions (e.g. <see cref="String" />), not type references (<see cref="T:String[]" /> or <see cref="List{String}" />). </summary>
         public TypeSignature TryFindTypeDef(string name)
@@ -185,26 +181,32 @@ namespace Coberec.ExprCS
 
         /// <summary> Lists all method signatures of the specified <paramref name="type" />. Only includes the methods declared in this type, not the inherited ones. </summary>
         public IEnumerable<MethodSignature> GetMemberMethodDefs(TypeSignature type) =>
+            this.definedTypes.GetValueOrDefault(type)?.Members.OfType<MethodDef>().Select(m => m.Signature) ??
             GetTypeDef(type).GetMethods(null, GetMemberOptions.IgnoreInheritedMembers).Select(SymbolLoader.Method);
 
         /// <summary> Lists all method signatures of the specified <paramref name="type" /> with specified <paramref name="name" />. Only includes the methods declared in this type, not the inherited ones. </summary>
         public IEnumerable<MethodSignature> GetMemberMethodDefs(TypeSignature type, string name) =>
+            this.definedTypes.GetValueOrDefault(type)?.Members.OfType<MethodDef>().Where(m => m.Signature.Name == name).Select(m => m.Signature) ??
             GetTypeDef(type).GetMethods(m => m.Name == name, GetMemberOptions.IgnoreInheritedMembers).Select(SymbolLoader.Method);
 
         /// <summary> Lists all field signatures of the specified <paramref name="type" />. Only includes the fields declared in this type, not the inherited ones. </summary>
         public IEnumerable<FieldSignature> GetMemberFieldDefs(TypeSignature type) =>
+            this.definedTypes.GetValueOrDefault(type)?.Members.OfType<FieldDef>().Select(m => m.Signature) ??
             GetTypeDef(type).GetFields(null, GetMemberOptions.IgnoreInheritedMembers).Select(SymbolLoader.Field);
 
         /// <summary> Gets the member field of the specified <paramref name="type" /> with specified <paramref name="name" />. Only includes the fields declared in this type, not the inherited ones. </summary>
         public FieldSignature GetMemberFieldDef(TypeSignature type, string name) =>
+            this.definedTypes.TryGetValue(type, out var t) ? t.Members.OfType<FieldDef>().SingleOrDefault(m => m.Signature.Name == name)?.Signature :
             GetTypeDef(type).GetFields(f => f.Name == name, GetMemberOptions.IgnoreInheritedMembers).Select(SymbolLoader.Field).SingleOrDefault();
 
         /// <summary> Lists all property signatures of the specified <paramref name="type" />. Only includes the properties declared in this type, not the inherited ones. </summary>
         public IEnumerable<PropertySignature> GetMemberPropertyDefs(TypeSignature type) =>
+            this.definedTypes.GetValueOrDefault(type)?.Members.OfType<PropertyDef>().Select(m => m.Signature) ??
             GetTypeDef(type).GetProperties(null, GetMemberOptions.IgnoreInheritedMembers).Select(SymbolLoader.Property);
 
         /// <summary> Gets the member property signature of the specified <paramref name="type" /> with specified <paramref name="name" />. Only includes the properties declared in this type, not the inherited ones. </summary>
         public PropertySignature GetMemberPropertyDef(TypeSignature type, string name) =>
+            this.definedTypes.TryGetValue(type, out var t) ? t.Members.OfType<PropertyDef>().SingleOrDefault(m => m.Signature.Name == name)?.Signature :
             GetTypeDef(type).GetProperties(p => p.Name == name, GetMemberOptions.IgnoreInheritedMembers).Select(SymbolLoader.Property).SingleOrDefault();
 
         /// <summary> Lists all members of the specified <paramref name="type" />. Only includes the members declared in this type, not the inherited ones. </summary>
@@ -283,11 +285,13 @@ namespace Coberec.ExprCS
         /// <summary> Gets all implemented interfaces of this specific <paramref name="type" />. Does not include the transitively implemented ones from its base types. </summary>
         public IEnumerable<SpecializedType> GetDirectImplements(SpecializedType type) =>
             type.GenericParameters.Length > 0 ? throw new NotImplementedException() : // TODO
+            this.definedTypes.TryGetValue(type.Type, out var t) ? t.Implements :
             GetTypeDef(type.Type).DirectBaseTypes.Where(b => b.Kind == TypeKind.Interface).Select(SymbolLoader.TypeRef).Select(t => Assert.IsType<TypeReference.SpecializedTypeCase>(t).Item);
 
         /// <summary> Gets all base type signatures of the specified <paramref name="type" />. </summary>
         public IEnumerable<SpecializedType> GetBaseTypes(SpecializedType type) =>
             type.GenericParameters.Length > 0 ? throw new NotImplementedException() : // TODO
+            this.definedTypes.TryGetValue(type.Type, out var t) ? GetBaseTypes(t.Extends ?? TypeSignature.Object.NotGeneric()).Append(t.Extends ?? TypeSignature.Object.NotGeneric()) :
             GetTypeDef(type.Type).GetAllBaseTypes().Select(SymbolLoader.TypeRef).Select(t => Assert.IsType<TypeReference.SpecializedTypeCase>(t).Item);
 
 
@@ -323,7 +327,9 @@ namespace Coberec.ExprCS
         /// <param name="isExternal">If true, the type will not be included in the generated config. It will be however treated as already present in the code, so the generated code will be aware that it exists.</param>
         public void AddType(TypeDef type, Func<Exception, bool> errorHandler = null, bool isExternal = false)
         {
-            waitingTypes.Add((type, errorHandler, isExternal));
+            this.definedTypes.Add(type.Signature, type);
+            this.definedTypeNames.Add(type.Signature.GetFullTypeName(), type);
+            this.waitingTypes.Add((type, errorHandler, isExternal));
         }
 
         /// <summary> Generates the "real" types from the symbolic <see cref="TypeDef" />s. When this method is called, all symbols used in the metadata must be already added to the context (using <see cref="AddType(TypeDef,Action{Exception},bool)" />) </summary>

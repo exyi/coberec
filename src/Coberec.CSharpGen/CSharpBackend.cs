@@ -294,15 +294,6 @@ namespace Coberec.CSharpGen
                         )
                     ).ToArray();
 
-                    foreach (var (ifcProp, myProp, ifcRealProp) in interfaceFields)
-                    {
-                        if (myProp.prop == null ||
-                            myProp.prop.Signature.Name != ifcRealProp.Signature.Name || // TODO: ASAP migrate to ExprCS. This logic should disappear
-                            myProp.prop.Signature.Type != ifcRealProp.Signature.Type)
-                            // add explicit implementation if needed
-                            vtype.AddExplicitInterfaceProperty(E.MetadataDefiner.GetProperty(cx.Metadata, ifcRealProp.Signature), E.MetadataDefiner.GetProperty(cx.Metadata, myProp.prop.Signature));
-                    }
-
                     if (i.mapping.GetSymbol("With") is string withMethodName)
                     {
                         var ifcWithMethod = i.type.Members.OfType<E.MethodDef>().Where(m => m.Signature.Name == withMethodName).Single();

@@ -168,7 +168,7 @@ namespace Coberec.CSharpGen.Emit
                 if (member.ResultType().IsNullableValueType())
                     return ExpressionFactory.Nullable_HasValue(fieldExpr);
                 else if (member.ResultType().IsReferenceType == true)
-                    return Expression.Binary("==", fieldExpr.Box(), Expression.Constant<object>(null));
+                    return Expression.Binary("!=", fieldExpr.Box(), Expression.Constant<object>(null));
                 else return null;
             }
 

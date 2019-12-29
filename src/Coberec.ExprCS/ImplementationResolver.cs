@@ -24,7 +24,6 @@ namespace Coberec.ExprCS
             var methods = baseTypes.Concat(interfaces).ZipSelectMany(t => cx.GetMemberMethodDefs(t.Type).Where(m => !explicitImplMethods.Contains(m))).ToLookup(m => m.Item2.Name);
             var properties = baseTypes.Concat(interfaces).ZipSelectMany(t => cx.GetMemberPropertyDefs(t.Type).Where(p => !explicitImplProps.Contains(p))).ToLookup(p => p.Item2.Name);
 
-
             var myMembers = type.Members.Select(member => {
                 // implementations must be public
                 if (member is MethodDef method && methods.Contains(method.Signature.Name))

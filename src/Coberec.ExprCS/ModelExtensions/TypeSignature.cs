@@ -138,7 +138,7 @@ namespace Coberec.ExprCS
             if (this.IsAbstract && !this.CanOverride) sb.Append("static ");
             else
             {
-                if (this.IsAbstract) sb.Append("abstract ");
+                if (this.Kind != "interface" && this.IsAbstract) sb.Append("abstract ");
                 if (this.Kind == "class" && !this.CanOverride) sb.Append("sealed ");
             }
             if (this.Kind != "class") sb.Append(this.Kind).Append(" ");

@@ -16,9 +16,9 @@ namespace Coberec.ExprCS
             desiredName = NameSanitizer.SanitizeTypeName(desiredName);
             var ns = compilation.RootNamespace.FindDescendantNamespace(@namespace);
 
-            if (ns == null) return desiredName; // there will be no collision
-
-            var existingNames = new HashSet<string>(ns.Types.Where(t => t.TypeArguments.Count == genericArgCount).Select(t => t.Name).Concat(ns.ChildNamespaces.Select(t => t.Name)), StringComparer.InvariantCultureIgnoreCase);
+            var existingNames =
+                ns == null ? new HashSet<string>() :
+                new HashSet<string>(ns.Types.Where(t => t.TypeArguments.Count == genericArgCount).Select(t => t.Name).Concat(ns.ChildNamespaces.Select(t => t.Name)), StringComparer.InvariantCultureIgnoreCase);
             existingNames.UnionWith(blacklist ?? Enumerable.Empty<string>());
 
             if (!existingNames.Contains(desiredName)) return desiredName;
@@ -150,9 +150,9 @@ namespace Coberec.ExprCS
             foreach (var m in type.Members.Where(m => IsSpecial(m.Signature)))
             {
                 // don't sanitize nor avoid collisions
-                // just replace <oldName> with <newName>
+                // just replace <oldName> with <newName> for property names
                 var name = m.Signature.Name;
-                foreach (var m2 in type.Members)
+                foreach (var m2 in type.Members.OfType<PropertyDef>())
                 {
                     if (!IsSpecial(m2.Signature))
                         name = name.Replace("<" + m2.Signature.Name + ">", "<" + result[m2.Signature] + ">");

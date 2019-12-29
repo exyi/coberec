@@ -12,7 +12,7 @@ namespace Coberec.ExprCS.Tests
     {
         public static void AddTestExpr(this MetadataContext cx, Expression expr, params ParameterExpression[] parameters)
         {
-            var typeCount = cx.DefinedTypes.Count + cx.WaitingTypes.Count();
+            var typeCount = cx.DefinedTypes.Count;
             var name = typeCount < 15 ? ((char)('C' + typeCount)).ToString() : "C" + typeCount;
             var ns = ((TypeOrNamespace.NamespaceSignatureCase)cx.DefinedTypes.FirstOrDefault()?.Signature.Parent)?.Item ??
                     new NamespaceSignature("NS", NamespaceSignature.Global);
