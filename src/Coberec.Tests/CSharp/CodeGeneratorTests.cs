@@ -207,6 +207,23 @@ namespace GeneratedProject {
         }
 
         [Fact]
+        public void InterfacePropertyNameCollision()
+        {
+            // interface property name collides with the implementing type name
+            var schema = GraphqlLoader.Helpers.ParseSchema(@"
+type a  implements b {
+    a: String,
+}
+interface b {
+    a: String,
+}
+", invertNonNull: true);
+            var result = CSharpBackend.Build(schema, DefaultSettings);
+            CheckItCompiles(result);
+            check.CheckString(result, fileExtension: "cs");
+        }
+
+        [Fact]
         public void DifferentOrderInterface()
         {
             var schema = GraphqlLoader.Helpers.ParseSchema(@"type a implements b { } interface b { }", invertNonNull: true);
@@ -253,8 +270,8 @@ namespace GeneratedProject {
         }
 
         // [Property(MaxTest = 2000, EndSize = 10_000)]
-        // [Property]
-        [Property(Replay = "(802755643,296687915)")]
+        [Property]
+        // [Property(Replay = "(802755643,296687915)")]
         public void GenerateArbitrarySchema(DataSchema schema)
         {
             // var schema = new DataSchema(Enumerable.Empty<Entity>(), new [] { typeDef });

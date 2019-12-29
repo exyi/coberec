@@ -178,7 +178,7 @@ namespace Coberec.ExprCS
                 defaultValue: p.HasDefaultValue ? p.DefaultValue : null
             );
 
-        internal static VirtualMethod CreateMethodDefinition(MetadataContext cx, MethodDef m, string name, bool isHidden = false)
+        internal static VirtualMethod CreateMethodDefinition(MetadataContext cx, MethodDef m, string name, bool isHidden = false, bool sneaky = false)
         {
             var sgn = m.Signature;
             var declType = cx.GetTypeDef(sgn.DeclaringType);
@@ -202,15 +202,54 @@ namespace Coberec.ExprCS
                 sgn.IsAbstract,
                 sgn.IsStatic,
                 isHidden,
-                sgn.TypeParameters.Select<GenericParameter, ITypeParameter>(a => throw new NotImplementedException()).ToArray(),
-                explicitImplementations:
-                    m.Implements
-                    .Where(i => i.Signature.DeclaringType.Kind == "interface")
-                    .Select(cx.GetMethod)
-                    .Where(m => m.Name != name)
+                sgn.TypeParameters.Select<GenericParameter, ITypeParameter>(a => throw new NotImplementedException()).ToArray()
             )
-            .ApplyAction(mm => cx.RegisterEntity(m, mm));
+            .ApplyAction(mm => { if (!sneaky) cx.RegisterEntity(m, mm); });
+        }
 
+        internal static void AddExplicitImplementations(VirtualType type, MetadataContext cx, MethodDef method, string name)
+        {
+            var implements = method.Implements
+                .Where(i => i.Signature.DeclaringType.Kind == "interface")
+                .Select(cx.GetMethod)
+                .Where(m => m.Name != name || method.Signature.Accessibility == Accessibility.APrivate)
+                .ToArray();
+            foreach (var i in implements)
+            {
+                var m2 = new VirtualMethod(type, TS.Accessibility.Private, i.DeclaringType.FullName + "." + i.Name, i.Parameters, i.ReturnType, typeParameters: i.TypeParameters.ToArray(), explicitImplementations: new IMember[] { i });
+                var m2_def = MethodDef.CreateWithArray(method.Signature, args => ((Expression)args[0]).CallMethod(method.Signature, args.Skip(1).Select(Expression.Parameter)));
+                m2.BodyFactory = CreateBodyFactory(m2, m2_def, cx);
+                type.Methods.Add(m2);
+            }
+        }
+
+        internal static void AddExplicitImplementations(VirtualType type, MetadataContext cx, PropertyDef property, string name)
+        {
+            var implements = property.Implements
+                .Where(i => i.Signature.DeclaringType.Kind == "interface")
+                .Select(cx.GetProperty)
+                .Where(p => p.Name != name || property.Signature.Accessibility == Accessibility.APrivate)
+                .ToArray();
+            foreach (var i in implements)
+            {
+                var getter = property.Getter?.Apply(m => CreateMethodDefinition(cx, m.With(signature: m.Signature.With(accessibility: Accessibility.APrivate)), i.DeclaringType.FullName + "." + "get_" + name, isHidden: true, sneaky: true));
+                var setter = property.Setter?.Apply(m => CreateMethodDefinition(cx, m.With(signature: m.Signature.With(accessibility: Accessibility.APrivate)), i.DeclaringType.FullName + "." + "set_" + name, isHidden: true, sneaky: true));
+                var p2 = new VirtualProperty(type, TS.Accessibility.Private, i.DeclaringType.FullName + "." + i.Name, getter, setter, explicitImplementations: new IMember[] { i });
+
+                if (getter is object)
+                {
+                    type.Methods.Add(getter);
+                    var g_def = MethodDef.CreateWithArray(property.Getter.Signature, args => ((Expression)args[0]).CallMethod(property.Getter.Signature, args.Skip(1).Select(Expression.Parameter)));
+                    getter.BodyFactory = CreateBodyFactory(getter, g_def, cx);
+                }
+                if (setter is object)
+                {
+                    type.Methods.Add(setter);
+                    var g_def = MethodDef.CreateWithArray(property.Setter.Signature, args => ((Expression)args[0]).CallMethod(property.Setter.Signature, args.Skip(1).Select(Expression.Parameter)));
+                    setter.BodyFactory = CreateBodyFactory(setter, g_def, cx);
+                }
+                type.Properties.Add(p2);
+            }
         }
 
         internal static (VirtualProperty, VirtualMethod, VirtualMethod) CreatePropertyDefinition(MetadataContext cx, PropertyDef property, string name)
@@ -243,12 +282,7 @@ namespace Coberec.ExprCS
                 mSgn.IsOverride,
                 sgn.IsStatic,
                 mSgn.IsAbstract,
-                !mSgn.IsVirtual && mSgn.IsOverride,
-                explicitImplementations:
-                    property.Implements
-                    .Where(i => i.Signature.DeclaringType.Kind == "interface")
-                    .Select(cx.GetProperty)
-                    .Where(p => p.Name != name)
+                !mSgn.IsVirtual && mSgn.IsOverride
             );
             cx.RegisterEntity(property, prop);
             return (prop, getter, setter);
@@ -328,6 +362,8 @@ namespace Coberec.ExprCS
                     var d = CreateMethodDefinition(cx, method, name);
                     type.Methods.Add(d);
                     d.BodyFactory = isHidden ? null : CreateBodyFactory(d, method, cx);
+
+                    AddExplicitImplementations(type, cx, method, name);
                 }
                 else if (member is TypeDef typeMember)
                 {
@@ -351,6 +387,8 @@ namespace Coberec.ExprCS
                         getter.BodyFactory = isHidden ? null : CreateBodyFactory(getter, prop.Getter, cx);
                     if (setter != null)
                         setter.BodyFactory = isHidden ? null : CreateBodyFactory(setter, prop.Setter, cx);
+
+                    AddExplicitImplementations(type, cx, prop, name);
                 }
                 else throw new NotImplementedException($"Member '{member}' of type '{member.GetType().Name}'");
             }

@@ -20,7 +20,10 @@ namespace Coberec.ExprCS
 
 
         /// <summary> Calls the specified instance method on the <paramref name="target" />. Can be also used to call extension methods </summary>
+        public static Expression CallMethod(this Expression target, MethodReference method, IEnumerable<Expression> args) =>
+            CallMethod(target, method, args.ToArray());
         public static Expression CallMethod(this Expression target, MethodReference method, params Expression[] args)
+        /// <summary> Calls the specified instance method on the <paramref name="target" />. Can be also used to call extension methods </summary>
         {
             if (method.Signature.IsStatic)
                 // probably extension method
