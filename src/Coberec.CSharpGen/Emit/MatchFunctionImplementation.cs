@@ -3,50 +3,45 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
-using ICSharpCode.Decompiler.TypeSystem;
-using ICSharpCode.Decompiler.TypeSystem.Implementation;
+using TS=ICSharpCode.Decompiler.TypeSystem;
 using Coberec.CoreLib;
 using Coberec.CSharpGen.TypeSystem;
 using IL=ICSharpCode.Decompiler.IL;
-using static Coberec.CSharpGen.Emit.EmitExtensions;
-using System.Reflection.Metadata;
 using E=Coberec.ExprCS;
+using Coberec.ExprCS;
 
 namespace Coberec.CSharpGen.Emit
 {
     public static class MatchFunctionImplementation
     {
-        public static IMethod ImplementMatchBase(this VirtualType type, (IType caseType, string caseName)[] cases)
+        static PropertySignature GetItemProperty(TypeDef caseType) =>
+            caseType.Members.OfType<PropertyDef>().Single(m => m.Signature.Name == "Item").Signature;
+        public static MethodDef ImplementMatchBase(TypeSignature declaringType, (TypeDef caseType, string caseName)[] cases)
         {
-            var genericParameter = new DefaultTypeParameter(type, 0, "TResult");
-            var func = type.Compilation.FindType(typeof(Func<,>));
-            IType makeArgType(IType caseType) => new ParameterizedType(func, new [] { caseType, genericParameter });
+            var genericParameter = new GenericParameter(Guid.NewGuid(), "T");
+            var func = TypeSignature.FromType(typeof(Func<,>));
+            TypeReference makeArgType(TypeDef caseType) => func.Specialize(GetItemProperty(caseType).Type, genericParameter);
 
-            var parameters = E.SymbolNamer.NameParameters(cases.Select(c => new VirtualParameter(makeArgType(c.caseType), c.caseName)));
-            var methodName = E.SymbolNamer.NameMethod(type, "Match", 1, parameters, false);
-            var method = new VirtualMethod(type, Accessibility.Public, methodName, parameters, genericParameter, isVirtual: true, isAbstract: true, typeParameters: new [] { genericParameter });
+            var parameters = cases.Select(c => new MethodParameter(makeArgType(c.caseType), c.caseName));
+            var method = new MethodSignature(declaringType, parameters.ToImmutableArray(), "Match", genericParameter, isStatic: false, Accessibility.APublic, isVirtual: true, isOverride: false, isAbstract: true, hasSpecialName: false, typeParameters: ImmutableArray.Create(genericParameter));
 
-            type.Methods.Add(method);
-            return method;
+            return MethodDef.InterfaceDef(method);
         }
 
-        public static IMethod ImplementMatchCase(this VirtualType type, IMethod baseMethod, int caseIndex)
+        public static MethodDef ImplementMatchCase(TypeDef caseType, MethodSignature baseMethod, int caseIndex)
         {
-            var caseP = baseMethod.Parameters[caseIndex];
+            var caseP = baseMethod.Params[caseIndex];
 
-            var method = new VirtualMethod(type, Accessibility.Public, baseMethod.Name, baseMethod.Parameters, baseMethod.ReturnType, isOverride: true, typeParameters: baseMethod.TypeParameters.ToArray());
+            var method = MethodSignature.Override(caseType.Signature, baseMethod);
 
-            method.BodyFactory = () => {
-                var thisParam = new IL.ILVariable(IL.VariableKind.Parameter, type, -1);
-                var funcParam = new IL.ILVariable(IL.VariableKind.Parameter, caseP.Type, caseIndex);
-                var invokeMethod = funcParam.Type.GetMethods(m => m.Parameters.Count == 1 && m.Name == "Invoke").Single();
-                return CreateExpressionFunction(method,
-                    new IL.CallVirt(invokeMethod) { Arguments = { new IL.LdLoc(funcParam), new IL.LdLoc(thisParam) } }
-                );
-            };
+            return MethodDef.CreateWithArray(method, args => {
+                Expression @this = args[0];
+                Expression myFunc = args[caseIndex + 1];
+                var itemProperty = GetItemProperty(caseType);
+                var function = Expression.FunctionConversion(myFunc, TypeReference.FunctionType(ImmutableArray.Create(new MethodParameter(itemProperty.Type, "arg")), method.TypeParameters.Single()));
 
-            type.Methods.Add(method);
-            return method;
+                return function.Invoke(@this.ReadProperty(itemProperty));
+            });
         }
     }
 }

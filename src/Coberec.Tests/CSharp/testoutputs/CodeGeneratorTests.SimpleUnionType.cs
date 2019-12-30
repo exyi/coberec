@@ -86,6 +86,11 @@ namespace GeneratedProject.ModelNamespace
 				Item = item;
 			}
 
+			public override T Match<T>(Func<Test123, T> test123, Func<string, T> @string)
+			{
+				return test123(Item);
+			}
+
 			public override int GetHashCode()
 			{
 				return Item.GetHashCode();
@@ -95,11 +100,6 @@ namespace GeneratedProject.ModelNamespace
 			{
 				Test123Case test123Case;
 				return (object)(test123Case = (b as Test123Case)) != null && Item == ((Test123Case)b).Item;
-			}
-
-			public override TResult Match<TResult>(Func<Test123Case, TResult> test123, Func<StringCase, TResult> @string)
-			{
-				return test123(this);
 			}
 		}
 
@@ -114,6 +114,11 @@ namespace GeneratedProject.ModelNamespace
 				Item = item;
 			}
 
+			public override T Match<T>(Func<Test123, T> test123, Func<string, T> @string)
+			{
+				return @string(Item);
+			}
+
 			public override int GetHashCode()
 			{
 				return Item.GetHashCode();
@@ -124,12 +129,9 @@ namespace GeneratedProject.ModelNamespace
 				StringCase stringCase;
 				return (object)(stringCase = (b as StringCase)) != null && Item == ((StringCase)b).Item;
 			}
-
-			public override TResult Match<TResult>(Func<Test123Case, TResult> test123, Func<StringCase, TResult> @string)
-			{
-				return @string(this);
-			}
 		}
+
+		public abstract T Match<T>(Func<Test123, T> test123, Func<string, T> @string);
 
 		private protected abstract bool EqualsCore(Union123 b);
 
@@ -152,8 +154,6 @@ namespace GeneratedProject.ModelNamespace
 		{
 			return Equals(b as Union123);
 		}
-
-		public abstract TResult Match<TResult>(Func<Test123Case, TResult> test123, Func<StringCase, TResult> @string);
 
 		public static Union123 Test123(Test123 item)
 		{

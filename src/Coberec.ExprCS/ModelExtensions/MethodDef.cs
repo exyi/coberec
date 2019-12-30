@@ -29,6 +29,8 @@ namespace Coberec.ExprCS
                 args = args.Prepend(ParameterExpression.CreateThisParam(signature.DeclaringType));
             var argsA = args.ToImmutableArray();
             var bodyExpr = body(argsA);
+            if (bodyExpr is object)
+                Assert.Equal(signature.ResultType, bodyExpr.Type());
             return new MethodDef(signature, argsA, bodyExpr);
         }
 
@@ -45,10 +47,12 @@ namespace Coberec.ExprCS
         public static MethodDef Create(MethodSignature signature, Func<ParameterExpression, ParameterExpression, ParameterExpression, Expression> body) =>
             CreateWithArray(signature, args => { Assert.Equal(3, args.Length); return body(args[0], args[1], args[2]); });
 
-        /// <summary> Creates an empty method definition. Useful when declaring an interface. </summary>
+        /// <summary> Creates an empty method definition. Useful when declaring an interface or an abstract method. </summary>
         public static MethodDef InterfaceDef(MethodSignature signature)
         {
-            Assert.Equal("interface", signature.DeclaringType.Kind);
+            if ("interface" != signature.DeclaringType.Kind &&
+                !signature.IsAbstract)
+                throw new ArgumentException($"InterfaceDef can only be used interface or abstract methods.");
             return CreateWithArray(signature, _ => null);
         }
     }

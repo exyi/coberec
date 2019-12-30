@@ -98,6 +98,8 @@ namespace Coberec.ExprCS
         public static GenericParameter GenericParameter(ITypeParameter parameter) =>
             typeParameterCache.GetValue(parameter, p => ExprCS.GenericParameter.Get(parameter.Owner, parameter.Name));
 
+        internal static void RegisterTypeParameter(ITypeParameter p1, GenericParameter p2) =>
+            typeParameterCache.Add(p1, p2);
 
         public static Accessibility TranslateAccessibility(TS.Accessibility a) =>
             a == TS.Accessibility.Internal ? Accessibility.AInternal :
@@ -127,6 +129,7 @@ namespace Coberec.ExprCS
             );
 
         public static TypeReference TypeRef(IType type) =>
+            type is TS.Implementation.NullabilityAnnotatedType decoratedType ? TypeRef(decoratedType.TypeWithoutAnnotation) :
             type is ITypeDefinition td ? TypeReference.SpecializedType(Type(td), ImmutableArray<TypeReference>.Empty) :
             type is TS.ByReferenceType refType ? TypeReference.ByReferenceType(TypeRef(refType.ElementType)) :
             type is TS.PointerType ptrType ? TypeReference.PointerType(TypeRef(ptrType.ElementType)) :
@@ -135,7 +138,6 @@ namespace Coberec.ExprCS
                                                          Type(paramType.GenericType.GetDefinition()),
                                                          paramType.TypeArguments.Select(TypeRef).ToImmutableArray()) :
             type is TS.ITypeParameter typeParam ? TypeReference.GenericParameter(GenericParameter(typeParam)) :
-            type is TS.Implementation.NullabilityAnnotatedType decoratedType ? TypeRef(decoratedType.TypeWithoutAnnotation) :
             throw new NotImplementedException($"Type reference '{type}' of type '{type.GetType().Name}' is not supported.");
 
     }

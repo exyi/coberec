@@ -82,6 +82,8 @@ namespace Coberec.ExprCS
         public IReadOnlyCollection<TypeDef> DefinedTypes => definedTypes.Values;
         private Dictionary<FullTypeName, TypeDef> definedTypeNames = new Dictionary<FullTypeName, TypeDef>();
 
+        internal GenericParameterStore GenericParameterStore { get; } = new GenericParameterStore();
+
         /// <summary> Adds a new entity into <see cref="DeclaredEntities" />. </summary>
         internal void RegisterEntity(MemberDef member, IEntity entity)
         {

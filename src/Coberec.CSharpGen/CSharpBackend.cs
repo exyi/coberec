@@ -352,12 +352,20 @@ namespace Coberec.CSharpGen
                 return (index, schema, caseName, caseType: def.AddMember(caseCtor, field, prop), caseCtor);
             }).ToArray();
 
+            var baseMatch = MatchFunctionImplementation.ImplementMatchBase(
+                type, cases.Select(c => (c.caseType, c.caseName)).ToArray());
+            result = result.AddMember(baseMatch);
+
+            for (int i = 0; i < cases.Length; i++)
+            {
+                var caseMatch = MatchFunctionImplementation.ImplementMatchCase(cases[i].caseType, baseMatch.Signature, i);
+                cases[i].caseType = cases[i].caseType.AddMember(caseMatch);
+            }
+
             result = result.AddMember(cases.Select(c => c.caseType).ToArray());
 
             cx.Metadata.RegisterTypeMod(type, _ => { }, vtype => {
                 var (abstractEqCore, _) = vtype.ImplementEqualityForBase();
-
-                var baseMatch = vtype.ImplementMatchBase(cases.Select(c => ((IType)E.MetadataDefiner.GetTypeReference(cx.Metadata, c.caseType.Signature), c.caseName)).ToArray());
 
                 var caseCtors = new List<IMethod>();
 
@@ -365,17 +373,11 @@ namespace Coberec.CSharpGen
                 {
                     var caseType_ = (VirtualType)E.MetadataDefiner.GetTypeReference(cx.Metadata, caseType.Signature);
                     var caseCtor_ = E.MetadataDefiner.GetMethod(cx.Metadata, caseCtor.Signature);
-                    var valueType = FindType(schema);
-
-                    // var sealMethod = new VirtualMethod(caseType, Accessibility.ProtectedAndInternal, sealMethodName, new IParameter[0], cx.FindType(typeof(void)), isOverride: true);
-                    // sealMethod.BodyFactory = () => EmitExtensions.CreateOneBlockFunction(sealMethod);
-                    // caseType.Methods.Add(sealMethod);
 
                     var valueProperty = caseType_.Properties.Single();
                     caseCtors.Add(caseCtor_);
 
                     caseType_.ImplementEqualityForCase(abstractEqCore, valueProperty);
-                    caseType_.ImplementMatchCase(baseMatch, index);
 
                     vtype.ImplementBasicCaseFactory(caseName, caseCtor_);
                     vtype.TryImplementForwardingCaseFactory(caseName, caseCtor_); // TODO: configurable

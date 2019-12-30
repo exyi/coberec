@@ -18,12 +18,16 @@ namespace Coberec.ExprCS
         public static Expression ToBlock(this IEnumerable<Expression> expressions, Expression result = null) =>
             Expression.Block(expressions.ToImmutableArray(), result ?? Expression.Nop);
 
+        /// <summary> Calls the getter of the specified <paramref name="property" /> </summary>
+        public static Expression ReadProperty(this Expression target, PropertyReference property) =>
+            Expression.MethodCall(property.Getter(), ImmutableArray<Expression>.Empty, target);
 
         /// <summary> Calls the specified instance method on the <paramref name="target" />. Can be also used to call extension methods </summary>
         public static Expression CallMethod(this Expression target, MethodReference method, IEnumerable<Expression> args) =>
             CallMethod(target, method, args.ToArray());
-        public static Expression CallMethod(this Expression target, MethodReference method, params Expression[] args)
+
         /// <summary> Calls the specified instance method on the <paramref name="target" />. Can be also used to call extension methods </summary>
+        public static Expression CallMethod(this Expression target, MethodReference method, params Expression[] args)
         {
             if (method.Signature.IsStatic)
                 // probably extension method
@@ -46,5 +50,10 @@ namespace Coberec.ExprCS
         /// <summary> Creates a reference conversion of <paramref name="value" /> to <see cref="System.Object" /> </summary>
         public static Expression Box(this Expression value) =>
             Expression.ReferenceConversion(value, TypeSignature.Object);
+
+        public static Expression Invoke(this Expression function, params Expression[] args)
+        {
+            return Expression.Invoke(function, args.ToImmutableArray());
+        }
     }
 }

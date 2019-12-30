@@ -15,6 +15,11 @@ namespace GeneratedProject.ModelNamespace
 				Item = item;
 			}
 
+			public override T Match<T>(Func<string, T> constant, Func<string, T> constantExpression)
+			{
+				return constant(Item);
+			}
+
 			public override int GetHashCode()
 			{
 				return Item.GetHashCode();
@@ -24,11 +29,6 @@ namespace GeneratedProject.ModelNamespace
 			{
 				ConstantCase constantCase;
 				return (object)(constantCase = (b as ConstantCase)) != null && Item == ((ConstantCase)b).Item;
-			}
-
-			public override TResult Match<TResult>(Func<ConstantCase, TResult> constant, Func<ConstantExpressionCase, TResult> constantExpression)
-			{
-				return constant(this);
 			}
 		}
 
@@ -43,6 +43,11 @@ namespace GeneratedProject.ModelNamespace
 				Item = item;
 			}
 
+			public override T Match<T>(Func<string, T> constant, Func<string, T> constantExpression)
+			{
+				return constantExpression(Item);
+			}
+
 			public override int GetHashCode()
 			{
 				return Item.GetHashCode();
@@ -53,12 +58,9 @@ namespace GeneratedProject.ModelNamespace
 				ConstantExpressionCase constantExpressionCase;
 				return (object)(constantExpressionCase = (b as ConstantExpressionCase)) != null && Item == ((ConstantExpressionCase)b).Item;
 			}
-
-			public override TResult Match<TResult>(Func<ConstantCase, TResult> constant, Func<ConstantExpressionCase, TResult> constantExpression)
-			{
-				return constantExpression(this);
-			}
 		}
+
+		public abstract T Match<T>(Func<string, T> constant, Func<string, T> constantExpression);
 
 		private protected abstract bool EqualsCore(Expression b);
 
@@ -81,8 +83,6 @@ namespace GeneratedProject.ModelNamespace
 		{
 			return Equals(b as Expression);
 		}
-
-		public abstract TResult Match<TResult>(Func<ConstantCase, TResult> constant, Func<ConstantExpressionCase, TResult> constantExpression);
 
 		public static Expression Constant(string item)
 		{

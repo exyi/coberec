@@ -29,6 +29,18 @@ namespace Coberec.ExprCS
         public static MethodSignature Instance(string name, TypeSignature declaringType, Accessibility accessibility, TypeReference returnType, params MethodParameter[] parameters) =>
             new MethodSignature(declaringType, parameters.ToImmutableArray(), name, returnType, isStatic: false, accessibility, isVirtual: false, isOverride: false, isAbstract: false, hasSpecialName: false, ImmutableArray<GenericParameter>.Empty);
 
+        /// <summary> Creates new instance abstract method signature. It is not override, but you can apply `.With(isOverride: true)` to the result to make it. </summary>
+        public static MethodSignature Abstract(string name, TypeSignature declaringType, Accessibility accessibility, TypeReference returnType, params MethodParameter[] parameters) =>
+            new MethodSignature(declaringType, parameters.ToImmutableArray(), name, returnType, isStatic: false, accessibility, isVirtual: true, isOverride: false, isAbstract: true, hasSpecialName: false, ImmutableArray<GenericParameter>.Empty);
+
+        public static MethodSignature Override(TypeSignature declaringType, MethodSignature overridenMethod, bool isVirtual = true, bool isAbstract = false)
+        {
+            var newTypeParams = overridenMethod.TypeParameters.EagerSelect(tp => new GenericParameter(Guid.NewGuid(), tp.Name));
+            var resultType = overridenMethod.ResultType.SubstituteGenerics(overridenMethod.TypeParameters, newTypeParams.EagerSelect(TypeReference.GenericParameter));
+            var @params = overridenMethod.Params.EagerSelect(p => p.SubstituteGenerics(overridenMethod.TypeParameters, newTypeParams.EagerSelect(TypeReference.GenericParameter)));
+
+            return new MethodSignature(declaringType, @params, overridenMethod.Name, resultType, false, overridenMethod.Accessibility, isVirtual, true, isAbstract, overridenMethod.HasSpecialName, newTypeParams);
+        }
 
         /// <summary> Fills in the generic parameters. </summary>
         public MethodReference Specialize(IEnumerable<TypeReference> typeArgs, IEnumerable<TypeReference> methodArgs) =>

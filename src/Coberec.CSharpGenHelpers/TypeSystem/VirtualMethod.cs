@@ -15,7 +15,7 @@ namespace Coberec.CSharpGen.TypeSystem
 
     public sealed class VirtualMethod : IMethod, IMethodWithDefinition, IHideableMember
     {
-        public VirtualMethod(ITypeDefinition declaringType, Accessibility accessibility, string name, IReadOnlyList<IParameter> parameters, IType returnType, bool isOverride = false, bool isVirtual = false, bool isSealed = false, bool isAbstract = false, bool isStatic = false, bool isHidden = false, ITypeParameter[] typeParameters = null, IEnumerable<IMember> explicitImplementations = null)
+        public VirtualMethod(ITypeDefinition declaringType, Accessibility accessibility, string name, IReadOnlyList<IParameter> parameters, IType returnType, bool isOverride = false, bool isVirtual = false, bool isSealed = false, bool isAbstract = false, bool isStatic = false, bool isHidden = false, IEnumerable<IMember> explicitImplementations = null)
         {
             this.DeclaringTypeDefinition = declaringType ?? throw new ArgumentNullException(nameof(declaringType)); ;
             this.ReturnType = returnType ?? throw new ArgumentNullException(nameof(returnType));
@@ -28,8 +28,27 @@ namespace Coberec.CSharpGen.TypeSystem
             this.IsSealed = isSealed;
             this.IsAbstract = isAbstract;
             this.IsStatic = isStatic;
-            this.TypeParameters = typeParameters ?? Array.Empty<ITypeParameter>();
+            this.TypeParameters = Array.Empty<ITypeParameter>();
             this.ExplicitlyImplementedInterfaceMembers = explicitImplementations?.ToArray() ?? Array.Empty<IMember>();
+        }
+
+        /// generic method require dependency on the type parameters, which have dependency on its owner :/ So everything has to be lazy loaded after generic parameters are instantiated :(
+        public VirtualMethod(ITypeDefinition declaringType, Accessibility accessibility, string name, Func<IMethod, IReadOnlyList<IParameter>> parameters, Func<IMethod, IType> returnType, bool isOverride = false, bool isVirtual = false, bool isSealed = false, bool isAbstract = false, bool isStatic = false, bool isHidden = false, Func<IEntity, int, ITypeParameter>[] typeParameters = null, IEnumerable<IMember> explicitImplementations = null)
+        {
+            this.DeclaringTypeDefinition = declaringType ?? throw new ArgumentNullException(nameof(declaringType)); ;
+            this.Name = name ?? throw new ArgumentNullException(nameof(name));
+            this.Accessibility = accessibility;
+            this.IsHidden = isHidden;
+            this.IsOverride = isOverride;
+            this.IsVirtual = isVirtual;
+            this.IsSealed = isSealed;
+            this.IsAbstract = isAbstract;
+            this.IsStatic = isStatic;
+            this.ExplicitlyImplementedInterfaceMembers = explicitImplementations?.ToArray() ?? Array.Empty<IMember>();
+
+            this.TypeParameters = typeParameters?.Select((t, i) => t(this, i)).ToArray() ?? Array.Empty<ITypeParameter>();
+            this.ReturnType = returnType(this) ?? throw new ArgumentNullException(nameof(returnType));
+            this.Parameters = parameters(this) ?? throw new ArgumentNullException(nameof(parameters));
         }
 
         public IReadOnlyList<ITypeParameter> TypeParameters { get; }
@@ -207,6 +226,11 @@ namespace Coberec.CSharpGen.TypeSystem
         public IMethod Specialize(TypeParameterSubstitution substitution) => SpecializedMethod.Create(this, substitution);
 
         IMember IMember.Specialize(TypeParameterSubstitution substitution) => this.Specialize(substitution);
+
+		public override string ToString()
+		{
+			return $"{DeclaringType?.ReflectionName}.{Name}";
+		}
     }
 
     public interface IHideableMember

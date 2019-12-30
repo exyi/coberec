@@ -34,6 +34,7 @@ namespace Coberec.ExprCS
         //     c.Compilation.FindType(t.GetFullTypeName()).GetDefinition() ??
         //     throw new Exception($"Could not resolve {t.GetFullTypeName()} for some reason.");
 
+
         public static TS.IType GetTypeReference(this MetadataContext c, TypeReference tref) =>
             tref.Match(
                 specializedType =>
@@ -43,7 +44,7 @@ namespace Coberec.ExprCS
                 arrayType => new TS.ArrayType(c.Compilation, GetTypeReference(c, arrayType.Item.Type), arrayType.Item.Dimensions),
                 byrefType => new TS.ByReferenceType(GetTypeReference(c, byrefType.Item.Type)),
                 pointerType => new TS.PointerType(GetTypeReference(c, pointerType.Item.Type)),
-                gParam => throw new NotSupportedException(),
+                gParam => c.GenericParameterStore.Retreive(gParam.Item),
                 function => throw new NotSupportedException($"Function types are not supported in metadata")
             );
 
@@ -182,7 +183,7 @@ namespace Coberec.ExprCS
         {
             var sgn = m.Signature;
             var declType = cx.GetTypeDef(sgn.DeclaringType);
-            var parameters = SymbolNamer.NameParameters(sgn.Params.Select(p => CreateParameter(cx, p)));
+            IParameter[] parameters() => SymbolNamer.NameParameters(sgn.Params.Select(p => CreateParameter(cx, p)));
 
             foreach (var i in m.Implements)
                 if (i.Signature.DeclaringType.Kind == "interface")
@@ -194,15 +195,15 @@ namespace Coberec.ExprCS
                 declType,
                 GetAccessibility(sgn.Accessibility),
                 name,
-                parameters,
-                GetTypeReference(cx, sgn.ResultType),
+                _ => parameters(),
+                _ => GetTypeReference(cx, sgn.ResultType),
                 sgn.IsOverride,
                 isVirtual: sgn.IsVirtual && !sgn.IsOverride,
                 isSealed: sgn.IsOverride && !sgn.IsVirtual,
                 sgn.IsAbstract,
                 sgn.IsStatic,
                 isHidden,
-                sgn.TypeParameters.Select<GenericParameter, ITypeParameter>(a => throw new NotImplementedException()).ToArray()
+                typeParameters: sgn.TypeParameters.Select<GenericParameter, Func<IEntity, int, ITypeParameter>>(p => (owner, index) => cx.GenericParameterStore.Register(p, owner, index)).ToArray()
             )
             .ApplyAction(mm => { if (!sneaky) cx.RegisterEntity(m, mm); });
         }
@@ -216,7 +217,7 @@ namespace Coberec.ExprCS
                 .ToArray();
             foreach (var i in implements)
             {
-                var m2 = new VirtualMethod(type, TS.Accessibility.Private, i.DeclaringType.FullName + "." + i.Name, i.Parameters, i.ReturnType, typeParameters: i.TypeParameters.ToArray(), explicitImplementations: new IMember[] { i });
+                var m2 = new VirtualMethod(type, TS.Accessibility.Private, i.DeclaringType.FullName + "." + i.Name, _ => i.Parameters, _ => i.ReturnType, typeParameters: i.TypeParameters.Select<ITypeParameter, Func<IEntity, int, ITypeParameter>>(p => (owner, index) => new TS.Implementation.DefaultTypeParameter(owner, index, name: p.Name)).ToArray(), explicitImplementations: new IMember[] { i });
                 var m2_def = MethodDef.CreateWithArray(method.Signature, args => ((Expression)args[0]).CallMethod(method.Signature, args.Skip(1).Select(Expression.Parameter)));
                 m2.BodyFactory = CreateBodyFactory(m2, m2_def, cx);
                 type.Methods.Add(m2);
@@ -312,12 +313,13 @@ namespace Coberec.ExprCS
 
         static Func<IL.ILFunction> CreateBodyFactory(VirtualMethod resultMethod, MethodDef method, MetadataContext cx)
         {
-            if (resultMethod.DeclaringType.Kind == TypeKind.Interface)
+            if (resultMethod.DeclaringType.Kind == TypeKind.Interface || resultMethod.IsAbstract)
             {
-                if (method.Body != null) throw new NotSupportedException($"Default interface implementation are not supported.");
+                if (method.Body != null) throw new NotSupportedException($"Interface and abstract method can not have a body (Default interface implementation are not supported). Method {method.Signature} does.");
                 return null;
             }
-            Assert.NotNull(method.Body);
+            if (method.Body is null)
+                throw new Exception($"Method {method.Signature} was expected to have body, but there is null in the MethodDef.");
 
             return () => CodeTranslation.CodeTranslator.CreateBody(method, resultMethod, cx);
         }
