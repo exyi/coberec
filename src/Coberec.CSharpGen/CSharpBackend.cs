@@ -234,7 +234,6 @@ namespace Coberec.CSharpGen
                 props.ToDictionary(p => p.schema.Name, p => p.prop.Signature.Name)
             );
 
-
             var interfaces =
                 from f in composite.Implements
                 let name = ((TypeRef.ActualTypeCase)f).TypeName
@@ -325,14 +324,21 @@ namespace Coberec.CSharpGen
 
             string name(TypeRef t) =>
                 t.Match(
-                    actual: x => x.TypeName.EndsWith(typeDef.Name) ? x.TypeName.Remove(x.TypeName.Length - typeDef.Name.Length) :
-                                x.TypeName, // TODO: document behavior
+                    actual: x => x.TypeName, // TODO: document behavior
                     nullable: x => name(x.Type),
                     list: x => name(x.Type) + "List"
                 );
+            var names = union.Options.Select(name).ToArray();
 
             var cases = union.Options.Select((schema, index) => {
-                var caseName = name(schema);
+                var caseName = names[index];
+
+                if (caseName.EndsWith(typeDef.Name))
+                {
+                    var trimmedName = caseName.Remove(caseName.Length - typeDef.Name.Length);
+                    if (!names.Contains(trimmedName))
+                        caseName = trimmedName;
+                }
 
                 var caseType = E.TypeSignature.SealedClass(
                     caseName + "Case",

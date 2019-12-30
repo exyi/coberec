@@ -224,6 +224,17 @@ interface b {
         }
 
         [Fact]
+        public void UnionNameTrimmingCollision()
+        {
+            var schema = GraphqlLoader.Helpers.ParseSchema(@"
+union Expression = Constant | ConstantExpression
+", invertNonNull: true);
+            var result = CSharpBackend.Build(schema, DefaultSettings);
+            CheckItCompiles(result);
+            check.CheckString(result, fileExtension: "cs");
+        }
+
+        [Fact]
         public void DifferentOrderInterface()
         {
             var schema = GraphqlLoader.Helpers.ParseSchema(@"type a implements b { } interface b { }", invertNonNull: true);
