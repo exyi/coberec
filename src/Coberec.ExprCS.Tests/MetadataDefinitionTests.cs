@@ -48,24 +48,28 @@ namespace Coberec.ExprCS.Tests
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void IEquatableImplementation(bool isStruct)
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        [InlineData(true, true)]
+        [InlineData(false, true)]
+        public void IEquatableImplementation(bool isStruct, bool isExplicit)
         {
             var ns = NamespaceSignature.Parse("MyNamespace");
             var type = isStruct ? TypeSignature.Struct("MyType", ns, Accessibility.APublic)
                                 : TypeSignature.Class("MyType", ns, Accessibility.APublic);
-            var iequatableT = TypeSignature.FromType(typeof(IEquatable<>));
-            var method = new MethodSignature(type, ImmutableArray.Create(new MethodParameter(type, "obj")), "Equals", TypeReference.FromType(typeof(bool)), false, Accessibility.APublic, false, false, false, false, ImmutableArray<GenericParameter>.Empty);
-            var methodDef = MethodDef.Create(method, (_thisP, _objP) => new ConstantExpression(true, TypeReference.FromType(typeof(bool))));
+            var iequatableT = TypeSignature.FromType(typeof(IEquatable<>)).Specialize(type);
+            var interfaceMethod = cx.GetMemberMethods(iequatableT, "Equals").Single();
+            var method = new MethodSignature(type, ImmutableArray.Create(new MethodParameter(type, "obj")), "Equals", TypeReference.FromType(typeof(bool)), false, isExplicit ? Accessibility.APrivate : Accessibility.APublic, false, false, false, false, ImmutableArray<GenericParameter>.Empty);
+            var methodDef = MethodDef.Create(method, (_thisP, _objP) => new ConstantExpression(true, TypeReference.FromType(typeof(bool))))
+                                     .AddImplements(interfaceMethod);
             var typeDef = TypeDef.Empty(type).With(
-                implements: ImmutableArray.Create(new SpecializedType(iequatableT, ImmutableArray.Create<TypeReference>(type))),
+                implements: ImmutableArray.Create(iequatableT),
                 members: ImmutableArray.Create<MemberDef>(methodDef));
 
             cx.AddType(typeDef);
 
 
-            check.CheckOutput(cx, $"{(isStruct ? "struct" : "class")}");
+            check.CheckOutput(cx, $"{(isStruct ? "struct" : "class")}{(isExplicit ? "-explicit" : "")}");
         }
 
         [Fact]

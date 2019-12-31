@@ -55,5 +55,9 @@ namespace Coberec.ExprCS
                 throw new ArgumentException($"InterfaceDef can only be used interface or abstract methods.");
             return CreateWithArray(signature, _ => null);
         }
+
+        /// <summary> Marks the method definition as implementation of the specified interface methods. </summary>
+        public MethodDef AddImplements(params MethodReference[] interfaceMethods) =>
+            this.With(implements: this.Implements.AddRange(interfaceMethods));
     }
 }
