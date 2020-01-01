@@ -75,10 +75,11 @@ namespace Coberec.CSharpGen.Emit
             TypeSymbolNameMapping typeMapping,
             (string name, FieldReference field)[] fields,
             IEnumerable<ValidatorUsage> validators,
-            bool needsNoValidationConstructor
+            bool needsNoValidationConstructor,
+            MethodSignature validateMethodExtension
         )
         {
-            var validator = ValidationImplementation.ImplementValidateIfNeeded(type, cx, typeSchema, typeMapping, validators, fields);
+            var validator = ValidationImplementation.ImplementValidateIfNeeded(type, cx, typeSchema, typeMapping, validators, fields, validateMethodExtension);
             var privateNoValidationVersion = needsNoValidationConstructor && validator != null;
             var ctor1 = AddCreateConstructor(type, cx, fields, privateNoValidationVersion, needsNoValidationConstructor ? null : validator.Signature);
             var ctor2 = privateNoValidationVersion ?

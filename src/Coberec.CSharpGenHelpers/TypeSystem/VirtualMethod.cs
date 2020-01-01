@@ -141,6 +141,8 @@ namespace Coberec.CSharpGen.TypeSystem
 
         public bool IsHidden { get; }
 
+        public bool IsPartial { get; set; }
+
         public bool ReturnTypeIsRefReadOnly => GetReturnTypeAttributes().Any(a => a.AttributeType.IsKnownType(KnownAttribute.IsReadOnly));
 
         public bool IsLocalFunction { get; }

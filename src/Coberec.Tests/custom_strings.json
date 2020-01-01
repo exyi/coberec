@@ -41,5 +41,6 @@
     "ctid",
     "Match",
     "ValidateObject",
-    "Create"
+    "Create",
+    "ValidateObjectExtension"
 ]

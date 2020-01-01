@@ -196,13 +196,16 @@ namespace Coberec.CSharpGen
 
             result = result.AddMember(valueField, valueProperty);
 
+            var valExtension = AddValidationExtension(type);
+
             var (noValCtor, publicCtor, validateMethod) = type.AddObjectCreationStuff(
                 cx,
                 typeDef,
                 typeMapping,
                 new[] { ("value", valueField.Signature.SpecializeFromDeclaringType() ) },
                 this.GetValidators(typeDef),
-                needsNoValidationConstructor: true);
+                needsNoValidationConstructor: true,
+                validateMethodExtension: valExtension?.Signature);
 
             var createFn = type.AddCreateFunction(cx, validateMethod?.Signature, noValCtor.Signature);
 
@@ -211,9 +214,24 @@ namespace Coberec.CSharpGen
                 vtype.ImplementEquality(new[] { E.MetadataDefiner.GetProperty(cx.Metadata, valueProperty.Signature) });
             });
 
-            result = result.AddMember(noValCtor, publicCtor, validateMethod, createFn);
+            result = result.AddMember(noValCtor, publicCtor, validateMethod, createFn, valExtension);
 
             return (result, typeMapping);
+        }
+
+        private E.MethodDef AddValidationExtension(E.TypeSignature type)
+        {
+            if (!cx.Settings.EmitValidationExtension)
+                return null;
+            var s = E.MethodSignature.Static("ValidateObjectExtension", type, E.Accessibility.APrivate, E.TypeSignature.Void, new E.MethodParameter(E.TypeReference.ByReferenceType(E.TypeReference.FromType(typeof(ValidationErrorsBuilder))), "e"), new E.MethodParameter(type, "obj"));
+
+            cx.Metadata.RegisterTypeMod(type, _ => {}, vtype => {
+                var a = (VirtualMethod)vtype.Methods.Single(m => m.Name == s.Name);
+                a.BodyFactory = null;
+                a.IsPartial = true;
+            });
+
+            return E.MethodDef.CreateWithArray(s, _ => E.Expression.Nop);
         }
 
         private (E.TypeDef, TypeSymbolNameMapping) GenerateComposite(E.TypeSignature type, TypeDefCore.CompositeCase composite, TypeDef typeDef)
@@ -246,17 +264,20 @@ namespace Coberec.CSharpGen
                          .AddMember(props.Select(p => p.prop).ToArray())
                          .AddMember(props.Select(p => p.field).ToArray());
 
+            var valExtension = AddValidationExtension(type);
+
             var (noValCtor, publicCtor, validateMethod) = type.AddObjectCreationStuff(
                 cx,
                 typeDef,
                 typeMapping,
                 props.Select(k => (k.schema.Name, k.field.Signature.SpecializeFromDeclaringType())).ToArray(),
                 this.GetValidators(typeDef),
-                needsNoValidationConstructor: true);
+                needsNoValidationConstructor: true,
+                validateMethodExtension: valExtension?.Signature);
 
             var createFn = type.AddCreateFunction(cx, validateMethod?.Signature, noValCtor.Signature);
 
-            result = result.AddMember(noValCtor, (object)publicCtor == noValCtor ? null : publicCtor, validateMethod, createFn);
+            result = result.AddMember(noValCtor, (object)publicCtor == noValCtor ? null : publicCtor, validateMethod, createFn, valExtension);
 
             cx.Metadata.RegisterTypeMod(type, _ => { }, vtype => {
 

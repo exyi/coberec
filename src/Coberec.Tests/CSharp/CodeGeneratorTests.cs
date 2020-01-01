@@ -93,6 +93,12 @@ namespace GeneratedProject {
             },
             fallbackToStringType: true
         );
+
+        public static EmitSettings ValidationExtensionSettings = DefaultSettings.With(
+            emitPartialClasses: true,
+            emitValidationExtension: true
+        );
+
         [Fact]
         public void SimpleCompositeType()
         {
@@ -277,6 +283,36 @@ namespace GeneratedProject {
     }
 }
 ");
+            check.CheckString(result, fileExtension: "cs");
+        }
+
+        [Fact]
+        public void ValidationExtension_ScalarType()
+        {
+            var schema = new DataSchema(Enumerable.Empty<Entity>(), new [] {
+                new TypeDef("Scalar123", Enumerable.Empty<Directive>(), TypeDefCore.Primitive())
+            });
+
+            var result = CSharpBackend.Build(schema, ValidationExtensionSettings);
+            CheckItCompiles(result);
+            check.CheckString(result, fileExtension: "cs");
+        }
+
+        [Fact]
+        public void ValidationExtension_CompositeType()
+        {
+            var schema = new DataSchema(Enumerable.Empty<Entity>(), new [] {
+                new TypeDef("Composite123", Enumerable.Empty<Directive>(), TypeDefCore.Composite(
+                    new [] {
+                        new TypeField("Field543", TypeRef.ActualType("String"), null, new Directive[] { new Directive("validateMySpecialStringValidator", new JObject()) }),
+                        new TypeField("abcSS", TypeRef.ActualType("Int"), null, new Directive[] { new Directive("validateRange", JObject.Parse("{low: 1, high: 10}")) }),
+                    },
+                    new TypeRef[] {}
+                ))
+            });
+
+            var result = CSharpBackend.Build(schema, ValidationExtensionSettings);
+            CheckItCompiles(result);
             check.CheckString(result, fileExtension: "cs");
         }
 

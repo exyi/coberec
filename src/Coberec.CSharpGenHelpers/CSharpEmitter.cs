@@ -959,7 +959,13 @@ namespace Coberec.CSharpGen.Emit
             }
             else if (!method.IsAbstract && method.DeclaringType.Kind != TypeKind.Interface)
             {
-                methodDecl.Modifiers |= Modifiers.Extern;
+                if ((method as VirtualMethod)?.IsPartial == true)
+                {
+                    methodDecl.Modifiers |= Modifiers.Partial;
+                    methodDecl.Modifiers &= ~(Modifiers.Private | Modifiers.Public | Modifiers.Private | Modifiers.Protected | Modifiers.Internal);
+                }
+                else
+                    methodDecl.Modifiers |= Modifiers.Extern;
             }
             if (method.SymbolKind == SymbolKind.Method && !method.IsExplicitInterfaceImplementation && (method as IMethodWithDefinition)?.HasFlag(System.Reflection.MethodAttributes.Virtual) == (method as IMethodWithDefinition)?.HasFlag(System.Reflection.MethodAttributes.NewSlot))
             {

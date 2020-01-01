@@ -223,7 +223,7 @@ namespace Coberec.CSharpGen.Emit
         static MethodReference Method_Builder_Add = MethodReference.FromLambda<ValidationErrorsBuilder>(b => b.Add(default));
         static MethodReference Method_Builder_Build = MethodReference.FromLambda<ValidationErrorsBuilder>(b => b.Build());
 
-        public static MethodDef ImplementValidateIfNeeded(TypeSignature type, EmitContext cx, M.TypeDef typeSchema, TypeSymbolNameMapping typeMapping, IEnumerable<ValidatorUsage> validators, (string name, FieldReference field)[] fields)
+        public static MethodDef ImplementValidateIfNeeded(TypeSignature type, EmitContext cx, M.TypeDef typeSchema, TypeSymbolNameMapping typeMapping, IEnumerable<ValidatorUsage> validators, (string name, FieldReference field)[] fields, MethodSignature validateMethodExtension)
         {
             var methodParams = new[] { new MethodParameter(type.SpecializeByItself(), "obj") };
             var validationMethod = MethodSignature.Static("ValidateObject", type, Accessibility.APrivate, Type_Errors, methodParams);
@@ -231,23 +231,31 @@ namespace Coberec.CSharpGen.Emit
             var @this = ParameterExpression.Create(methodParams[0]);
             var validateCalls = CreateValidateCalls(@this, cx, typeSchema, validators, fields);
 
-            if (validateCalls.Count == 0) return null;
+            if (validateCalls.Count == 0 && validateMethodExtension is null) return null;
 
             var errorsJoin = MethodReference.FromLambda<ValidationErrors[]>(x => ValidationErrors.Join(x));
 
-            var resultV = ParameterExpression.Create(Type_Builder, "e");
 
-            var body = validateCalls.Count switch {
-                1 => Expression.Conditional(validateCalls[0].condition, validateCalls[0].validator, Expression.Default(Type_Errors)),
-                _ => validateCalls.Select(v => Expression.IfThen(v.condition, Expression.VariableReference(resultV).CallMethod(Method_Builder_Add, v.validator)))
-                     .ToBlock(result: Expression.VariableReference(resultV).CallMethod(Method_Builder_Build))
-                     .Where(resultV, Expression.Default(Type_Builder))
-            };
+            var body = validateCalls.Count == 1 && validateMethodExtension is null ?
+                       Expression.Conditional(validateCalls[0].condition, validateCalls[0].validator, Expression.Default(Type_Errors)) :
+                       CreateFullValidator(validateCalls, @this, validateMethodExtension);
 
-            return new MethodDef(validationMethod, new [] { @this }, body);
+            return new MethodDef(validationMethod, new[] { @this }, body);
         }
 
-        private static List<(Expression condition, Expression validator)> CreateValidateCalls(Expression @this, EmitContext cx, M.TypeDef typeSchema, IEnumerable<ValidatorUsage> validators, (string name, FieldReference field)[] fields)
+        static Expression CreateFullValidator(List<(Expression condition, Expression validator)> validateCalls, Expression @this, MethodSignature validateMethodExtension)
+        {
+            var resultV = ParameterExpression.Create(Type_Builder, "e");
+            var modifications = validateCalls.Select(v => Expression.IfThen(v.condition, Expression.VariableReference(resultV).CallMethod(Method_Builder_Add, v.validator)));
+            if (validateMethodExtension is object)
+                modifications = modifications.Append(Expression.StaticMethodCall(validateMethodExtension, Expression.VariableReference(resultV), @this));
+
+            return modifications
+                   .ToBlock(result: Expression.VariableReference(resultV).CallMethod(Method_Builder_Build))
+                   .Where(resultV, Expression.Default(Type_Builder));
+        }
+
+        static List<(Expression condition, Expression validator)> CreateValidateCalls(Expression @this, EmitContext cx, M.TypeDef typeSchema, IEnumerable<ValidatorUsage> validators, (string name, FieldReference field)[] fields)
         {
             var validateCalls = new List<(Expression condition, Expression validator)>();
             foreach (var v in Enumerable.Concat(GetImplicitNullValidators(typeSchema, fields), validators))

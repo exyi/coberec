@@ -38,7 +38,8 @@ namespace Coberec.CSharpGen
             bool withMethodReturnsValidationResult = true,
             bool fallbackToStringType = false,
             bool addJsonPropertyAttributes = false,
-            bool emitPartialClasses = false)
+            bool emitPartialClasses = false,
+            bool emitValidationExtension = false)
         {
             Namespace = @namespace;
             PrimitiveTypeMapping = primitiveTypeMapping ?? ImmutableDictionary<string, string>.Empty;
@@ -52,6 +53,9 @@ namespace Coberec.CSharpGen
             FallbackToStringType = fallbackToStringType;
             AddJsonPropertyAttributes = addJsonPropertyAttributes;
             EmitPartialClasses = emitPartialClasses;
+            if (emitValidationExtension && !emitPartialClasses)
+                throw new ArgumentException("Validation extension can only be enabled with partial classes", nameof(emitValidationExtension));
+            EmitValidationExtension = emitValidationExtension;
         }
 
         public bool EmitInterfaceWithMethods { get; } = true;
@@ -66,6 +70,7 @@ namespace Coberec.CSharpGen
         public ImmutableArray<string> AdditionalReferences { get; }
         public bool AddJsonPropertyAttributes { get; }
         public bool EmitPartialClasses { get; }
+        public bool EmitValidationExtension { get; }
 
         public EmitSettings With(
             OptParam<string> @namespace = default,
@@ -76,7 +81,8 @@ namespace Coberec.CSharpGen
             OptParam<bool> emitOptionalWithMethod = default,
             OptParam<bool> fallbackToStringType = default,
             OptParam<bool> addJsonPropertyAttributes = default,
-            OptParam<bool> emitPartialClasses = default
+            OptParam<bool> emitPartialClasses = default,
+            OptParam<bool> emitValidationExtension = default
         )
         {
             return new EmitSettings(
@@ -91,7 +97,8 @@ namespace Coberec.CSharpGen
                 this.WithMethodReturnValidationResult,
                 fallbackToStringType.ValueOrDefault(this.FallbackToStringType),
                 addJsonPropertyAttributes.ValueOrDefault(this.AddJsonPropertyAttributes),
-                emitPartialClasses.ValueOrDefault(this.EmitPartialClasses)
+                emitPartialClasses.ValueOrDefault(this.EmitPartialClasses),
+                emitValidationExtension.ValueOrDefault(this.EmitValidationExtension)
             );
         }
     }
