@@ -126,6 +126,40 @@ namespace Coberec.ExprCS.Tests
             check.CheckOutput(cx);
         }
 
+        [Fact(Skip = "Currently a bit broken")]
+        public void StandardProperties()
+        {
+            var ns = NamespaceSignature.Parse("MyNamespace");
+            var type = TypeSignature.Class("MyType", ns, Accessibility.APublic);
+            var prop = PropertySignature.Create("A", type, TypeSignature.String, Accessibility.APublic, Accessibility.AProtected);
+            var td = TypeDef.Empty(type).AddMember(
+                new PropertyDef(prop,
+                    getter: MethodDef.Create(prop.Getter, thisP => Expression.Constant("abcd")),
+                    setter: MethodDef.Create(prop.Setter, (thisP, xP) =>
+                        Expression.While(FluentExpression.Box(thisP).CallMethod(MethodSignature.Object_Equals, Expression.Default(TypeSignature.Object)), Expression.Nop))
+                )
+            );
+            cx.AddType(td);
+            check.CheckOutput(cx);
+        }
+
+        [Fact]
+        public void AutoProperties()
+        {
+            var ns = NamespaceSignature.Parse("MyNamespace");
+            var type = TypeSignature.Class("MyType", ns, Accessibility.APublic);
+            var td = TypeDef.Empty(type)
+                     .AddAutoProperty("A", TypeSignature.String, Accessibility.APublic)
+                     .AddAutoProperty("B", TypeSignature.String, Accessibility.APublic, isStatic: true)
+                     .AddAutoProperty("C", TypeSignature.String, Accessibility.APublic, isStatic: true, isReadOnly: false)
+                     .AddAutoProperty("D", TypeSignature.String, Accessibility.APublic, isReadOnly: false)
+                     .AddAutoProperty("E", TypeSignature.TimeSpan, Accessibility.APublic)
+                     .AddAutoProperty("F", type, Accessibility.APublic)
+                     ;
+            cx.AddType(td);
+            check.CheckOutput(cx);
+        }
+
         [Fact]
         public void NameSanitization()
         {

@@ -21,7 +21,7 @@ namespace Coberec.CSharpGen.TypeSystem
 
             if (getter != null && !getter.Parameters.Select(p => p.Type).SequenceEqual(parameters.Select(p => p.Type)))
                 throw new Exception($"Getter has an unexpected signature");
-            if (setter != null && !getter.Parameters.Select(p => p.Type).SequenceEqual(parameters.Select(p => p.Type).Append(returnType)))
+            if (setter != null && !setter.Parameters.Select(p => p.Type).SequenceEqual(parameters.Select(p => p.Type).Append(returnType)))
                 throw new Exception($"Setter has an unexpected signature.");
 
             if (getter is VirtualMethod getterM) getterM.SetAccessorOwner(this, MethodSemanticsAttributes.Getter);

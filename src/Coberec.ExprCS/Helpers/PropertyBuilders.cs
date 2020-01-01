@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Coberec.CSharpGen;
 
 namespace Coberec.ExprCS
 {
@@ -23,10 +24,11 @@ namespace Coberec.ExprCS
             var fieldRef = field.SpecializeFromDeclaringType();
             var prop = PropertySignature.Create(name, declType, propertyType, accessibility, isReadOnly ? null : accessibility, isStatic);
 
-            var getter = MethodDef.Create(prop.Getter, thisP => Expression.FieldAccess(fieldRef, thisP).Dereference());
+            var getter = MethodDef.CreateWithArray(prop.Getter, thisP => Expression.FieldAccess(fieldRef, thisP.SingleOrDefault()?.Apply(Expression.Parameter)).Dereference());
+            // TODO:                                                                                                                    ^ remove this!
             // getter.Attributes.Add(declaringType.Compilation.CompilerGeneratedAttribute());
             var setter = isReadOnly ? null :
-                         MethodDef.Create(prop.Setter, (thisP, valueP) => Expression.FieldAccess(fieldRef, thisP).ReferenceAssign(valueP));
+                         MethodDef.CreateWithArray(prop.Setter, args => Expression.FieldAccess(fieldRef, args.Length == 1 ? null : (Expression)args[0]).ReferenceAssign(args.Last()));
             return (new FieldDef(field),
                     new PropertyDef(prop, getter, setter));
         }

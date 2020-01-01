@@ -78,7 +78,7 @@ namespace Coberec.ExprCS.CodeTranslation
             var bodyC = this.BuildBContainer(bodyR);
 
             var fn = ILAstFactory.CreateFunction(method, bodyC, function.Args.Select(a => this.Parameters[a.Id]), functionKind: ILFunctionKind.LocalFunction);
-            fn.ReducedMethod = new TS.Implementation.LocalFunctionMethod(method, numberOfCompilerGeneratedParameters: 0);
+            fn.ReducedMethod = new TS.Implementation.LocalFunctionMethod(method, numberOfCompilerGeneratedParameters: 0, numberOfCompilerGeneratedTypeParameters: 0);
 
             foreach (var p in function.Args)
                 this.Parameters.Remove(p.Id);

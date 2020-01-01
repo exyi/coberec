@@ -30,6 +30,7 @@ namespace Coberec.CSharpGen.TypeSystem
             this.IsStatic = isStatic;
             this.TypeParameters = Array.Empty<ITypeParameter>();
             this.ExplicitlyImplementedInterfaceMembers = explicitImplementations?.ToArray() ?? Array.Empty<IMember>();
+            this.ThisIsRefReadOnly = declaringType.IsReadOnly;
         }
 
         /// generic method require dependency on the type parameters, which have dependency on its owner :/ So everything has to be lazy loaded after generic parameters are instantiated :(
@@ -49,6 +50,7 @@ namespace Coberec.CSharpGen.TypeSystem
             this.TypeParameters = typeParameters?.Select((t, i) => t(this, i)).ToArray() ?? Array.Empty<ITypeParameter>();
             this.ReturnType = returnType(this) ?? throw new ArgumentNullException(nameof(returnType));
             this.Parameters = parameters(this) ?? throw new ArgumentNullException(nameof(parameters));
+            this.ThisIsRefReadOnly = declaringType.IsReadOnly;
         }
 
         public IReadOnlyList<ITypeParameter> TypeParameters { get; }
@@ -146,6 +148,8 @@ namespace Coberec.CSharpGen.TypeSystem
         public bool ReturnTypeIsRefReadOnly => GetReturnTypeAttributes().Any(a => a.AttributeType.IsKnownType(KnownAttribute.IsReadOnly));
 
         public bool IsLocalFunction { get; }
+
+        public bool ThisIsRefReadOnly { get; set; }
 
         public ILFunction GetBody()
         {

@@ -11,8 +11,8 @@ namespace NS
 	{
 		public static int M()
 		{
-			string pString = "5";
-			return int.Parse("123456789" + pString);
+			string pString1 = "5";
+			return int.Parse("123456789" + pString1);
 		}
 	}
 	public class E
@@ -26,7 +26,7 @@ namespace NS
 	{
 		public static void M(string pString1)
 		{
-			string text = "123456789" + pString1;
+			_ = "123456789" + pString1;
 		}
 	}
 }

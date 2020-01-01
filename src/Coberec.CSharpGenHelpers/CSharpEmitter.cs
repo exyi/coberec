@@ -68,6 +68,7 @@ namespace Coberec.CSharpGen.Emit
             // .Where(t => t.GetType().FullName != "ICSharpCode.Decompiler.IL.Transforms.SplitVariables")
             // .Where(t => t.GetType().FullName != "ICSharpCode.Decompiler.IL.Transforms.ILInlining")
             .Where(t => t.GetType().FullName != "ICSharpCode.Decompiler.IL.ControlFlow.YieldReturnDecompiler")
+            .Where(t => t.GetType().FullName != "ICSharpCode.Decompiler.IL.Transforms.LocalFunctionDecompiler")
             .ToList();
 
         List<IAstTransform> astTransforms = CSharpDecompiler.GetAstTransforms();

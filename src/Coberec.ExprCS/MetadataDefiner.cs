@@ -260,6 +260,8 @@ namespace Coberec.ExprCS
 
             var getter = property.Getter?.Apply(m => CreateMethodDefinition(cx, m, "get_" + name, isHidden: true));
             var setter = property.Setter?.Apply(m => CreateMethodDefinition(cx, m, "set_" + name, isHidden: true));
+            if (property.Getter?.Body != null) getter.Attributes.Add(cx.Compilation.CompilerGeneratedAttribute()); // TODO: this is not very nice :/
+            if (property.Setter?.Body != null) setter.Attributes.Add(cx.Compilation.CompilerGeneratedAttribute());
 
             var sgn = property.Signature;
             var declType = cx.GetTypeDef(sgn.DeclaringType);
