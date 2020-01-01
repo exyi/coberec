@@ -335,6 +335,9 @@ namespace Coberec.ExprCS.CodeTranslation
             // TODO: shortcut for simplest expressions
             Assert.Equal(item.IfTrue.Type(), item.IfFalse.Type());
 
+            if (item.Condition is Expression.ConstantCase constant) // TODO: optimization phase
+                return TranslateExpression((bool)constant.Item.Value ? item.IfTrue : item.IfFalse);
+
             var condition = this.TranslateExpression(item.Condition);
             Assert.NotNull(condition.Output);
             var ifTrue = this.TranslateExpression(item.IfTrue);

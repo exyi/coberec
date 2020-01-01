@@ -79,7 +79,7 @@ namespace Coberec.CSharpGen.Emit
             }
         }
 
-        static IEnumerable<ValidatorUsage> GetImplicitNullValidators(M.TypeDef typeSchema, TypeSymbolNameMapping typeMapping, (string name, FieldReference field)[] declaredFields)
+        static IEnumerable<ValidatorUsage> GetImplicitNullValidators(M.TypeDef typeSchema, (string name, FieldReference field)[] declaredFields)
         {
             if (typeSchema.Core is TypeDefCore.PrimitiveCase)
             {
@@ -98,7 +98,7 @@ namespace Coberec.CSharpGen.Emit
             }
         }
 
-        static ObjExpr GetValidatorImplementation(TypeSignature declaringType, EmitContext cx, M.TypeDef typeSchema, TypeSymbolNameMapping typeMapping, ValidatorUsage v, (string name, FieldReference field)[] declaredFields)
+        static (Expression condition, Expression validator) GetValidatorImplementation(Expression @this, EmitContext cx, ValidatorUsage v, (string name, FieldReference field)[] declaredFields)
         {
             var def = cx.Settings.Validators.GetValueOrDefault(v.Name) ?? throw new ValidationErrorException(ValidationErrors.CreateField(new [] { "name" }, $"Validator {v.Name} could not be found."));
             var method = cx.FindMethod(def.ValidationMethodName);
@@ -172,21 +172,14 @@ namespace Coberec.CSharpGen.Emit
                 else return null;
             }
 
-            Expression checkForNulls(Expression @this, Expression core)
+            Expression checkForNulls(Expression @this)
             {
                 var nullchecks = fields
                                  .Where(f => f.Length > 0)
                                  .Select(f => createFieldNullcheck(@this, f.Single()))
                                  .Where(f => f != null)
                                  .ToArray();
-                if (nullchecks.Length == 0)
-                    return core;
-                else
-                    return Expression.Conditional(
-                        Expression.AndAlso(nullchecks),
-                        core,
-                        Expression.Constant(null, core.Type())
-                    );
+                return Expression.AndAlso(nullchecks);
             }
 
             var parameters = new Dictionary<MethodParameter, ObjExpr>();
@@ -208,31 +201,60 @@ namespace Coberec.CSharpGen.Emit
                 return makeField(fields[fieldIndex], expectedType);
             }, fields.Length, cx.Metadata);
 
-            return @this => {
-                var call = Expression.StaticMethodCall(
-                    method,
-                    method.Params.Select(p => parameters.GetValue(p).Invoke(@this)));
-                foreach (var field in fields.First())
-                {
-                    // TODO: properly represent errors of more than one field
-                    call = Expression.StaticMethodCall(
-                              MethodReference.FromLambda<ValidationErrors>(e => e.Nest("")),
-                              call,
-                              Expression.Constant(field)
-                           );
-                }
-                return checkForNulls(@this, call);
-            };
+
+            var call = Expression.StaticMethodCall(
+                method,
+                method.Params.Select(p => parameters.GetValue(p).Invoke(@this)));
+            foreach (var field in fields.First())
+            {
+                // TODO: properly represent errors of more than one field
+                call = Expression.StaticMethodCall(
+                            MethodReference.FromLambda<ValidationErrors>(e => e.Nest("")),
+                            call,
+                            Expression.Constant(field)
+                        );
+            }
+            var condition = checkForNulls(@this);
+            return (condition, call);
         }
+
+        static TypeReference Type_Errors = TypeReference.FromType(typeof(ValidationErrors));
+        static TypeReference Type_Builder = TypeReference.FromType(typeof(ValidationErrorsBuilder));
+        static MethodReference Method_Builder_Add = MethodReference.FromLambda<ValidationErrorsBuilder>(b => b.Add(default));
+        static MethodReference Method_Builder_Build = MethodReference.FromLambda<ValidationErrorsBuilder>(b => b.Build());
 
         public static MethodDef ImplementValidateIfNeeded(TypeSignature type, EmitContext cx, M.TypeDef typeSchema, TypeSymbolNameMapping typeMapping, IEnumerable<ValidatorUsage> validators, (string name, FieldReference field)[] fields)
         {
-            var validateCalls = new List<ObjExpr>();
-            foreach(var v in Enumerable.Concat(GetImplicitNullValidators(typeSchema, typeMapping, fields), validators))
+            var methodParams = new[] { new MethodParameter(type.SpecializeByItself(), "obj") };
+            var validationMethod = MethodSignature.Static("ValidateObject", type, Accessibility.APrivate, Type_Errors, methodParams);
+
+            var @this = ParameterExpression.Create(methodParams[0]);
+            var validateCalls = CreateValidateCalls(@this, cx, typeSchema, validators, fields);
+
+            if (validateCalls.Count == 0) return null;
+
+            var errorsJoin = MethodReference.FromLambda<ValidationErrors[]>(x => ValidationErrors.Join(x));
+
+            var resultV = ParameterExpression.Create(Type_Builder, "e");
+
+            var body = validateCalls.Count switch {
+                1 => Expression.Conditional(validateCalls[0].condition, validateCalls[0].validator, Expression.Default(Type_Errors)),
+                _ => validateCalls.Select(v => Expression.IfThen(v.condition, Expression.VariableReference(resultV).CallMethod(Method_Builder_Add, v.validator)))
+                     .ToBlock(result: Expression.VariableReference(resultV).CallMethod(Method_Builder_Build))
+                     .Where(resultV, Expression.Default(Type_Builder))
+            };
+
+            return new MethodDef(validationMethod, new [] { @this }, body);
+        }
+
+        private static List<(Expression condition, Expression validator)> CreateValidateCalls(Expression @this, EmitContext cx, M.TypeDef typeSchema, IEnumerable<ValidatorUsage> validators, (string name, FieldReference field)[] fields)
+        {
+            var validateCalls = new List<(Expression condition, Expression validator)>();
+            foreach (var v in Enumerable.Concat(GetImplicitNullValidators(typeSchema, fields), validators))
             {
                 try
                 {
-                    validateCalls.Add(GetValidatorImplementation(type, cx, typeSchema, typeMapping, v, fields));
+                    validateCalls.Add(GetValidatorImplementation(@this, cx, v, fields));
                 }
                 catch (ValidationErrorException e) when (v.DirectiveIndex is int dirIndex)
                 {
@@ -243,25 +265,7 @@ namespace Coberec.CSharpGen.Emit
                 }
             }
 
-            if (validateCalls.Count == 0) return null;
-
-            var methodParams = new [] { new MethodParameter(type.SpecializeByItself(), "obj") };
-            var validationMethod = MethodSignature.Static("ValidateObject", type, Accessibility.APrivate, TypeReference.FromType(typeof(ValidationErrors)), methodParams);
-
-            return MethodDef.Create(validationMethod, @this => {
-                var errorsJoin = MethodReference.FromLambda<ValidationErrors[]>(x => ValidationErrors.Join(x));
-
-                var expression =
-                    validateCalls.Count == 1 ? validateCalls.Single().Invoke(@this) :
-                    Expression.StaticMethodCall(errorsJoin,
-                        ExpressionFactory.MakeArray(
-                            validateCalls.Select(v => v.Invoke(@this))
-                        )
-                    );
-
-
-                return expression;
-            });
+            return validateCalls;
         }
     }
 }

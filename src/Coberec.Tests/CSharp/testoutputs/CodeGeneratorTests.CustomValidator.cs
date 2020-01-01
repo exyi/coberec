@@ -22,23 +22,13 @@ namespace GeneratedProject.ModelNamespace
 
 		private static ValidationErrors ValidateObject(CustomValidatorTest obj)
 		{
-			ValidationErrors[] tmpArray = new ValidationErrors[2]
-			{
-				BasicValidators.NotNull(obj.F1).Nest("f1"),
-				null
-			};
-			ref ValidationErrors reference = ref tmpArray[1];
-			ValidationErrors validationErrors;
+			ValidationErrorsBuilder e = default(ValidationErrorsBuilder);
+			e.Add(BasicValidators.NotNull(obj.F1).Nest("f1"));
 			if (obj.F1 != null)
 			{
-				validationErrors = Validators.MySpecialStringValidator(0, obj.F1).Nest("f1");
+				e.Add(Validators.MySpecialStringValidator(0, obj.F1).Nest("f1"));
 			}
-			else
-			{
-				validationErrors = null;
-			}
-			reference = validationErrors;
-			return ValidationErrors.Join(tmpArray);
+			return e.Build();
 		}
 
 		public static ValidationResult<CustomValidatorTest> Create(string f1)

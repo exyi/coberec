@@ -46,23 +46,13 @@ namespace GeneratedProject.ModelNamespace
 
 		private static ValidationErrors ValidateObject(Test123 obj)
 		{
-			ValidationErrors[] tmpArray = new ValidationErrors[2]
-			{
-				BasicValidators.NotEmpty(obj.Field543).Nest("Field543"),
-				null
-			};
-			ref ValidationErrors reference = ref tmpArray[1];
-			ValidationErrors validationErrors;
+			ValidationErrorsBuilder e = default(ValidationErrorsBuilder);
+			e.Add(BasicValidators.NotEmpty(obj.Field543).Nest("Field543"));
 			if (obj.AbcSS.HasValue)
 			{
-				validationErrors = BasicValidators.Range(1, 10, obj.AbcSS.Value).Nest("abcSS");
+				e.Add(BasicValidators.Range(1, 10, obj.AbcSS.Value).Nest("abcSS"));
 			}
-			else
-			{
-				validationErrors = null;
-			}
-			reference = validationErrors;
-			return ValidationErrors.Join(tmpArray);
+			return e.Build();
 		}
 
 		public static ValidationResult<Test123> Create(ImmutableArray<string> field543, ImmutableArray<int> someName, int? abcSS)

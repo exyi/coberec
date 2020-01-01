@@ -37,61 +37,27 @@ namespace GeneratedProject.ModelNamespace
 
 		private static ValidationErrors ValidateObject(MyType obj)
 		{
-			ValidationErrors[] tmpArray = new ValidationErrors[7]
-			{
-				BasicValidators.NotNull(obj.F3).Nest("f3"),
-				BasicValidators.NotNull(obj.F4).Nest("f4"),
-				Validators.CustomValidator(obj),
-				null,
-				null,
-				null,
-				null
-			};
-			ref ValidationErrors reference = ref tmpArray[3];
-			ValidationErrors validationErrors;
+			ValidationErrorsBuilder e = default(ValidationErrorsBuilder);
+			e.Add(BasicValidators.NotNull(obj.F3).Nest("f3"));
+			e.Add(BasicValidators.NotNull(obj.F4).Nest("f4"));
+			e.Add(Validators.CustomValidator(obj));
 			if ((object)obj.F4 != null)
 			{
-				validationErrors = Validators.CustomValidator(obj.F4).Nest("f4");
+				e.Add(Validators.CustomValidator(obj.F4).Nest("f4"));
 			}
-			else
-			{
-				validationErrors = null;
-			}
-			reference = validationErrors;
-			ref ValidationErrors reference2 = ref tmpArray[4];
-			ValidationErrors validationErrors2;
 			if ((object)obj.F1 != null)
 			{
-				validationErrors2 = Validators.CustomValidator(obj.F1).Nest("f1");
+				e.Add(Validators.CustomValidator(obj.F1).Nest("f1"));
 			}
-			else
-			{
-				validationErrors2 = null;
-			}
-			reference2 = validationErrors2;
-			ref ValidationErrors reference3 = ref tmpArray[5];
-			ValidationErrors validationErrors3;
 			if (obj.F2 != null)
 			{
-				validationErrors3 = Validators.MySpecialStringValidator(0, obj.F2).Nest("f2");
+				e.Add(Validators.MySpecialStringValidator(0, obj.F2).Nest("f2"));
 			}
-			else
-			{
-				validationErrors3 = null;
-			}
-			reference3 = validationErrors3;
-			ref ValidationErrors reference4 = ref tmpArray[6];
-			ValidationErrors validationErrors4;
 			if (obj.F3 != null)
 			{
-				validationErrors4 = Validators.MySpecialStringValidator(12, obj.F3).Nest("f3");
+				e.Add(Validators.MySpecialStringValidator(12, obj.F3).Nest("f3"));
 			}
-			else
-			{
-				validationErrors4 = null;
-			}
-			reference4 = validationErrors4;
-			return ValidationErrors.Join(tmpArray);
+			return e.Build();
 		}
 
 		public static ValidationResult<MyType> Create(MyType f1, string f2, string f3, MyType f4)

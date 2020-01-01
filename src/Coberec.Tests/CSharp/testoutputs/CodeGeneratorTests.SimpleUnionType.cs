@@ -29,7 +29,10 @@ namespace GeneratedProject.ModelNamespace
 
 		private static ValidationErrors ValidateObject(Test123 obj)
 		{
-			return ValidationErrors.Join(BasicValidators.NotEmpty(obj.Field543).Nest("Field543"), BasicValidators.Range(1, 10, obj.AbcSS).Nest("abcSS"));
+			ValidationErrorsBuilder e = default(ValidationErrorsBuilder);
+			e.Add(BasicValidators.NotEmpty(obj.Field543).Nest("Field543"));
+			e.Add(BasicValidators.Range(1, 10, obj.AbcSS).Nest("abcSS"));
+			return e.Build();
 		}
 
 		public static ValidationResult<Test123> Create(ImmutableArray<string> field543, int abcSS)
