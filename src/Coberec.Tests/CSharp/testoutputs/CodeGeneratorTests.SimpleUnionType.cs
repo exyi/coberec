@@ -201,12 +201,12 @@ namespace GeneratedProject.ModelNamespace
 
 		public static implicit operator Union123(Test123 item)
 		{
-			return new Test123Case(item);
+			return ((object)item != null) ? new Test123Case(item) : null;
 		}
 
 		public static implicit operator Union123(string item)
 		{
-			return new StringCase(item);
+			return (item != null) ? new StringCase(item) : null;
 		}
 	}
 }

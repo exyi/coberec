@@ -59,10 +59,18 @@ namespace Coberec.CSharpGen.Emit
                 returnType: type,
                 isStatic: true
             );
-            caseFactory.BodyFactory = () =>
-                EmitExtensions.CreateExpressionFunction(caseFactory,
-                    new IL.NewObj(caseCtor) { Arguments = { new IL.LdLoc(new IL.ILVariable(IL.VariableKind.Parameter, valueType, 0)) } }
-                );
+            caseFactory.BodyFactory = () => {
+                var @this = new IL.ILVariable(IL.VariableKind.Parameter, valueType, 0);
+                IL.ILInstruction body = new IL.NewObj(caseCtor) { Arguments = { new IL.LdLoc(@this) } };
+                if (valueType.IsReferenceType == true)
+                    // pass nulls
+                    body = new IL.IfInstruction(
+                        new IL.Comp(IL.ComparisonKind.Inequality, Sign.None, new IL.LdLoc(@this), new IL.LdNull()),
+                        body,
+                        new IL.LdNull()
+                    );
+                return EmitExtensions.CreateExpressionFunction(caseFactory, body);
+            };
             type.Methods.Add(caseFactory);
             return caseFactory;
         }
