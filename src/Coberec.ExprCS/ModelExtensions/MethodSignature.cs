@@ -44,13 +44,20 @@ namespace Coberec.ExprCS
         public static MethodSignature Abstract(string name, TypeSignature declaringType, Accessibility accessibility, TypeReference returnType, params MethodParameter[] parameters) =>
             new MethodSignature(declaringType, parameters.ToImmutableArray(), name, returnType, isStatic: false, accessibility, isVirtual: true, isOverride: false, isAbstract: true, hasSpecialName: false, ImmutableArray<GenericParameter>.Empty);
 
+        /// <summary> Creates new method signature with brand new type parameters. Since you can't have declared multiple methods with the same type parameters, you should use Clone to create similar method signatures. </summary>
+        public MethodSignature Clone()
+        {
+            if (this.TypeParameters.Length == 0) return this;
+            var newTypeParams = TypeParameters.EagerSelect(tp => new GenericParameter(Guid.NewGuid(), tp.Name));
+            var resultType = ResultType.SubstituteGenerics(TypeParameters, newTypeParams.EagerSelect(TypeReference.GenericParameter));
+            var @params = Params.EagerSelect(p => p.SubstituteGenerics(TypeParameters, newTypeParams.EagerSelect(TypeReference.GenericParameter)));
+            return this.With(@params: @params, resultType: resultType, typeParameters: newTypeParams);
+        }
+
         public static MethodSignature Override(TypeSignature declaringType, MethodSignature overridenMethod, bool isVirtual = true, bool isAbstract = false)
         {
-            var newTypeParams = overridenMethod.TypeParameters.EagerSelect(tp => new GenericParameter(Guid.NewGuid(), tp.Name));
-            var resultType = overridenMethod.ResultType.SubstituteGenerics(overridenMethod.TypeParameters, newTypeParams.EagerSelect(TypeReference.GenericParameter));
-            var @params = overridenMethod.Params.EagerSelect(p => p.SubstituteGenerics(overridenMethod.TypeParameters, newTypeParams.EagerSelect(TypeReference.GenericParameter)));
-
-            return new MethodSignature(declaringType, @params, overridenMethod.Name, resultType, false, overridenMethod.Accessibility, isVirtual, true, isAbstract, overridenMethod.HasSpecialName, newTypeParams);
+            overridenMethod = overridenMethod.Clone();
+            return overridenMethod.With(declaringType, name: overridenMethod.Name, isVirtual: isVirtual, isOverride: true, isAbstract: isAbstract);
         }
 
         /// <summary> Fills in the generic parameters. </summary>
@@ -60,6 +67,9 @@ namespace Coberec.ExprCS
         /// <summary> Fills in the generic parameters from the declaring type. Useful when using the method inside it's declaring type. </summary>
         public MethodReference SpecializeFromDeclaringType(IEnumerable<TypeReference> methodArgs) =>
             new MethodReference(this, this.DeclaringType.TypeParameters.EagerSelect(TypeReference.GenericParameter), methodArgs?.ToImmutableArray() ?? ImmutableArray<TypeReference>.Empty);
+        /// <summary> Fills in the generic parameters from the declaring type. Useful when using the method inside it's declaring type. </summary>
+        public MethodReference SpecializeFromDeclaringType(params TypeReference[] methodArgs) =>
+            SpecializeFromDeclaringType(methodArgs.AsEnumerable());
 
         public static implicit operator MethodReference(MethodSignature signature)
         {

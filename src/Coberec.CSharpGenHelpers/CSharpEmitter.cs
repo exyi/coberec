@@ -943,16 +943,7 @@ namespace Coberec.CSharpGen.Emit
                 methodDecl.Name = method.Name.Substring(lastDot + 1);
             }
             FixParameterNames(methodDecl);
-            // var methodDefinition = metadata.GetMethodDefinition((MethodDefinitionHandle)method.MetadataToken);
-            // if (!settings.LocalFunctions && LocalFunctionDecompiler.IsLocalFunctionMethod(method.ParentModule.PEFile, (MethodDefinitionHandle)method.MetadataToken))
-            // {
-            //     // if local functions are not active and we're dealing with a local function,
-            //     // reduce the visibility of the method to private,
-            //     // otherwise this leads to compile errors because the display classes have lesser accessibility.
-            //     // Note: removing and then adding the static modifier again is necessary to set the private modifier before all other modifiers.
-            //     methodDecl.Modifiers &= ~(Modifiers.Internal | Modifiers.Static);
-            //     methodDecl.Modifiers |= Modifiers.Private | (method.IsStatic ? Modifiers.Static : 0);
-            // }
+
             if (method.HasBody)
             {
                 DecompileBody(method, methodDecl, decompileRun, decompilationContext);

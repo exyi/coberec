@@ -202,7 +202,7 @@ namespace Coberec.CSharpGen
                 cx,
                 typeDef,
                 typeMapping,
-                new[] { ("value", valueField.Signature.SpecializeFromDeclaringType() ) },
+                new[] { (new TypeField("value", TypeRef.ActualType("String"), null, new Directive[0]), valueField.Signature.SpecializeFromDeclaringType() ) },
                 this.GetValidators(typeDef),
                 needsNoValidationConstructor: true,
                 validateMethodExtension: valExtension?.Signature);
@@ -270,7 +270,7 @@ namespace Coberec.CSharpGen
                 cx,
                 typeDef,
                 typeMapping,
-                props.Select(k => (k.schema.Name, k.field.Signature.SpecializeFromDeclaringType())).ToArray(),
+                props.Select(k => (k.schema, k.field.Signature.SpecializeFromDeclaringType())).ToArray(),
                 this.GetValidators(typeDef),
                 needsNoValidationConstructor: true,
                 validateMethodExtension: valExtension?.Signature);
@@ -278,6 +278,12 @@ namespace Coberec.CSharpGen
             var createFn = type.AddCreateFunction(cx, validateMethod?.Signature, noValCtor.Signature);
 
             result = result.AddMember(noValCtor, (object)publicCtor == noValCtor ? null : publicCtor, validateMethod, createFn, valExtension);
+
+            // TODO: config knob
+            result = result.AddMember(
+                ObjectConstructionImplementation.AddBenevolentOverload(publicCtor.Signature),
+                ObjectConstructionImplementation.AddBenevolentOverload(createFn.Signature)
+            );
 
             cx.Metadata.RegisterTypeMod(type, _ => { }, vtype => {
 

@@ -125,6 +125,32 @@ namespace Coberec.CSharpGen
             return builder.MoveToImmutable();
         }
 
+        public static ImmutableArray<V> EagerZip<T, U, V>(this ImmutableArray<T> arr1, ImmutableArray<U> arr2, Func<T, U, V> fn)
+        {
+            if (arr1.IsEmpty || arr2.IsEmpty) return ImmutableArray<V>.Empty;
+            var len = Math.Min(arr1.Length, arr2.Length);
+            var builder = ImmutableArray.CreateBuilder<V>(initialCapacity: len);
+            for (int i = 0; i < len; i++)
+            {
+                builder.Add(fn(arr1[i], arr2[i]));
+            }
+            return builder.MoveToImmutable();
+        }
+
+        public static ImmutableArray<T> EagerSlice<T>(this ImmutableArray<T> arr, int skip = 0, int? take = null)
+        {
+            if (skip < 0 || take < 0) throw new ArgumentException();
+            var take_ = take ?? arr.Length - skip;
+            if (skip == 0 && take_ == arr.Length) return arr;
+
+            var builder = ImmutableArray.CreateBuilder<T>(initialCapacity: take_);
+            for (int i = 0; i < take_; i++)
+            {
+                builder.Add(arr[i + skip]);
+            }
+            return builder.MoveToImmutable();
+        }
+
         public static IReadOnlyList<T> NullIfEmpty<T>(this ImmutableArray<T> array) =>
             array.IsEmpty ? null : (IReadOnlyList<T>)array;
 

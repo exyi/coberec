@@ -46,7 +46,7 @@ namespace Coberec.GraphqlLoader
         static (ReadOnlyMemory<string> remainingPath, G.AST.ASTNode node) FindSourceLocation_Directive(G.AST.ASTNode nodeWithDirectives, ReadOnlyMemory<string> path)
         {
             Debug.Assert(path.Span[0] == "directives");
-            var syntaxDirective = (nodeWithDirectives as G.AST.IGraphQLNodeWithDirecives)?.Directives.ElementAtOrDefault(int.Parse(path.Span[1]));
+            var syntaxDirective = (nodeWithDirectives as G.AST.IHasDirectivesNode)?.Directives.ElementAtOrDefault(int.Parse(path.Span[1]));
             if (syntaxDirective == null) return (path, nodeWithDirectives);
             path = path.Slice(2);
             if (path.Length > 0 && path.Span[0] == "args")
@@ -86,7 +86,7 @@ namespace Coberec.GraphqlLoader
                 if (path.Span[0] == "directives" && path.Length >= 2)
                     return (FindSourceLocation_Directive(t, path), source);
                 else if (path.Span[0] == "name")
-                    return ((path.Slice(1), ((G.AST.IGraphQLNamedNode)t).Name), source);
+                    return ((path.Slice(1), ((G.AST.INamedNode)t).Name), source);
                 else if (path.Span[0] == "core")
                 {
                     path = path.Slice(1);

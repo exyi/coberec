@@ -1,6 +1,7 @@
 using Coberec.CoreLib;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 
 namespace GeneratedProject.ModelNamespace
@@ -59,6 +60,16 @@ namespace GeneratedProject.ModelNamespace
 		{
 			Test123 result = new Test123(default(NoNeedForValidationSentinel), field543, someName, abcSS);
 			return ValidationResult.CreateErrorsOrValue(ValidateObject(result), result);
+		}
+
+		public Test123(IEnumerable<string> field543, IEnumerable<int> someName, int? abcSS)
+			: this(field543.ToImmutableArray(), someName.ToImmutableArray(), abcSS)
+		{
+		}
+
+		public static ValidationResult<Test123> Create(IEnumerable<string> field543, IEnumerable<int> someName, int? abcSS)
+		{
+			return Create(field543.ToImmutableArray(), someName.ToImmutableArray(), abcSS);
 		}
 
 		public override int GetHashCode()

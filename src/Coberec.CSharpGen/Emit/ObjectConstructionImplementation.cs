@@ -67,20 +67,57 @@ namespace Coberec.CSharpGen.Emit
             });
         }
 
+        static readonly MethodSignature Method_ToImmutableArray = MethodReference.FromLambda(() => ImmutableArray.ToImmutableArray(Enumerable.Empty<int>())).Signature;
+        static readonly TypeSignature Type_ImmutableArrayOfT = TypeSignature.FromType(typeof(ImmutableArray<int>));
+
+        static (TypeReference type, Func<Expression, Expression> convert)? GetBenevolentVariant(TypeReference type)
+        {
+            if (type.IsGenericInstanceOf(Type_ImmutableArrayOfT))
+            {
+                // ImmutableArray<X>
+                var t = ((TypeReference.SpecializedTypeCase)type).Item.GenericParameters.Single();
+                return (TypeSignature.IEnumerableOfT.Specialize(t),
+                        (Expression e) => e.CallMethod(Method_ToImmutableArray.SpecializeFromDeclaringType(t)));
+            }
+            return null;
+        }
+
+        public static MethodDef AddBenevolentOverload(MethodSignature method)
+        {
+            var p = method.Params.EagerSelect(p => GetBenevolentVariant(p.Type));
+            if (p.All(x => x == null))
+                return null;
+
+            var bMethod = method.Clone().With(
+                @params: method.Params.EagerZip(p, (x, y) => x.With(type: y?.type ?? x.Type))
+            );
+
+            return MethodDef.CreateWithArray(bMethod, args_ => {
+                var (target, args) = method.IsStatic ? (null, args_)
+                                                     : ((Expression)args_[0], args_.EagerSlice(skip: 1));
+                return Expression.MethodCall(
+                    method.SpecializeFromDeclaringType(bMethod.TypeParameters.EagerSelect(TypeReference.GenericParameter)),
+                    args.EagerZip(p, (x, y) => y?.convert.Invoke(x) ?? x),
+                    target
+                );
+            });
+        }
+
         public static (MethodDef noValidationConsructor, MethodDef constructor, MethodDef validationMethod) AddObjectCreationStuff(
             this TypeSignature type,
             EmitContext cx,
             M.TypeDef typeSchema,
             TypeSymbolNameMapping typeMapping,
-            (string name, FieldReference field)[] fields,
+            (M.TypeField schema, FieldReference field)[] fields,
             IEnumerable<ValidatorUsage> validators,
             bool needsNoValidationConstructor,
             MethodSignature validateMethodExtension
         )
         {
-            var validator = ValidationImplementation.ImplementValidateIfNeeded(type, cx, typeSchema, typeMapping, validators, fields, validateMethodExtension);
+            var fieldNames = fields.Select(f => (f.schema.Name, f.field)).ToArray();
+            var validator = ValidationImplementation.ImplementValidateIfNeeded(type, cx, typeSchema, typeMapping, validators, fieldNames, validateMethodExtension);
             var privateNoValidationVersion = needsNoValidationConstructor && validator != null;
-            var ctor1 = AddCreateConstructor(type, cx, fields, privateNoValidationVersion, needsNoValidationConstructor ? null : validator.Signature);
+            var ctor1 = AddCreateConstructor(type, cx, fieldNames, privateNoValidationVersion, needsNoValidationConstructor ? null : validator.Signature);
             var ctor2 = privateNoValidationVersion ?
                         AddValidatingConstructor(type, cx, ctor1.Signature, validator.Signature) :
                         null;
