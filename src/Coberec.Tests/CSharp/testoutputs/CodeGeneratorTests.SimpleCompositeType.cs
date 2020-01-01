@@ -22,15 +22,15 @@ namespace GeneratedProject.ModelNamespace
 			AbcSS = abcSS;
 		}
 
+		public Test123(IEnumerable<string> field543, int abcSS)
+			: this(field543.ToImmutableArray(), abcSS)
+		{
+		}
+
 		public static ValidationResult<Test123> Create(ImmutableArray<string> field543, int abcSS)
 		{
 			Test123 result = new Test123(field543, abcSS);
 			return ValidationResult.Create(result);
-		}
-
-		public Test123(IEnumerable<string> field543, int abcSS)
-			: this(field543.ToImmutableArray(), abcSS)
-		{
 		}
 
 		public static ValidationResult<Test123> Create(IEnumerable<string> field543, int abcSS)

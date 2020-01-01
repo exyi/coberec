@@ -78,6 +78,7 @@ namespace GeneratedProject {
             ImmutableDictionary.CreateRange<string, string>(new Dictionary<string,string>{
                 ["Int"] = "System.Int32",
                 ["String"] = "System.String",
+                ["Float"] = "System.Double",
             }),
             validators: ImmutableDictionary<string, ValidatorConfig>.Empty
                         .Add("mySpecialStringValidator", new ValidatorConfig("GeneratedProject.Validators.MySpecialStringValidator", new [] { ("param1", 0, JToken.FromObject(0)) }))
@@ -312,6 +313,29 @@ namespace GeneratedProject {
             });
 
             var result = CSharpBackend.Build(schema, ValidationExtensionSettings);
+            CheckItCompiles(result);
+            check.CheckString(result, fileExtension: "cs");
+        }
+
+        [Fact]
+        public void DefaultValues()
+        {
+            var schema = new DataSchema(Enumerable.Empty<Entity>(), new [] {
+                new TypeDef("Composite123", Enumerable.Empty<Directive>(), TypeDefCore.Composite(
+                    new [] {
+                        new TypeField("StringF", TypeRef.ActualType("String"), null, new Directive[] { new Directive("default", JObject.Parse("{value: 'abcd'}")) }),
+                        new TypeField("NullableStringF", TypeRef.NullableType(TypeRef.ActualType("String")), null, new Directive[] { new Directive("default", JObject.Parse("{value: null}")) }),
+                        new TypeField("NullableIntF", TypeRef.NullableType(TypeRef.ActualType("Int")), null, new Directive[] { new Directive("default", JObject.Parse("{value: null}")) }),
+                        new TypeField("IntF", TypeRef.NullableType(TypeRef.ActualType("Int")), null, new Directive[] { new Directive("default", JObject.Parse("{value: 12}")) }),
+                        new TypeField("FloatF", TypeRef.ActualType("Float"), null, new Directive[] { new Directive("default", JObject.Parse("{value: 12.12}")) }),
+                        new TypeField("NullListF", TypeRef.NullableType(TypeRef.ListType(TypeRef.ActualType("String"))), null, new Directive[] { new Directive("default", JObject.Parse("{value: null}")) }),
+                        new TypeField("ThisF", TypeRef.NullableType(TypeRef.ActualType("Composite123")), null, new Directive[] { new Directive("default", JObject.Parse("{value: null}")) }),
+                    },
+                    new TypeRef[] {}
+                ))
+            });
+
+            var result = CSharpBackend.Build(schema, DefaultSettings);
             CheckItCompiles(result);
             check.CheckString(result, fileExtension: "cs");
         }

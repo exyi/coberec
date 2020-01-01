@@ -128,6 +128,33 @@ type A {
 "));
         }
 
+        [Fact]
+        public void InvalidDefaultValue()
+        {
+            check.CheckString(GetCompilationErrors(@"
+type A {
+    f: Int @validateRange(low: 0, high: 10)
+           @validateRange(low: 0, high: 10)
+           @default(value: ""Ahoj"")
+           @validateRange(low: 0, high: 10)
+}
+"));
+        }
+
+        [Fact]
+        public void InvalidNullDefaultValue()
+        {
+            check.CheckString(GetCompilationErrors(@"
+type A {
+    g: Int @default(value: null)
+    f: Int! @validateRange(low: 0, high: 10)
+           @validateRange(low: 0, high: 10)
+           @default(value: null)
+           @validateRange(low: 0, high: 10)
+}
+"));
+        }
+
         [Fact(Skip = "This is quite hard to implement actually :/ When we'll have error handling annotation or what")]
         public void InvalidValidatorFieldType()
         {

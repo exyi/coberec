@@ -68,5 +68,14 @@ namespace Coberec.ExprCS
             else
                 throw new ArgumentException($"Target `{target}` must be of type Nullable<...>, not {target.Type()}.", nameof(target));
         }
+
+        public static Expression Nullable_Create(Expression value)
+        {
+            return Expression.NewObject(
+                MethodSignature.NullableOfT_Constructor.Specialize(new[] { value.Type() }, new TypeReference[] {}),
+                ImmutableArray.Create(value)
+            );
+        }
+
     }
 }

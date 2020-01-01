@@ -55,8 +55,9 @@ namespace Coberec.GraphqlLoader
                     return (path.Slice(1), (G.AST.ASTNode)syntaxDirective.Arguments.FirstOrDefault() ?? syntaxDirective);
                 else
                 {
-                    var index = int.Parse(path.Span[1]);
-                    return (path.Slice(2), syntaxDirective.Arguments.ElementAt(index));
+                    var argument = syntaxDirective.Arguments.FirstOrDefault(d => d.Name.Value == path.Span[1]) ??
+                                syntaxDirective.Arguments.ElementAt(int.Parse(path.Span[1]));
+                    return (path.Slice(2), argument);
                 }
             }
             else if (path.Length > 0 && path.Span[0] == "name")

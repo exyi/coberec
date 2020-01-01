@@ -16,3 +16,9 @@ To get the value (or exception, if `null` is present), you can use the `Value` p
 ```csharp
 ExpressionFactory.Nullable_Value(a);
 ```
+
+### Constructing
+
+To construct an instance of `Nullable<T>` of value null, it's enough to create a default value (since it's a struct) - `Expression.Default(TypeSignature.NullableOfT.Specialize(myType))`
+
+To construct an instance with some value, you just [call the constructor](constructor.md). To save you some work, there is a helper prepared - `Coberec.ExprCS.ExpressionFactory.Nullable_Create` that just wraps the value in a `Nullable<T>`.

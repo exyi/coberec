@@ -198,7 +198,7 @@ namespace Coberec.CSharpGen
 
             var valExtension = AddValidationExtension(type);
 
-            var (noValCtor, publicCtor, validateMethod) = type.AddObjectCreationStuff(
+            var (noValCtor, publicCtor, bCtor, validateMethod, _) = type.AddObjectCreationStuff(
                 cx,
                 typeDef,
                 typeMapping,
@@ -207,14 +207,14 @@ namespace Coberec.CSharpGen
                 needsNoValidationConstructor: true,
                 validateMethodExtension: valExtension?.Signature);
 
-            var createFn = type.AddCreateFunction(cx, validateMethod?.Signature, noValCtor.Signature);
+            var (createFn, _) = type.AddCreateFunction(cx, validateMethod?.Signature, noValCtor.Signature, null);
 
             cx.Metadata.RegisterTypeMod(type, _ => { }, vtype => {
 
                 vtype.ImplementEquality(new[] { E.MetadataDefiner.GetProperty(cx.Metadata, valueProperty.Signature) });
             });
 
-            result = result.AddMember(noValCtor, publicCtor, validateMethod, createFn, valExtension);
+            result = result.AddMember(noValCtor, publicCtor, bCtor, validateMethod, createFn, valExtension);
 
             return (result, typeMapping);
         }
@@ -266,7 +266,7 @@ namespace Coberec.CSharpGen
 
             var valExtension = AddValidationExtension(type);
 
-            var (noValCtor, publicCtor, validateMethod) = type.AddObjectCreationStuff(
+            var (noValCtor, publicCtor, benevolentCtor, validateMethod, defaults) = type.AddObjectCreationStuff(
                 cx,
                 typeDef,
                 typeMapping,
@@ -275,15 +275,9 @@ namespace Coberec.CSharpGen
                 needsNoValidationConstructor: true,
                 validateMethodExtension: valExtension?.Signature);
 
-            var createFn = type.AddCreateFunction(cx, validateMethod?.Signature, noValCtor.Signature);
+            var (createFn, benevolentCreate) = type.AddCreateFunction(cx, validateMethod?.Signature, noValCtor.Signature, default);
 
-            result = result.AddMember(noValCtor, (object)publicCtor == noValCtor ? null : publicCtor, validateMethod, createFn, valExtension);
-
-            // TODO: config knob
-            result = result.AddMember(
-                ObjectConstructionImplementation.AddBenevolentOverload(publicCtor.Signature),
-                ObjectConstructionImplementation.AddBenevolentOverload(createFn.Signature)
-            );
+            result = result.AddMember(noValCtor, (object)publicCtor == noValCtor ? null : publicCtor, benevolentCtor, validateMethod, createFn, benevolentCreate, valExtension);
 
             cx.Metadata.RegisterTypeMod(type, _ => { }, vtype => {
 
@@ -375,7 +369,7 @@ namespace Coberec.CSharpGen
                 var def = E.TypeDef.Empty(caseType).With(extends: type.SpecializeByItself());
                 var valueType = FindType(schema);
                 var (field, prop) = E.PropertyBuilders.CreateAutoProperty(caseType, "Item", valueType);
-                var caseCtor = caseType.AddCreateConstructor(cx, new[] { ("item", field.Signature.SpecializeFromDeclaringType()) }, false);
+                var caseCtor = caseType.AddCreateConstructor(cx, new[] { ("item", field.Signature.SpecializeFromDeclaringType()) });
 
                 def = def.AddMember(E.MethodDef.Create(
                     E.MethodSignature.Override(caseType, E.MethodSignature.Object_ToString),

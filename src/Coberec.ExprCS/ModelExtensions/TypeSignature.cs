@@ -15,6 +15,8 @@ namespace Coberec.ExprCS
         public static readonly TypeSignature Void = Struct("Void", NamespaceSignature.System, Accessibility.APublic);
         /// <summary> Signature of <see cref="System.Int32" /> </summary>
         public static readonly TypeSignature Int32 = Struct("Int32", NamespaceSignature.System, Accessibility.APublic);
+        /// <summary> Signature of <see cref="System.Double" /> </summary>
+        public static readonly TypeSignature Double = Struct("Double", NamespaceSignature.System, Accessibility.APublic);
         /// <summary> Signature of <see cref="System.TimeSpan" /> </summary>
         public static readonly TypeSignature TimeSpan = Struct("TimeSpan", NamespaceSignature.System, Accessibility.APublic);
         /// <summary> Signature of <see cref="System.Object" /> </summary>

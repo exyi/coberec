@@ -19,8 +19,10 @@ namespace Coberec.ExprCS
         public static readonly MethodSignature Object_GetHashCode = MethodReference.FromLambda<object>(a => a.GetHashCode()).Signature;
         /// <summary> Signature of method <see cref="Object.Equals(object)" /> </summary>
         public static readonly MethodSignature Object_Equals = MethodReference.FromLambda<object>(a => a.Equals(null)).Signature;
-        /// <summary> Signature of method <see cref="Object.Object" /> </summary>
+        /// <summary> Signature of constructor <see cref="Object.Object" /> </summary>
         public static readonly MethodSignature Object_Constructor = MethodReference.FromLambda(() => new object()).Signature;
+        /// <summary> Signature of constructor <see cref="Nullable{T}.Nullable(T)" /> </summary>
+        public static readonly MethodSignature NullableOfT_Constructor = MethodReference.FromLambda(() => new int?(34)).Signature;
 
         /// <summary> Creates new method signature that is a constructor </summary>
         public static MethodSignature Constructor(TypeSignature declaringType, Accessibility accessibility, params MethodParameter[] parameters) =>

@@ -13,12 +13,18 @@ using M=Coberec.MetaSchema;
 using E=Coberec.ExprCS;
 using Coberec.ExprCS;
 using Xunit;
+using Newtonsoft.Json.Linq;
 
 namespace Coberec.CSharpGen.Emit
 {
     public static class ObjectConstructionImplementation
     {
-        public static MethodDef AddCreateConstructor(this TypeSignature declaringType, EmitContext cx, (string name, FieldReference field)[] fields, bool privateNoValidationVersion, MethodReference validationMethod = null)
+        public static MethodDef AddCreateConstructor(this TypeSignature declaringType, EmitContext cx, (string name, FieldReference field)[] fields)
+        {
+            var (sgn, body) = CreateConstructorCore(declaringType, cx, fields, privateNoValidationVersion: false);
+            return MethodDef.CreateWithArray(sgn, args => body(args.EagerSelect(Expression.Parameter)));
+        }
+        static (MethodSignature sgn, Func<ImmutableArray<Expression>, Expression> body) CreateConstructorCore(TypeSignature declaringType, EmitContext cx, (string name, FieldReference field)[] fields, bool privateNoValidationVersion, MethodReference validationMethod = null)
         {
             var parameters = fields.Select(f => new MethodParameter(f.field.ResultType(), f.name));
             if (privateNoValidationVersion)
@@ -27,7 +33,7 @@ namespace Coberec.CSharpGen.Emit
             var accessibility = privateNoValidationVersion ? Accessibility.APrivate : Accessibility.APublic;
             var ctor = MethodSignature.Constructor(declaringType, accessibility, parameters);
             var indexOffset = privateNoValidationVersion ? 1 : 0;
-            return MethodDef.CreateWithArray(ctor, p => {
+            return (ctor, p => {
                 Expression @this = p[0];
                 var statements =
                     fields.Select((f, index) => {
@@ -47,15 +53,15 @@ namespace Coberec.CSharpGen.Emit
                 return statements.ToBlock();
             });
         }
-        public static MethodDef AddValidatingConstructor(TypeSignature declaringType, EmitContext cx, MethodReference baseConstructor, MethodReference validationMethod)
+        public static (MethodDef main, MethodDef benevolentVariant) AddValidatingConstructor(TypeSignature declaringType, EmitContext cx, MethodReference baseConstructor, MethodReference validationMethod, ImmutableArray<Expression> defaultValues)
         {
             Assert.Equal(baseConstructor.Params()[0].Type, TypeReference.FromType(typeof(NoNeedForValidationSentinel)));
 
             var parameters = baseConstructor.Params().Skip(1).ToArray();
             var ctor = MethodSignature.Constructor(declaringType, Accessibility.APublic, parameters);
-            return MethodDef.CreateWithArray(ctor, p => {
+            return CreateBenevolentMethod(ctor, defaultValues, p => {
                 Expression @this = p[0];
-                var baseCall = @this.CallMethod(baseConstructor, p.Skip(1).Select(Expression.Parameter).Prepend(Expression.Default(TypeReference.FromType(typeof(NoNeedForValidationSentinel)))).ToArray());
+                var baseCall = @this.CallMethod(baseConstructor, p.Skip(1).Prepend(Expression.Default(TypeReference.FromType(typeof(NoNeedForValidationSentinel)))).ToArray());
 
                 return new [] {
                     baseCall,
@@ -70,40 +76,83 @@ namespace Coberec.CSharpGen.Emit
         static readonly MethodSignature Method_ToImmutableArray = MethodReference.FromLambda(() => ImmutableArray.ToImmutableArray(Enumerable.Empty<int>())).Signature;
         static readonly TypeSignature Type_ImmutableArrayOfT = TypeSignature.FromType(typeof(ImmutableArray<int>));
 
-        static (TypeReference type, Func<Expression, Expression> convert)? GetBenevolentVariant(TypeReference type)
+        static MethodDef CreateBenevolentDef(MethodSignature main, MethodSignature benevolent, ImmutableArray<Func<Expression, Expression>> transforms)
         {
-            if (type.IsGenericInstanceOf(Type_ImmutableArrayOfT))
-            {
-                // ImmutableArray<X>
-                var t = ((TypeReference.SpecializedTypeCase)type).Item.GenericParameters.Single();
-                return (TypeSignature.IEnumerableOfT.Specialize(t),
-                        (Expression e) => e.CallMethod(Method_ToImmutableArray.SpecializeFromDeclaringType(t)));
-            }
-            return null;
-        }
-
-        public static MethodDef AddBenevolentOverload(MethodSignature method)
-        {
-            var p = method.Params.EagerSelect(p => GetBenevolentVariant(p.Type));
-            if (p.All(x => x == null))
-                return null;
-
-            var bMethod = method.Clone().With(
-                @params: method.Params.EagerZip(p, (x, y) => x.With(type: y?.type ?? x.Type))
-            );
-
-            return MethodDef.CreateWithArray(bMethod, args_ => {
-                var (target, args) = method.IsStatic ? (null, args_)
-                                                     : ((Expression)args_[0], args_.EagerSlice(skip: 1));
+            return MethodDef.CreateWithArray(benevolent, args_ => {
+                var (target, args) = main.IsStatic ? (null, args_)
+                                                   : ((Expression)args_[0], args_.EagerSlice(skip: 1));
                 return Expression.MethodCall(
-                    method.SpecializeFromDeclaringType(bMethod.TypeParameters.EagerSelect(TypeReference.GenericParameter)),
-                    args.EagerZip(p, (x, y) => y?.convert.Invoke(x) ?? x),
+                    main.SpecializeFromDeclaringType(benevolent.TypeParameters.EagerSelect(TypeReference.GenericParameter)),
+                    args.EagerZip(transforms, (a, t) => t(a)),
                     target
                 );
             });
         }
 
-        public static (MethodDef noValidationConsructor, MethodDef constructor, MethodDef validationMethod) AddObjectCreationStuff(
+        static (MethodSignature method, ImmutableArray<Func<Expression, Expression>> transforms, bool isDifferentSignature) CreateBenevolentSignature(MethodSignature method, ImmutableArray<Expression> defaults)
+        {
+            var p = method.Params.EagerZip(defaults, InduceDefaultValue);
+            var newMethod = method.With(@params: p.EagerSelect(p => p.newParameter));
+            var isDifferent = !newMethod.Params.EagerSelect(p => p.Type).SequenceEqual(method.Params.EagerSelect(p => p.Type));
+            if (isDifferent)
+                newMethod = newMethod.Clone();
+            return (newMethod, p.EagerSelect(p => p.transform), isDifferent);
+        }
+
+        /// Either adds default values to the parameters or add entire new overload that is more benevolent
+        static (MethodDef main, MethodDef benevolentOverload) CreateBenevolentMethod(MethodSignature method, ImmutableArray<Expression> defaults, Func<ImmutableArray<Expression>, Expression> createBody)
+        {
+            var (method2, transforms, isDifferent) = CreateBenevolentSignature(method, defaults);
+            if (isDifferent)
+            {
+                var main = MethodDef.CreateWithArray(method, args => createBody(args.EagerSelect(Expression.Parameter)));
+                var benevolent = CreateBenevolentDef(main.Signature, method2, transforms);
+                return (main, benevolent);
+            }
+            else
+            {
+                if (!method2.IsStatic)
+                    transforms = transforms.Insert(0, e => e);
+                var main = MethodDef.CreateWithArray(method2, args => createBody(args.EagerZip(transforms, (a, t) => t(a))));
+                return (main, null);
+            }
+        }
+
+        public static (MethodParameter newParameter, Func<Expression, Expression> transform) InduceDefaultValue(MethodParameter parameter, Expression value)
+        {
+            var type = parameter.Type;
+            var nullUnwrappedType = type.UnwrapNullableValueType() ?? type;
+            if (value is null)
+            {
+                if (type.IsGenericInstanceOf(Type_ImmutableArrayOfT)) // TODO: nullable types (depends on sane decompilation of conditionals)
+                {
+                    // ImmutableArray<X>
+                    var t = ((TypeReference.SpecializedTypeCase)nullUnwrappedType).Item.GenericParameters.Single();
+                    Expression nonNullable(Expression e) => e.CallMethod(Method_ToImmutableArray.SpecializeFromDeclaringType(t));
+                    Expression nullable(Expression e) =>
+                        Expression.Conditional(
+                            Expression.Binary("==", e.Box(), Expression.Default(TypeSignature.Object)),
+                            Expression.Default(type),
+                            e.CallMethod(Method_ToImmutableArray.SpecializeFromDeclaringType(t))
+                                .Apply(ExpressionFactory.Nullable_Create)
+                        );
+                    return (parameter.With(type: TypeReference.SpecializedType(TypeSignature.IEnumerableOfT.Specialize(t))),
+                            type.IsNullableValueType() ? nullable : (Func<Expression, Expression>)nonNullable);
+                }
+                return (parameter, e => e);
+            }
+
+            Assert.Equal(type, value.Type());
+            if (value is Expression.ConstantCase d)
+                return (parameter.WithDefault(d.Item.Value), e => e);
+            else if (value is Expression.DefaultCase)
+                return (parameter.WithDefault(null), e => e);
+            else
+                throw new NotSupportedException();
+
+        }
+
+        public static (MethodDef noValidationConstructor, MethodDef validatingConstructor, MethodDef benevolentConstructor, MethodDef validationMethod, ImmutableArray<Expression> defaultValues) AddObjectCreationStuff(
             this TypeSignature type,
             EmitContext cx,
             M.TypeDef typeSchema,
@@ -114,25 +163,77 @@ namespace Coberec.CSharpGen.Emit
             MethodSignature validateMethodExtension
         )
         {
+            var defaultValues = GetDefaultParameterValues(fields);
+
             var fieldNames = fields.Select(f => (f.schema.Name, f.field)).ToArray();
             var validator = ValidationImplementation.ImplementValidateIfNeeded(type, cx, typeSchema, typeMapping, validators, fieldNames, validateMethodExtension);
-            var privateNoValidationVersion = needsNoValidationConstructor && validator != null;
-            var ctor1 = AddCreateConstructor(type, cx, fieldNames, privateNoValidationVersion, needsNoValidationConstructor ? null : validator.Signature);
-            var ctor2 = privateNoValidationVersion ?
-                        AddValidatingConstructor(type, cx, ctor1.Signature, validator.Signature) :
-                        null;
+            var privateNoValidationVersion = needsNoValidationConstructor && validator is object;
+            var ctor1core = CreateConstructorCore(type, cx, fieldNames, privateNoValidationVersion, needsNoValidationConstructor ? null : validator.Signature);
+            var (validatedCtor, benevolentCtor) =
+                privateNoValidationVersion ?
+                AddValidatingConstructor(type, cx, ctor1core.sgn, validator.Signature, defaultValues) :
+                CreateBenevolentMethod(ctor1core.sgn, defaultValues, ctor1core.body);
 
-            return (validator == null || needsNoValidationConstructor ? ctor1 : null,
-                    ctor2 ?? ctor1,
-                    validator
+            var noValCtor = privateNoValidationVersion ? MethodDef.CreateWithArray(ctor1core.sgn, args => ctor1core.body(args.EagerSelect(Expression.Parameter))) :
+                            validator is null          ? validatedCtor :
+                                                         null;
+
+            return (noValCtor,
+                    validatedCtor,
+                    benevolentCtor,
+                    validator,
+                    defaultValues
                    );
         }
 
-        public static MethodDef AddCreateFunction(this TypeSignature type,
-                                                  EmitContext cx,
-                                                  MethodReference validationMethod,
-                                                  MethodReference constructor)
+        private static ImmutableArray<Expression> GetDefaultParameterValues((TypeField schema, FieldReference field)[] fields)
         {
+            var defaultValues = fields.Select((f, i) => {
+                if (f.schema.Directives.SingleOrDefault(d => d.Name == "default") is Directive d)
+                {
+                    Exception error(string message)
+                    {
+                        var dIndex = f.schema.Directives.IndexOf(d);
+                        return new ValidationErrorException(ValidationErrors.CreateField(new[] { "fields", i.ToString(), "directives", dIndex.ToString(), "args", "value" }, message));
+                    }
+                    var v = d.Args["value"];
+                    var ftype = f.field.ResultType();
+                    var fntype = ftype.UnwrapNullableValueType() ?? ftype;
+                    if (v.Type == JTokenType.Null)
+                    {
+                        if (ftype.IsReferenceType != true && !ftype.IsGenericInstanceOf(TypeSignature.NullableOfT))
+                            throw error($"Default value can't be null, since the field type '{ftype}' is not nullable"); // TODO non-nullable reference types (with different error message)
+                        return Expression.Default(ftype);
+                    }
+                    if (v.Type == JTokenType.String)
+                    {
+                        if (ftype != TypeSignature.String)
+                            throw error($"Default value can't be a string, since the field is of type '{ftype}'"); // TODO scalar types and enums?
+                        return Expression.Constant(v.Value<string>(), ftype);
+                    }
+                    if (v.Type == JTokenType.Integer && fntype == TypeSignature.Int32)
+                    {
+                        return Expression.Constant(v.Value<int>(), ftype);
+                    }
+                    if ((v.Type == JTokenType.Integer || v.Type == JTokenType.Float) && fntype == TypeSignature.Double)
+                    {
+                        return Expression.Constant(v.Value<double>(), ftype);
+                    }
+                    throw error($"Default value {v} for field of type '{ftype}' is not supported.");
+                }
+                return null;
+            }).ToImmutableArray();
+            return defaultValues;
+        }
+
+        public static (MethodDef create, MethodDef benevolentCreate) AddCreateFunction(
+            this TypeSignature type,
+            EmitContext cx,
+            MethodReference validationMethod,
+            MethodReference constructor,
+            ImmutableArray<Expression>? defaultValues)
+        {
+
             var returnType = TypeSignature.FromType(typeof(ValidationResult<>)).Specialize(type);
             var parameters = constructor.Params();
             bool hasSentinelParam = parameters.FirstOrDefault()?.Type == TypeReference.FromType(typeof(NoNeedForValidationSentinel));
@@ -141,9 +242,11 @@ namespace Coberec.CSharpGen.Emit
 
             var method = MethodSignature.Static("Create", type, Accessibility.APublic, returnType, parameters);
 
-            return MethodDef.CreateWithArray(method, p => {
+            defaultValues ??= ImmutableArray.Create(new Expression[method.Params.Length]);
+
+            return CreateBenevolentMethod(method, defaultValues.Value, p => {
                 var resultLocal = ParameterExpression.Create(type, "result");
-                var ctorParams = p.Select(Expression.Parameter);
+                var ctorParams = p.AsEnumerable();
                 if (hasSentinelParam)
                     ctorParams = ctorParams.Prepend(Expression.Default(constructor.Params().First().Type));
 

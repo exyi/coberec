@@ -1,0 +1,6 @@
+Syntax Error GraphQL (6:21) Default value can't be null, since the field type 'int' is not nullable
+5:            @validateRange(low: 0, high: 10)
+6:            @default(value: null)
+                       ^
+7:            @validateRange(low: 0, high: 10)
+

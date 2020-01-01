@@ -28,6 +28,11 @@ namespace GeneratedProject.ModelNamespace
 			ValidateObject(this).ThrowErrors("Could not initialize Test123 due to validation errors");
 		}
 
+		public Test123(IEnumerable<string> field543, int abcSS)
+			: this(field543.ToImmutableArray(), abcSS)
+		{
+		}
+
 		private static ValidationErrors ValidateObject(Test123 obj)
 		{
 			ValidationErrorsBuilder e = default(ValidationErrorsBuilder);
@@ -40,11 +45,6 @@ namespace GeneratedProject.ModelNamespace
 		{
 			Test123 result = new Test123(default(NoNeedForValidationSentinel), field543, abcSS);
 			return ValidationResult.CreateErrorsOrValue(ValidateObject(result), result);
-		}
-
-		public Test123(IEnumerable<string> field543, int abcSS)
-			: this(field543.ToImmutableArray(), abcSS)
-		{
 		}
 
 		public static ValidationResult<Test123> Create(IEnumerable<string> field543, int abcSS)

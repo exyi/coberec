@@ -1,0 +1,6 @@
+Syntax Error GraphQL (5:21) Default value can't be a string, since the field is of type 'struct System.Nullable`1<int>'
+4:            @validateRange(low: 0, high: 10)
+5:            @default(value: "Ahoj")
+                       ^
+6:            @validateRange(low: 0, high: 10)
+

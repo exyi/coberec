@@ -35,5 +35,15 @@ namespace Coberec.ExprCS.Tests
 
             check.CheckOutput(cx);
         }
+
+        [Fact]
+        public void Nullable_Create()
+        {
+
+            cx.AddTestExpr(ExpressionFactory.Nullable_Create(Expression.Constant(123)));
+            cx.AddTestExpr(Expression.Default(TypeReference.FromType(typeof(int?))));
+
+            check.CheckOutput(cx);
+        }
     }
 }
