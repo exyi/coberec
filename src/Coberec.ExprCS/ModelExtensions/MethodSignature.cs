@@ -11,6 +11,17 @@ namespace Coberec.ExprCS
     /// <summary> Basic metadata about a method - <see cref="Name" />, <see cref="Accessibility" />, <see cref="Params" />, <see cref="DeclaringType" />, ... </summary>
     public partial class MethodSignature
     {
+        /// <summary> Signature of method <see cref="Object.ToString" /> </summary>
+        public static readonly MethodSignature Object_ToString = MethodReference.FromLambda<object>(a => a.ToString()).Signature;
+        /// <summary> Signature of method <see cref="Object.GetType" /> </summary>
+        public static readonly MethodSignature Object_GetType = MethodReference.FromLambda<object>(a => a.GetType()).Signature;
+        /// <summary> Signature of method <see cref="Object.GetHashCode" /> </summary>
+        public static readonly MethodSignature Object_GetHashCode = MethodReference.FromLambda<object>(a => a.GetHashCode()).Signature;
+        /// <summary> Signature of method <see cref="Object.Equals(object)" /> </summary>
+        public static readonly MethodSignature Object_Equals = MethodReference.FromLambda<object>(a => a.Equals(null)).Signature;
+        /// <summary> Signature of method <see cref="Object.Object" /> </summary>
+        public static readonly MethodSignature Object_Constructor = MethodReference.FromLambda(() => new object()).Signature;
+
         /// <summary> Creates new method signature that is a constructor </summary>
         public static MethodSignature Constructor(TypeSignature declaringType, Accessibility accessibility, params MethodParameter[] parameters) =>
             Constructor(declaringType, accessibility, parameters.AsEnumerable());

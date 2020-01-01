@@ -10,6 +10,11 @@ namespace GeneratedProject.ModelNamespace
 				get;
 			}
 
+			public override string ToString()
+			{
+				return Item.ToString();
+			}
+
 			public ConstantCase(string item)
 			{
 				Item = item;
@@ -36,6 +41,11 @@ namespace GeneratedProject.ModelNamespace
 		{
 			public string Item {
 				get;
+			}
+
+			public override string ToString()
+			{
+				return Item.ToString();
 			}
 
 			public ConstantExpressionCase(string item)

@@ -370,6 +370,12 @@ namespace Coberec.CSharpGen
                 var valueType = FindType(schema);
                 var (field, prop) = E.PropertyBuilders.CreateAutoProperty(caseType, "Item", valueType);
                 var caseCtor = caseType.AddCreateConstructor(cx, new[] { ("item", field.Signature.SpecializeFromDeclaringType()) }, false);
+
+                def = def.AddMember(E.MethodDef.Create(
+                    E.MethodSignature.Override(caseType, E.MethodSignature.Object_ToString),
+                    @this => E.FluentExpression.CallMethod(E.FluentExpression.Box(E.FluentExpression.ReadProperty(@this, prop.Signature)), E.MethodSignature.Object_ToString)
+                ));
+
                 return (index, schema, caseName, caseType: def.AddMember(caseCtor, field, prop), caseCtor);
             }).ToArray();
 

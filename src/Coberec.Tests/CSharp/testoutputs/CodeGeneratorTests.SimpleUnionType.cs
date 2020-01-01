@@ -84,6 +84,11 @@ namespace GeneratedProject.ModelNamespace
 				get;
 			}
 
+			public override string ToString()
+			{
+				return Item.ToString();
+			}
+
 			public Test123Case(Test123 item)
 			{
 				Item = item;
@@ -110,6 +115,11 @@ namespace GeneratedProject.ModelNamespace
 		{
 			public string Item {
 				get;
+			}
+
+			public override string ToString()
+			{
+				return Item.ToString();
 			}
 
 			public StringCase(string item)

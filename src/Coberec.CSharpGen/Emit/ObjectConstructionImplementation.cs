@@ -26,7 +26,6 @@ namespace Coberec.CSharpGen.Emit
 
             var accessibility = privateNoValidationVersion ? Accessibility.APrivate : Accessibility.APublic;
             var ctor = MethodSignature.Constructor(declaringType, accessibility, parameters);
-            var objectCtor = MethodReference.FromLambda(() => new object());
             var indexOffset = privateNoValidationVersion ? 1 : 0;
             return MethodDef.CreateWithArray(ctor, p => {
                 Expression @this = p[0];
@@ -35,7 +34,7 @@ namespace Coberec.CSharpGen.Emit
                         return @this.AccessField(f.field)
                                .ReferenceAssign(p[index + 1 + indexOffset]);
                     })
-                    .Prepend(Expression.MethodCall(objectCtor, ImmutableArray<Expression>.Empty, @this.Box())) // TODO!
+                    .Prepend(Expression.MethodCall(MethodSignature.Object_Constructor, ImmutableArray<Expression>.Empty, @this.Box())) // TODO!
                     ;
                 if (validationMethod is object)
                     statements = statements.Append(
