@@ -5,28 +5,28 @@
     },
     "EmitPartialClasses": true,
     "EmitWithMethods": true,
-    "EmitOptionalWithMethods": true
-    // "Validators": {
-    //     "lengthDivisibleBy": {
-    //         "ValidationMethodName": "SampleProject.Validators.LengthDivisibleBy",
-    //         "ValidatorParameters": [ {"Item1": "num", "Item2": 1, "Item3": 12} ]
-    //     }
-    // },
-    // "ExternalSymbols": [
-    //     {
-    //         "DeclaredIn": "SampleProject",
-    //         "Name": "Validators",
-    //         "Kind": "TypeDefinition"
-    //     },
-    //     {
-    //         "DeclaredIn": "SampleProject.Validators",
-    //         "Name": "LengthDivisibleBy",
-    //         "Kind": "StaticMethod",
-    //         "ResultType": "Coberec.CoreLib.ValidationErrors",
-    //         "Args": [
-    //             { "Name": "value", "Type": "TypeB" },
-    //             { "Name": "num", "Type": "System.Int32" }
-    //         ]
-    //     }
-    // ]
+    "EmitOptionalWithMethods": true,
+    "EmitValidationExtension": true,
+    "Validators": {
+        "typeIsNotRef": {
+            "ValidationMethodName": "Coberec.ExprCS.ModelValidators.TypeIsNotRef",
+            "ValidatorParameters": [ ]
+        }
+    },
+    "ExternalSymbols": [
+        {
+            "DeclaredIn": "Coberec.ExprCS",
+            "Name": "ModelValidators",
+            "Kind": "TypeDefinition"
+        },
+        {
+            "DeclaredIn": "Coberec.ExprCS.ModelValidators",
+            "Name": "TypeIsNotRef",
+            "Kind": "StaticMethod",
+            "ResultType": "Coberec.CoreLib.ValidationErrors",
+            "Args": [
+                { "Name": "value", "Type": "TypeReference" }
+            ]
+        }
+    ]
 }

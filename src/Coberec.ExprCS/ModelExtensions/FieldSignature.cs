@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using Coberec.CoreLib;
 using Coberec.CSharpGen;
 using Xunit;
 using R = System.Reflection;
@@ -11,6 +12,10 @@ namespace Coberec.ExprCS
     /// <summary> Basic metadata about a field - <see cref="Name"/>, <see cref="Accessibility" />, <see cref="DeclaringType" />, ... </summary>
     public partial class FieldSignature
     {
+        static partial void ValidateObjectExtension(ref CoreLib.ValidationErrorsBuilder e, FieldSignature f)
+        {
+        }
+
         /// <summary> Fills in the generic parameters. </summary>
         public FieldReference Specialize(IEnumerable<TypeReference> typeArgs) =>
             new FieldReference(this, typeArgs.ToImmutableArray());
