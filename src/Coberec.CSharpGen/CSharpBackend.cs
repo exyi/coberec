@@ -243,6 +243,20 @@ namespace Coberec.CSharpGen
             {
                 var propType = FindType(f.Type);
                 var (field, prop) = E.PropertyBuilders.CreateAutoProperty(type, f.Name, propType);
+
+                // explicitly implement the interface
+                foreach (var i in composite.Implements)
+                {
+                    var iname = ((TypeRef.ActualTypeCase)i).TypeName;
+                    var idef = cx.FullSchema.Types.Single(t => t.Name == iname && t.Core is TypeDefCore.InterfaceCase);
+                    var matchingProp = ((TypeDefCore.InterfaceCase)idef.Core).Fields.SingleOrDefault(ff => ff.Name == f.Name);
+                    if (matchingProp is null) continue;
+
+                    var (ifc_type, ifc_mapping) = BuildType(idef);
+                    var iprop = ifc_type.Members.OfType<E.PropertyDef>().Single(p => p.Signature.Name == ifc_mapping.Fields[f.Name]);
+                    prop = prop.AddImplements(iprop.Signature);
+                }
+
                 propDictionary.Add(f.Name, (f, prop, field));
                 props.Add((f, prop, field));
             }
@@ -490,7 +504,7 @@ namespace Coberec.CSharpGen
 
         private static E.MetadataContext BuildCore(DataSchema schema, EmitSettings settings)
         {
-            var cx2 = E.MetadataContext.Create("NewEpicModule", settings.AdditionalReferences, GetEmitSettings(settings));
+            var cx2 = E.MetadataContext.Create("NewEpicModule", settings.AdditionalReferences.Concat(E.MetadataContext.GetReferencedPaths()), GetEmitSettings(settings));
             var cx = new EmitContext(cx2, settings, schema);
 
             var @this = new CSharpBackend(cx);

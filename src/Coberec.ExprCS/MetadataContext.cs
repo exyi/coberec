@@ -55,9 +55,12 @@ namespace Coberec.ExprCS
             IEnumerable<string> references = null,
             EmitSettings settings = null)
         {
+            var modules = new HashSet<string>();
             var referencedModules =
                 references == null ? ReferencedModules.Value :
-                ReferencedModules.Value.Concat(references.Distinct().Select(r => new PEFile(r, PEStreamOptions.PrefetchMetadata)).ToArray());
+                references.Distinct().Select(r => new PEFile(r, PEStreamOptions.PrefetchMetadata)).Concat(ReferencedModules.Value)
+                .Where(m => modules.Add(m.Name))
+                .ToArray();
             // TODO   ^ add a way to override this implicit reference
 
             var compilation = new HackedSimpleCompilation(

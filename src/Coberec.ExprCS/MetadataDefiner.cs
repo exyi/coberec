@@ -146,7 +146,6 @@ namespace Coberec.ExprCS
             if (t.Signature.Parent is TypeOrNamespace.TypeSignatureCase)
                 Assert.NotNull(name);
 
-
             var sgn = t.Signature;
             var kind = sgn.Kind == "struct" ? TypeKind.Struct :
                        sgn.Kind == "interface" ? TypeKind.Interface :
@@ -213,12 +212,16 @@ namespace Coberec.ExprCS
             var implements = method.Implements
                 .Where(i => i.Signature.DeclaringType.Kind == "interface")
                 .Select(cx.GetMethod)
-                .Where(m => m.Name != name || method.Signature.Accessibility == Accessibility.APrivate)
+                .Where(m => m.Name != name || method.Signature.Accessibility != Accessibility.APublic || SymbolLoader.TypeRef(m.ReturnType) != method.Signature.ResultType)
                 .ToArray();
             foreach (var i in implements)
             {
+                var newReturnType = SymbolLoader.TypeRef(i.ReturnType);
                 var m2 = new VirtualMethod(type, TS.Accessibility.Private, i.DeclaringType.FullName + "." + i.Name, _ => i.Parameters, _ => i.ReturnType, typeParameters: i.TypeParameters.Select<ITypeParameter, Func<IEntity, int, ITypeParameter>>(p => (owner, index) => new TS.Implementation.DefaultTypeParameter(owner, index, name: p.Name)).ToArray(), explicitImplementations: new IMember[] { i });
-                var m2_def = MethodDef.CreateWithArray(method.Signature, args => ((Expression)args[0]).CallMethod(method.Signature, args.Skip(1).Select(Expression.Parameter)));
+                var m2_def = MethodDef.CreateWithArray(
+                    method.Signature.Clone().With(resultType: newReturnType),
+                    args => ((Expression)args[0]).CallMethod(method.Signature, args.Skip(1).Select(Expression.Parameter)).ReferenceConvert(newReturnType)
+                );
                 m2.BodyFactory = CreateBodyFactory(m2, m2_def, cx);
                 type.Methods.Add(m2);
             }
@@ -229,24 +232,27 @@ namespace Coberec.ExprCS
             var implements = property.Implements
                 .Where(i => i.Signature.DeclaringType.Kind == "interface")
                 .Select(cx.GetProperty)
-                .Where(p => p.Name != name || property.Signature.Accessibility == Accessibility.APrivate)
+                .Where(p => p.Name != name || property.Signature.Accessibility != Accessibility.APublic || SymbolLoader.TypeRef(p.ReturnType) != property.Signature.Type)
                 .ToArray();
             foreach (var i in implements)
             {
-                var getter = property.Getter?.Apply(m => CreateMethodDefinition(cx, m.With(signature: m.Signature.With(accessibility: Accessibility.APrivate)), i.DeclaringType.FullName + "." + "get_" + name, isHidden: true, sneaky: true));
-                var setter = property.Setter?.Apply(m => CreateMethodDefinition(cx, m.With(signature: m.Signature.With(accessibility: Accessibility.APrivate)), i.DeclaringType.FullName + "." + "set_" + name, isHidden: true, sneaky: true));
+                var newReturnType = SymbolLoader.TypeRef(i.ReturnType);
+                var getter_s = property.Getter?.Signature.With(accessibility: Accessibility.APrivate, resultType: newReturnType);
+                var getter = property.Getter?.Apply(m => CreateMethodDefinition(cx, m.With(signature: getter_s), i.DeclaringType.FullName + "." + "get_" + name, isHidden: true, sneaky: true));
+                var setter_s = property.Setter?.Signature.With(accessibility: Accessibility.APrivate);
+                var setter = property.Setter?.Apply(m => CreateMethodDefinition(cx, m.With(signature: setter_s), i.DeclaringType.FullName + "." + "set_" + name, isHidden: true, sneaky: true));
                 var p2 = new VirtualProperty(type, TS.Accessibility.Private, i.DeclaringType.FullName + "." + i.Name, getter, setter, explicitImplementations: new IMember[] { i });
 
                 if (getter is object)
                 {
                     type.Methods.Add(getter);
-                    var g_def = MethodDef.CreateWithArray(property.Getter.Signature, args => ((Expression)args[0]).CallMethod(property.Getter.Signature, args.Skip(1).Select(Expression.Parameter)));
+                    var g_def = MethodDef.CreateWithArray(getter_s, args => ((Expression)args[0]).CallMethod(property.Getter.Signature, args.Skip(1).Select(Expression.Parameter)).ReferenceConvert(newReturnType));
                     getter.BodyFactory = CreateBodyFactory(getter, g_def, cx);
                 }
                 if (setter is object)
                 {
                     type.Methods.Add(setter);
-                    var g_def = MethodDef.CreateWithArray(property.Setter.Signature, args => ((Expression)args[0]).CallMethod(property.Setter.Signature, args.Skip(1).Select(Expression.Parameter)));
+                    var g_def = MethodDef.CreateWithArray(setter_s, args => ((Expression)args[0]).CallMethod(property.Setter.Signature, args.Skip(1).Select(Expression.Parameter)));
                     setter.BodyFactory = CreateBodyFactory(setter, g_def, cx);
                 }
                 type.Properties.Add(p2);

@@ -78,6 +78,7 @@ namespace Coberec.CSharpGen
             OptParam<ImmutableDictionary<string, ValidatorConfig>> validators = default,
             OptParam<IEnumerable<ExternalSymbolConfig>> externalSymbols = default,
             OptParam<IEnumerable<string>> additionalReferences = default,
+            OptParam<bool> emitInterfaceWithMethod = default,
             OptParam<bool> emitOptionalWithMethod = default,
             OptParam<bool> fallbackToStringType = default,
             OptParam<bool> addJsonPropertyAttributes = default,
@@ -92,7 +93,7 @@ namespace Coberec.CSharpGen
                 externalSymbols.ValueOrDefault(this.ExternalSymbols),
                 additionalReferences.ValueOrDefault(this.AdditionalReferences),
                 this.EmitWithMethods,
-                this.EmitInterfaceWithMethods,
+                emitInterfaceWithMethod.ValueOrDefault(this.EmitInterfaceWithMethods),
                 emitOptionalWithMethod.ValueOrDefault(this.EmitOptionalWithMethods),
                 this.WithMethodReturnValidationResult,
                 fallbackToStringType.ValueOrDefault(this.FallbackToStringType),
@@ -112,7 +113,7 @@ namespace Coberec.CSharpGen
             foreach (var t in Enum.GetValues(typeof(KnownTypeCode)))
             {
                 var ft = compilation.FindType((KnownTypeCode)t);
-                Debug.Assert(!(ft is UnknownType) || KnownTypeCode.Unsafe.Equals(t));
+                Debug.Assert(!(ft is UnknownType) || KnownTypeCode.Unsafe.Equals(t) || t.ToString().StartsWith("IAsync"));
             }
 
             Metadata = metadata;

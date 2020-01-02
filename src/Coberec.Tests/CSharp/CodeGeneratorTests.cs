@@ -340,6 +340,23 @@ namespace GeneratedProject {
             check.CheckString(result, fileExtension: "cs");
         }
 
+
+        [Fact]
+        public void ImplementsWithSupertype()
+        {
+            var schema = GraphqlLoader.Helpers.ParseSchema(@"
+interface b { }
+type a implements b { }
+
+interface x { p: b }
+type y implements x { p: a }
+"
+                , invertNonNull: true);
+            var result = CSharpBackend.Build(schema, DefaultSettings.With(emitInterfaceWithMethod: false));
+            CheckItCompiles(result);
+            check.CheckString(result, fileExtension: "cs");
+        }
+
         // [Property(MaxTest = 2000, EndSize = 10_000)]
         [Property]
         // [Property(Replay = "(802755643,296687915)")]
