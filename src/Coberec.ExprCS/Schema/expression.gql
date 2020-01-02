@@ -171,6 +171,8 @@ interface LowerableExpression {
     lowered: Expression
 }
 
+#| LabelExpression
+#| GotoExpression
 union Expression =
       BinaryExpression
     | NotExpression
@@ -190,8 +192,6 @@ union Expression =
     | FunctionExpression
     | FunctionConversionExpression
     | InvokeExpression
-    #| LabelExpression
-    #| GotoExpression
     | BreakExpression
     | BreakableExpression
     | LoopExpression
