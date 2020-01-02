@@ -109,11 +109,11 @@ namespace Coberec.ExprCS
             (ITypeDefinition)declaredEntities.GetValueOrDefault(type) ??
            (definedTypes.ContainsKey(type) ? throw new Exception($"Type {type} has been added to MetadataContext, but it hasn't been comited, so the ILSpy metadata can not be obtained.") :
             type.Parent.Match(
-                ns => GetNamespace(ns.Item).GetTypeDefinition(type.Name, type.TypeParameters.Length) ?? throw new InvalidOperationException($"Type {type.GetFullTypeName()} could not be found, namespace {ns.Item} does not exist"),
-                parentType => GetTypeDef(parentType.Item)
+                ns => GetNamespace(ns).GetTypeDefinition(type.Name, type.TypeParameters.Length) ?? throw new InvalidOperationException($"Type {type.GetFullTypeName()} could not be found, namespace {ns} does not exist"),
+                parentType => GetTypeDef(parentType)
                               .GetNestedTypes(t => t.Name == type.Name && t.TypeParameterCount == type.TypeParameters.Length)
                               .SingleOrDefault()
-                              ?.GetDefinition() ?? throw new Exception($"Nested type {type} does not exist on {parentType.Item}`")
+                              ?.GetDefinition() ?? throw new Exception($"Nested type {type} does not exist on {parentType}`")
             ));
 
         /// <summary> Finds a type signature by a <paramref name="name" />. Will only look for type definitions (e.g. <see cref="String" />), not type references (<see cref="T:String[]" /> or <see cref="List{String}" />). </summary>
@@ -271,7 +271,7 @@ namespace Coberec.ExprCS
         /// <summary> Lists all property references of the specified <paramref name="type" />. Only includes the properties declared in this type, not the inherited ones. </summary>
         public IEnumerable<PropertyReference> GetMemberProperties(TypeReference type) =>
             type.Match(
-                specializedType => GetMemberProperties(specializedType.Item),
+                specializedType => GetMemberProperties(specializedType),
                 array => throw new NotImplementedException(),
                 byRef => throw new NotImplementedException(),
                 pointer => throw new NotImplementedException(),

@@ -15,7 +15,7 @@ namespace Coberec.ExprCS
         public SpecializedType DeclaringType() =>
             this.Type.Parent.Match(
                 ns => null,
-                t => t.Item.Specialize(this.GenericParameters.Take(t.Item.TypeParameters.Length).ToImmutableArray())
+                t => t.Specialize(this.GenericParameters.Take(t.TypeParameters.Length).ToImmutableArray())
             );
 
         public override string ToString() =>

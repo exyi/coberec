@@ -54,12 +54,12 @@ namespace Coberec.ExprCS
         /// </example>
         public static bool IsOpen(this TypeReference type) =>
             type.Match(
-                specializedType => specializedType.Item.GenericParameters.Any(IsOpen),
-                arrayType => arrayType.Item.Type.IsOpen(),
-                byReferenceType => byReferenceType.Item.Type.IsOpen(),
-                pointerType => pointerType.Item.Type.IsOpen(),
+                specializedType => specializedType.GenericParameters.Any(IsOpen),
+                arrayType => arrayType.Type.IsOpen(),
+                byReferenceType => byReferenceType.Type.IsOpen(),
+                pointerType => pointerType.Type.IsOpen(),
                 genericParameter => true,
-                functionType => functionType.Item.ResultType.IsOpen() || functionType.Item.Params.Any(p => p.Type.IsOpen())
+                functionType => functionType.ResultType.IsOpen() || functionType.Params.Any(p => p.Type.IsOpen())
             );
 
         /// <summary>
@@ -207,10 +207,10 @@ namespace Coberec.ExprCS
             var r = collectionType.Match(
                                  st => GetElementTypeFromIEnumerable(st, cx, allowIEnumerator, out isGeneric_),
                                  arr => {
-                                     if (arr.Item.Dimensions == 1)
+                                     if (arr.Dimensions == 1)
                                      {
                                          isGeneric_ = true;
-                                         return arr.Item.Type;
+                                         return arr.Type;
                                      } else return null;
                                  },
                                  _ => null,

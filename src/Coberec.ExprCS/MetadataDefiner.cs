@@ -16,8 +16,8 @@ namespace Coberec.ExprCS
     {
         public static FullTypeName GetFullTypeName(this TypeSignature t) =>
             t.Parent.Match(
-                ns => new FullTypeName(new TopLevelTypeName(ns.Item.ToString(), t.Name, t.TypeParameters.Length)),
-                parentType => GetFullTypeName(parentType.Item).NestedType(t.Name, t.TypeParameters.Length)
+                ns => new FullTypeName(new TopLevelTypeName(ns.ToString(), t.Name, t.TypeParameters.Length)),
+                parentType => GetFullTypeName(parentType).NestedType(t.Name, t.TypeParameters.Length)
             );
 
         public static TS.Accessibility GetAccessibility(Accessibility a) =>
@@ -38,13 +38,13 @@ namespace Coberec.ExprCS
         public static TS.IType GetTypeReference(this MetadataContext c, TypeReference tref) =>
             tref.Match(
                 specializedType =>
-                    specializedType.Item.GenericParameters.IsEmpty ? (IType)c.GetTypeDef(specializedType.Item.Type) :
-                    new ParameterizedType(c.GetTypeDef(specializedType.Item.Type),
-                        specializedType.Item.GenericParameters.Select(p => GetTypeReference(c, p))),
-                arrayType => new TS.ArrayType(c.Compilation, GetTypeReference(c, arrayType.Item.Type), arrayType.Item.Dimensions),
-                byrefType => new TS.ByReferenceType(GetTypeReference(c, byrefType.Item.Type)),
-                pointerType => new TS.PointerType(GetTypeReference(c, pointerType.Item.Type)),
-                gParam => c.GenericParameterStore.Retreive(gParam.Item),
+                    specializedType.GenericParameters.IsEmpty ? (IType)c.GetTypeDef(specializedType.Type) :
+                    new ParameterizedType(c.GetTypeDef(specializedType.Type),
+                        specializedType.GenericParameters.Select(p => GetTypeReference(c, p))),
+                arrayType => new TS.ArrayType(c.Compilation, GetTypeReference(c, arrayType.Type), arrayType.Dimensions),
+                byrefType => new TS.ByReferenceType(GetTypeReference(c, byrefType.Type)),
+                pointerType => new TS.PointerType(GetTypeReference(c, pointerType.Type)),
+                gParam => c.GenericParameterStore.Retreive(gParam),
                 function => throw new NotSupportedException($"Function types are not supported in metadata")
             );
 

@@ -12,7 +12,7 @@ namespace Coberec.ExprCS
     {
         /// <summary> Says if the type is object-like. Says `true` for classes, arrays, functions. Says `false` for value types, pointers. And says `null` for stuff that is unknown - generic parameters and by-ref types. </summary>
         public bool? IsReferenceType => this.Match<bool?>(
-            specializedType: t => !t.Item.Type.IsValueType,
+            specializedType: t => !t.Type.IsValueType,
             arrayType: _ => true,
             byReferenceType: _ => null,
             pointerType: _ => false,
@@ -41,16 +41,6 @@ namespace Coberec.ExprCS
         public bool IsGenericInstanceOf(System.Type type) =>
             this is SpecializedTypeCase stc && stc.Item.Type == TypeSignature.FromType(type);
 
-        // TODO: this should be generated
-        public override string ToString() => this.Match(
-            x => x.Item.ToString(),
-            x => x.Item.ToString(),
-            x => x.Item.ToString(),
-            x => x.Item.ToString(),
-            x => x.Item.ToString(),
-            x => x.Item.ToString()
-        );
-
         public TypeReference SubstituteGenerics(
             IEnumerable<GenericParameter> parameters,
             IEnumerable<TypeReference> arguments) =>
@@ -64,19 +54,19 @@ namespace Coberec.ExprCS
                 return this;
             Assert.Equal(parameters.Length, parameters.Distinct().Count());
             return this.Match(
-                specializedType: t => t.Item.With(genericParameters: t.Item.GenericParameters.EagerSelect(t => t.SubstituteGenerics(parameters, arguments))),
-                arrayType: t => t.Item.With(type: t.Item.Type.SubstituteGenerics(parameters, arguments)),
-                byReferenceType: t => t.Item.With(type: t.Item.Type.SubstituteGenerics(parameters, arguments)),
-                pointerType: t => t.Item.With(type: t.Item.Type.SubstituteGenerics(parameters, arguments)),
+                specializedType: t => t.With(genericParameters: t.GenericParameters.EagerSelect(t => t.SubstituteGenerics(parameters, arguments))),
+                arrayType: t => t.With(type: t.Type.SubstituteGenerics(parameters, arguments)),
+                byReferenceType: t => t.With(type: t.Type.SubstituteGenerics(parameters, arguments)),
+                pointerType: t => t.With(type: t.Type.SubstituteGenerics(parameters, arguments)),
                 genericParameter:
-                    t => parameters.IndexOf(t.Item) switch {
+                    t => parameters.IndexOf(t) switch {
                         -1    => t,
                         var i => arguments[i]
                     },
                 functionType:
-                    t => t.Item.With(
-                        t.Item.Params.EagerSelect(t => t.SubstituteGenerics(parameters, arguments)),
-                        t.Item.ResultType.SubstituteGenerics(parameters, arguments))
+                    t => t.With(
+                        t.Params.EagerSelect(t => t.SubstituteGenerics(parameters, arguments)),
+                        t.ResultType.SubstituteGenerics(parameters, arguments))
             );
         }
 
