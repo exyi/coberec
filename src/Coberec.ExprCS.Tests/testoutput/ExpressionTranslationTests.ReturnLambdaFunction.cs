@@ -20,19 +20,7 @@ namespace NS
 	{
 		public static Func<bool, object> M()
 		{
-			return delegate(bool pBool1)
-			{
-				object result2;
-				if (pBool1)
-				{
-					result2 = (object)(object)((Func<int>)(() => 1))();
-				}
-				else
-				{
-					result2 = null;
-				}
-				return result2;
-			};
+			return (bool pBool1) => pBool1 ? ((object)(object)((Func<int>)(() => 1))()) : null;
 		}
 	}
 }

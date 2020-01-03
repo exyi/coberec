@@ -6,19 +6,7 @@ namespace NS
 	{
 		public static object M()
 		{
-			return ((Func<bool, object>)delegate(bool pBool1)
-			{
-				object result2;
-				if (pBool1)
-				{
-					result2 = (object)(object)((Func<int>)(() => 1))();
-				}
-				else
-				{
-					result2 = null;
-				}
-				return result2;
-			})(arg: true);
+			return ((Func<bool, object>)((bool pBool1) => pBool1 ? ((object)(object)((Func<int>)(() => 1))()) : null))(arg: true);
 		}
 	}
 }

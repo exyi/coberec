@@ -405,13 +405,15 @@ namespace Coberec.ExprCS.Tests
             check.CheckOutput(cx);
         }
 
-        [Fact(Skip = "This does not work")]
+        [Fact]
         public void RefReturnCondition()
         {
             var refP1 = ParameterExpression.Create(new ByReferenceType(TypeSignature.Int32), "r1");
             var refP2 = ParameterExpression.Create(new ByReferenceType(TypeSignature.Int32), "r2");
             cx.AddTestExpr(refP1, refP1);
             cx.AddTestExpr(Expression.Conditional(pBool1, refP1, refP2), refP1, refP2, pBool1);
+
+            check.CheckOutput(cx);
         }
 
         [Fact]

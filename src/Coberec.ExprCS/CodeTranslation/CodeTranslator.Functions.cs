@@ -170,12 +170,18 @@ namespace Coberec.ExprCS.CodeTranslation
 
 
             var targetVar = ParameterExpression.Create(e.Value.Type(), "convertedFunction");
-            this.Parameters.Add(targetVar.Id, target.Output);
+            var ilVar = new ILVariable(VariableKind.StackSlot, target.Type);
+            // hack: we add the function to a temporary function so the lambda does not take ownership of it.
+            new ILFunction(null, 10000, new ICSharpCode.Decompiler.TypeSystem.GenericContext(), new BlockContainer(), ILFunctionKind.Delegate).Variables.Add(ilVar);
+            this.Parameters.Add(targetVar.Id, ilVar);
             var args = fromFnType.Params.Select(p => ParameterExpression.Create(p.Type, p.Name)).ToImmutableArray();
             var newFunction = TranslateFunction(new FunctionExpression(fromFnType.Params, args, Expression.Invoke(Expression.FunctionConversion(targetVar, fromFnType), args.Select(a => (Expression)a).ToImmutableArray())));
             this.Parameters.Remove(targetVar.Id);
+            // here, we remove the temporary hack function from ilVar
+            ilVar.Function.Variables.Remove(ilVar);
             return Result.Concat(
                 target,
+                new Result(new ExpressionStatement(new StLoc(ilVar, target.Instr()))),
                 newFunction
             );
         }

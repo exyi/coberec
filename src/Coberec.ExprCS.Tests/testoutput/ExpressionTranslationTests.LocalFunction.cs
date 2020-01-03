@@ -11,16 +11,7 @@ namespace NS
 			}
 			object f2(bool pBool1)
 			{
-				object result2;
-				if (pBool1)
-				{
-					result2 = (object)(object)f();
-				}
-				else
-				{
-					result2 = null;
-				}
-				return result2;
+				return pBool1 ? ((object)(object)f()) : null;
 			}
 		}
 	}

@@ -4,16 +4,7 @@ namespace NS
 	{
 		public static int M(bool pBool1, int p1, int p2)
 		{
-			int result;
-			if (pBool1)
-			{
-				result = p1;
-			}
-			else
-			{
-				result = p2;
-			}
-			return result;
+			return pBool1 ? p1 : p2;
 		}
 	}
 }

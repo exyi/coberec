@@ -126,9 +126,10 @@ namespace Coberec.ExprCS.Tests
             check.CheckOutput(cx);
         }
 
-        [Fact(Skip = "Currently a bit broken")]
+        [Fact]
         public void StandardProperties()
         {
+            // TODO: remove those CompilerGenerated attributes
             var ns = NamespaceSignature.Parse("MyNamespace");
             var type = TypeSignature.Class("MyType", ns, Accessibility.APublic);
             var prop = PropertySignature.Create("A", type, TypeSignature.String, Accessibility.APublic, Accessibility.AProtected);

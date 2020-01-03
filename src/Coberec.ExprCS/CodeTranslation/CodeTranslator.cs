@@ -8,8 +8,8 @@ using ICSharpCode.Decompiler.IL;
 using ICSharpCode.Decompiler.TypeSystem;
 using ICSharpCode.Decompiler.Util;
 using Xunit;
-using IL=ICSharpCode.Decompiler.IL;
-using TS=ICSharpCode.Decompiler.TypeSystem;
+using IL = ICSharpCode.Decompiler.IL;
+using TS = ICSharpCode.Decompiler.TypeSystem;
 
 namespace Coberec.ExprCS.CodeTranslation
 {
@@ -71,20 +71,6 @@ namespace Coberec.ExprCS.CodeTranslation
 
         ILInstruction ToILInstruction(Result r, ILVariable resultVar)
         {
-            Result copyOutput(Result output)
-            {
-                if (output.IsVoid)
-                {
-                    Assert.Null(resultVar);
-                    return Result.Nop;
-                }
-                else
-                {
-                    Assert.NotNull(resultVar);
-                    return new Result(new ExpressionStatement(new StLoc(resultVar, output.Instr())));
-                }
-            }
-
             if (r.IsVoid && r.Statements.Count == 1 && r.Statements[0] is ExpressionStatement expr)
             {
                 Assert.Null(expr.Output);
@@ -92,14 +78,20 @@ namespace Coberec.ExprCS.CodeTranslation
                 return expr.Instruction;
             }
 
-            return this.BuildBContainer(
-                Result.Concat(r, copyOutput(r)));
+            if (r.Statements.Count == 0)
+            {
+                if (r.IsVoid)
+                    return new Nop();
+                return new StLoc(resultVar, r.Instr());
+            }
+
+            return this.BuildBContainer(r.WithOutputInto(resultVar));
         }
 
         BlockContainer BuildBContainer(Result r)
         {
             var isVoid = r.IsVoid;
-            var container = new IL.BlockContainer(expectedResultType: isVoid ? IL.StackType.Void : r.Output.StackType);
+            var container = new IL.BlockContainer(expectedResultType: isVoid ? IL.StackType.Void : r.Type.GetStackType());
             var block = new IL.Block();
 
             foreach (var stmt in r.Statements)
@@ -233,7 +225,11 @@ namespace Coberec.ExprCS.CodeTranslation
             this.TranslateExpression(e.Lowered);
 
         Result TranslateBlock(BlockExpression block) =>
-            block.Expressions.Append(block.Result).Select(TranslateExpression).Apply(Result.Concat);
+            block.Expressions
+            .Select(e => TranslateExpression(e).AsVoid())
+            .ToArray()
+            .Append(TranslateExpression(block.Result))
+            .Apply(Result.Concat);
 
         Result TranslateLetIn(LetInExpression e)
         {
@@ -253,7 +249,7 @@ namespace Coberec.ExprCS.CodeTranslation
             this.Parameters.Remove(e.Variable.Id);
             return Result.Concat(
                 value,
-                new Result(ImmutableList.Create<Statement>(new ExpressionStatement(new StLoc(ilVar, value.Instr())))),
+                new Result(new ExpressionStatement(new StLoc(ilVar, value.Instr()))),
                 target);
         }
 
@@ -267,7 +263,7 @@ namespace Coberec.ExprCS.CodeTranslation
                     new Result(
                         new BasicBlockStatement(startBlock)
                     ),
-                    expr,
+                    expr.AsVoid(),
                     new Result(
                         new ExpressionStatement(new Branch(startBlock))
                     )
@@ -285,9 +281,10 @@ namespace Coberec.ExprCS.CodeTranslation
 
             return
                 Result.Concat(
-                    expr,
+                    expr.AsVoid(),
                     new Result(
-                        resultVariable,
+                        resultVariable?.Type,
+                        resultVariable is object ? new LdLoc(resultVariable) : null,
                         new BasicBlockStatement(endBlock)
                     )
                 );
@@ -343,6 +340,18 @@ namespace Coberec.ExprCS.CodeTranslation
             var ifTrue = this.TranslateExpression(item.IfTrue);
             var ifFalse = this.TranslateExpression(item.IfFalse);
 
+            if (ifTrue.Statements.IsEmpty && ifFalse.Statements.IsEmpty && !ifTrue.IsVoid)
+            {
+                // shortcut for simple expressions
+                return Result.Concat(
+                    condition,
+                    new Result(
+                        ifTrue.Type,
+                        new IfInstruction(condition.Instr(), ifTrue.Instr(), ifFalse.Instr())
+                    )
+                );
+            }
+
             var resultVar = this.CreateOutputVar(item.IfTrue.Type());
 
             var ifTrueC = this.ToILInstruction(ifTrue, resultVar);
@@ -351,7 +360,8 @@ namespace Coberec.ExprCS.CodeTranslation
             return Result.Concat(
                 condition,
                 new Result(
-                    output: resultVar,
+                    resultVar?.Type,
+                    resultVar is object ? new LdLoc(resultVar) : null,
                     new ExpressionStatement(new IfInstruction(condition.Instr(), ifTrueC, ifFalseC)))
             );
 
@@ -386,7 +396,7 @@ namespace Coberec.ExprCS.CodeTranslation
         {
             if (!this.Parameters.TryGetValue(pe.Id, out var v))
                 throw new Exception($"Parameter {pe.Name}:{pe.Type} with id {pe.Id} is not defined");
-            return new Result(v);
+            return new Result(v.Type, new LdLoc(v));
         }
 
         Result TranslateDefault(DefaultExpression e)
@@ -451,15 +461,16 @@ namespace Coberec.ExprCS.CodeTranslation
             var target = this.TranslateExpression(e.Target);
             var value = this.TranslateExpression(e.Value);
 
+            var (args_r, args) = Result.CombineInstr(target, value);
+
             var type = Assert.IsType<TS.ByReferenceType>(target.Type).ElementType;
 
             Assert.Equal(type.WithoutNullability(), value.Type.WithoutNullability());
 
-            var load = new StObj(target.Instr(), value.Instr(), type);
+            var load = new StObj(args[0], args[1], type);
 
             return Result.Concat(
-                target,
-                value,
+                args_r,
                 new Result(new ExpressionStatement(load))
             );
         }
@@ -487,14 +498,16 @@ namespace Coberec.ExprCS.CodeTranslation
             var array = this.TranslateExpression(e.Array);
             var indices = e.Indices.Select(this.TranslateExpression).ToArray();
             var elementType = Assert.IsType<TS.ArrayType>(array.Type).ElementType;
+
+            var (args_r, args) = Result.CombineInstr(indices.Prepend(array));
+
             var r = new IL.LdElema(
                 elementType,
-                array.Instr(),
-                indices.Select(i => i.Instr()).ToArray()
+                args[0],
+                args.Skip(1).ToArray()
             );
             return Result.Concat(
-                array,
-                Result.Concat(indices),
+                args_r,
                 Result.Expression(new TS.ByReferenceType(elementType), r)
             );
         }
@@ -533,12 +546,15 @@ namespace Coberec.ExprCS.CodeTranslation
         {
             var method = this.Metadata.GetMethod(e.Ctor);
 
-            var args = e.Args.Select(this.TranslateExpression).ToArray();
+            var args_raw = e.Args.Select(this.TranslateExpression).ToArray();
+
+            var (args_r, args) = Result.CombineInstr(args_raw);
+
 
             var call = new NewObj(method);
-            call.Arguments.AddRange(args.Select(a => a.Instr()));
+            call.Arguments.AddRange(args);
 
-            return Result.Concat(args.Append(Result.Expression(method.DeclaringType, call)));
+            return Result.Concat(args_r, Result.Expression(method.DeclaringType, call));
         }
 
         Result TranslateNewArray(NewArrayExpression e)
@@ -546,14 +562,16 @@ namespace Coberec.ExprCS.CodeTranslation
             Assert.Equal(e.Type.Dimensions, e.Dimensions.Length);
 
             var elementType = this.Metadata.GetTypeReference(e.Type.Type);
-            var indices = e.Dimensions.Select(TranslateExpression).ToArray();
+            var indices_raw = e.Dimensions.Select(TranslateExpression).ToArray();
+
+            var (indices_r, indices) = Result.CombineInstr(indices_raw);
 
             // TODO: validate indices
 
-            var r = new IL.NewArr(elementType, indices.Select(i => i.Instr()).ToArray());
+            var r = new IL.NewArr(elementType, indices.ToArray());
 
             return Result.Concat(
-                Result.Concat(indices),
+                indices_r,
                 Result.Expression(new TS.ArrayType(this.Metadata.Compilation, elementType, e.Type.Dimensions), r)
             );
         }
@@ -617,22 +635,23 @@ namespace Coberec.ExprCS.CodeTranslation
 
             var method = this.Metadata.GetMethod(e.Method);
 
-            var args = e.Args.Select(TranslateExpression).ToArray();
+            var args_raw = e.Args.Select(TranslateExpression).ToList();
             var target = e.Target?.Apply(TranslateExpression);
             target = AdjustReference(target, !(bool)method.DeclaringType.IsReferenceType, isReadonly: IsMethodReadonly(e.Method, method));
 
-            var result = new List<Result>();
-            target?.ApplyAction(result.Add);
-            result.AddRange(args);
+            if (target is object) args_raw.Insert(0, target);
+            var (args_r, args) = Result.CombineInstr(args_raw);
 
-            var call = method.IsStatic ? new Call(method) : (CallInstruction)new CallVirt(method) { Arguments = { target.Instr() } };
-            call.Arguments.AddRange(args.Select(a => a.Instr()));
+
+            var call = method.IsStatic ? new Call(method) : (CallInstruction)new CallVirt(method);
+            call.Arguments.AddRange(args);
             var isVoid = e.Method.Signature.ResultType == TypeSignature.Void;
-            result.Add(isVoid ?
-                       new Result(new ExpressionStatement(call)) :
-                       Result.Expression(method.ReturnType, call));
 
-            return Result.Concat(result);
+            return Result.Concat(
+                args_r,
+                isVoid ? new Result(new ExpressionStatement(call))
+                       : Result.Expression(method.ReturnType, call)
+            );
         }
 
         Result TranslateBinary(BinaryExpression e)
@@ -641,8 +660,12 @@ namespace Coberec.ExprCS.CodeTranslation
             var type = e.Right.Type();
             Assert.Equal(e.Left.Type(), type);
 
-            var left = TranslateExpression(e.Left);
-            var right = TranslateExpression(e.Right);
+            var left_raw = TranslateExpression(e.Left);
+            var right_raw = TranslateExpression(e.Right);
+
+            var (args_r, args) = Result.CombineInstr(left_raw, right_raw);
+            var left = args[0];
+            var right = args[1];
 
             if (e.IsComparison())
             {
@@ -650,27 +673,27 @@ namespace Coberec.ExprCS.CodeTranslation
                 // primitive comparison
                 if (op == "==" || op == "!=")
                 {
-                    if (left.Type.IsReferenceType == false && left.Type.GetStackType() == StackType.O)
-                        throw new Exception($"Can not use '==' and '!=' operators for non-enum and non-primitive type {left.Type}. If you wanted to call an overloaded operator, please the a method call expression.");
+                    if (left_raw.Type.IsReferenceType == false && left_raw.Type.GetStackType() == StackType.O)
+                        throw new Exception($"Can not use '==' and '!=' operators for non-enum and non-primitive type {left_raw.Type}. If you wanted to call an overloaded operator, please the a method call expression.");
 
                     return Result.Concat(
-                        left, right,
+                        args_r,
                         Result.Expression(boolType, new IL.Comp(
                             op == "==" ? ComparisonKind.Equality : ComparisonKind.Inequality,
                             Sign.None,
-                            left.Instr(),
-                            right.Instr()
+                            left,
+                            right
                         ))
                     );
                 }
                 else
                 {
-                    var stackType = left.Type.GetStackType();
+                    var stackType = left_raw.Type.GetStackType();
                     if (stackType == StackType.O || stackType == StackType.Ref || stackType == StackType.Unknown)
-                        throw new Exception($"Can not use comparison operators for non-integer type {left.Type}. If you wanted to call an overloaded operator, please the a method call expression.");
+                        throw new Exception($"Can not use comparison operators for non-integer type {left_raw.Type}. If you wanted to call an overloaded operator, please the a method call expression.");
 
                     return Result.Concat(
-                        left, right,
+                        args_r,
                         Result.Expression(boolType, new IL.Comp(
                             op switch {
                                 "<" => ComparisonKind.LessThan,
@@ -679,9 +702,9 @@ namespace Coberec.ExprCS.CodeTranslation
                                 ">=" => ComparisonKind.GreaterThanOrEqual,
                                 _ => throw new NotSupportedException($"Comparison operator {op} is not supported.")
                             },
-                            left.Type.GetSign(),
-                            left.Instr(),
-                            right.Instr()
+                            left_raw.Type.GetSign(),
+                            left,
+                            right
                         ))
                     );
                 }
@@ -693,76 +716,6 @@ namespace Coberec.ExprCS.CodeTranslation
         {
             var type = this.Metadata.GetTypeReference(e.Type);
             return Result.Expression(type, ILAstFactory.Constant(e.Value, type));
-        }
-
-        class Statement
-        {
-        }
-
-        class BasicBlockStatement : Statement
-        {
-            public Block Block;
-            public BasicBlockStatement(Block b)
-            {
-                this.Block = b ?? throw new ArgumentNullException(nameof(b));
-            }
-        }
-
-        class ExpressionStatement : Statement
-        {
-            public readonly ILVariable Output;
-            public readonly ILInstruction Instruction;
-
-            public ExpressionStatement(ILInstruction instruction, ILVariable output = null)
-            {
-                Output = output;
-                Instruction = instruction ?? throw new ArgumentNullException(nameof(instruction));
-            }
-        }
-
-        class Result
-        {
-            public readonly ImmutableList<Statement> Statements;
-            public readonly ILVariable Output;
-
-            public IType Type => Output?.Type;
-            public bool IsVoid => Output == null;
-
-            public LdLoc Instr() => new LdLoc(this.Output);
-
-            public static Result Nop = new Result();
-            public bool IsNop => this.Statements.Count == 0 && Output is null;
-
-            public static Result Expression(IType type, ILInstruction i)
-            {
-                var resultVar = new ILVariable(VariableKind.StackSlot, type);
-                Assert.Equal(resultVar.StackType, i.ResultType);
-                return new Result(output: resultVar, new ExpressionStatement(i, resultVar));
-            }
-
-            public Result(params Statement[] statements) : this(null, statements) { }
-            public Result(IEnumerable<Statement> statements) : this(null, statements) { }
-            public Result(ILVariable output, params Statement[] statements) : this(output, statements.AsEnumerable()) { }
-            public Result(ILVariable output, IEnumerable<Statement> statements)
-            {
-                this.Statements = statements.ToImmutableList();
-                this.Statements.ForEach(Assert.NotNull);
-                Assert.NotEqual(StackType.Void, output?.StackType);
-                this.Output = output;
-            }
-
-            public static Result Concat(params Result[] rs) => Concat((IEnumerable<Result>)rs);
-            public static Result Concat(IEnumerable<Result> rs)
-            {
-                var s = ImmutableList<Statement>.Empty;
-                ILVariable output = null;
-                foreach (var r in rs)
-                {
-                    if (r.Statements != null) s = s.AddRange(r.Statements);
-                    output = r.Output;
-                }
-                return new Result(output, s);
-            }
         }
     }
 }

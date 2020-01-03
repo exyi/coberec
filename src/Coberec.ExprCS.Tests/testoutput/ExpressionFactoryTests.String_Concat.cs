@@ -39,7 +39,26 @@ namespace NS
 	{
 		public static string M(string s)
 		{
-			return string.Concat(s, "; ", s + "; " + s + "; " + s, "; ", s);
+			string[] tmpArray2 = new string[5]
+			{
+				s,
+				"; ",
+				null,
+				null,
+				null
+			};
+			string[] tmpArray = new string[5]
+			{
+				s,
+				"; ",
+				s,
+				"; ",
+				s
+			};
+			tmpArray2[2] = string.Concat(tmpArray);
+			tmpArray2[3] = "; ";
+			tmpArray2[4] = s;
+			return string.Concat(tmpArray2);
 		}
 	}
 }
