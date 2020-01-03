@@ -29,14 +29,14 @@ type FieldAccessExpression {
 
 type ReferenceAssignExpression {
     # target must be of type ByReference
-    target: Expression
+    target: Expression @validateIsWritableReferenceType
     value: Expression
 }
 
 # returns a value from a reference
 type DereferenceExpression {
     # expression must be of type ByReference
-    expr: Expression
+    expr: Expression @validateIsReferenceType
 }
 
 # returns a reference to a local variable or a parameter
@@ -51,7 +51,7 @@ type AddressOfExpression {
 
 type NumericConversionExpression {
     value: Expression
-    type: TypeReference
+    type: TypeReference @validateTypeIsNotRef
     checked: Boolean
 }
 
@@ -64,11 +64,11 @@ type ReferenceConversionExpression {
 
 type ConstantExpression {
     value: Any!
-    type: TypeReference
+    type: TypeReference @validateTypeIsNotRef
 }
 
 type DefaultExpression {
-    type: TypeReference
+    type: TypeReference @validateTypeIsNotRef
 }
 
 type ParameterExpression {
@@ -126,16 +126,6 @@ type LabelTarget {
     type: TypeReference
 }
 
-#type LabelExpression {
-#    target: LabelTarget
-#    defaultValue: Expression
-#}
-
-#type GotoExpression {
-#    value: Expression
-#    target: LabelTarget
-#}
-
 type NewArrayExpression {
     type: ArrayType
     dimensions: [Expression]
@@ -171,8 +161,6 @@ interface LowerableExpression {
     lowered: Expression
 }
 
-#| LabelExpression
-#| GotoExpression
 union Expression =
       BinaryExpression
     | NotExpression

@@ -11,6 +11,14 @@
         "typeIsNotRef": {
             "ValidationMethodName": "Coberec.ExprCS.ModelValidators.TypeIsNotRef",
             "ValidatorParameters": [ ]
+        },
+        "isReferenceType": {
+            "ValidationMethodName": "Coberec.ExprCS.ModelValidators.IsReferenceType",
+            "ValidatorParameters": [ ]
+        },
+        "isWritableReferenceType": {
+            "ValidationMethodName": "Coberec.ExprCS.ModelValidators.IsWritableReferenceType",
+            "ValidatorParameters": [ ]
         }
     },
     "ExternalSymbols": [
@@ -26,6 +34,24 @@
             "ResultType": "Coberec.CoreLib.ValidationErrors",
             "Args": [
                 { "Name": "value", "Type": "TypeReference" }
+            ]
+        },
+        {
+            "DeclaredIn": "Coberec.ExprCS.ModelValidators",
+            "Name": "IsReferenceType",
+            "Kind": "StaticMethod",
+            "ResultType": "Coberec.CoreLib.ValidationErrors",
+            "Args": [
+                { "Name": "value", "Type": "Expression" }
+            ]
+        },
+        {
+            "DeclaredIn": "Coberec.ExprCS.ModelValidators",
+            "Name": "IsWritableReferenceType",
+            "Kind": "StaticMethod",
+            "ResultType": "Coberec.CoreLib.ValidationErrors",
+            "Args": [
+                { "Name": "value", "Type": "Expression" }
             ]
         }
     ]

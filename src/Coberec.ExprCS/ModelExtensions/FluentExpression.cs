@@ -34,7 +34,6 @@ namespace Coberec.ExprCS
                 return Expression.StaticMethodCall(method, args.Prepend(target));
             else
             {
-                Assert.Equal(method.Params().Select(p => p.Type), args.Select(a => a.Type()));
                 return Expression.MethodCall(method, args.ToImmutableArray(), target);
             }
         }

@@ -48,6 +48,8 @@ namespace Coberec.ExprCS
 
         public static FieldSignature FromReflection(R.FieldInfo field)
         {
+            field = MethodSignature.SanitizeDeclaringTypeGenerics(field);
+
             var declaringType = TypeSignature.FromType(field.DeclaringType);
             var accessibility = field.IsPublic ? Accessibility.APublic :
                                 field.IsAssembly ? Accessibility.AInternal :

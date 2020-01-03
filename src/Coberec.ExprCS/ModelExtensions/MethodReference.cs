@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using Coberec.CoreLib;
 using Coberec.CSharpGen;
 using Xunit;
 using LE = System.Linq.Expressions;
@@ -12,6 +13,16 @@ namespace Coberec.ExprCS
     /// <summary> Represents a reference to a method. The generic parameters of the parent class and the method are substituted - this class is basically <see cref="MethodSignature" /> + generic arguments </summary>
     public partial class MethodReference
     {
+        static partial void ValidateObjectExtension(ref CoreLib.ValidationErrorsBuilder e, MethodReference m)
+        {
+            if (m.Signature is null) return;
+            var expectedCount = m.Signature.DeclaringType.TotalParameterCount();
+            if (expectedCount != m.TypeParameters.Length)
+                e.Add(ValidationErrors.Create($"Type {m.Signature.DeclaringType} expected {expectedCount} parameters, got [{string.Join(", ", m.TypeParameters)}]"));
+            if (m.Signature.TypeParameters.Length != m.MethodParameters.Length)
+                e.Add(ValidationErrors.Create($"Method {m.Signature} expected {expectedCount} type parameters, got [{string.Join(", ", m.MethodParameters)}]"));
+        }
+
         public SpecializedType DeclaringType() => new SpecializedType(this.Signature.DeclaringType, this.TypeParameters);
         public TypeReference ResultType() => Signature.ResultType.SubstituteGenerics(Signature.TypeParameters, this.MethodParameters).SubstituteGenerics(Signature.DeclaringType.TypeParameters, this.TypeParameters);
         public ImmutableArray<MethodParameter> Params() =>
@@ -22,19 +33,10 @@ namespace Coberec.ExprCS
         public override string ToString() =>
             MethodSignature.ToString(Signature, this.MethodParameters, this.Params(), this.ResultType());
 
-        internal static T SanitizeDeclaringTypeGenerics<T>(T m)
-            where T: R.MemberInfo
-        {
-            if (m.DeclaringType.IsGenericTypeDefinition || !m.DeclaringType.IsGenericType)
-                return m;
-            var d = m.DeclaringType.GetGenericTypeDefinition();
-            return d.GetMembers(R.BindingFlags.DeclaredOnly | R.BindingFlags.Public | R.BindingFlags.NonPublic | R.BindingFlags.Instance | R.BindingFlags.Static).OfType<T>().Single(m2 => m2.MetadataToken == m.MetadataToken);
-        }
-
         public static MethodReference FromReflection(R.MethodBase method)
         {
             Assert.False(method.IsGenericMethodDefinition);
-            var signature = MethodSignature.FromReflection(SanitizeDeclaringTypeGenerics(method.IsGenericMethod ? ((R.MethodInfo)method).GetGenericMethodDefinition() : method));
+            var signature = MethodSignature.FromReflection(method);
             var declaringType = ((TypeReference.SpecializedTypeCase) TypeReference.FromType(method.DeclaringType)).Item;
             var methodArgs = method.IsGenericMethod ?
                              method.GetGenericArguments().EagerSelect(TypeReference.FromType) :

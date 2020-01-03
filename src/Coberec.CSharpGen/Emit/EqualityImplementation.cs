@@ -232,7 +232,7 @@ namespace Coberec.CSharpGen.Emit
         {
             Debug.Assert(type.IsAbstract);
             var methodName = E.SymbolNamer.NameMethod(type, "EqualsCore", 0, new[] { type }, false);
-            var eqCoreMethod = new VirtualMethod(type, Accessibility.ProtectedAndInternal, methodName, new [] { new VirtualParameter(type, "b") }, type.Compilation.FindType(typeof(bool)), isAbstract: true);
+            var eqCoreMethod = new VirtualMethod(type, Accessibility.ProtectedAndInternal, methodName, new [] { new VirtualParameter(type, "b") }, type.Compilation.FindType(typeof(bool)), isAbstract: true, isVirtual: true);
             type.Methods.Add(eqCoreMethod);
             return (eqCoreMethod, type.ImplementEqualityCore(eqMethod =>
             {

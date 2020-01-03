@@ -17,11 +17,11 @@ union TypeOrNamespace = NamespaceSignature | TypeSignature
 
 type GenericParameter {
     id: ID
-    name: String @validateNotEmpty
+    name: String
 }
 
 interface MemberSignature {
-    name: String @validateNotEmpty
+    name: String
     accessibility: Accessibility
 }
 
@@ -53,11 +53,11 @@ type ArrayType {
 }
 
 type ByReferenceType {
-    type: TypeReference
+    type: TypeReference @validateTypeIsNotRef
 }
 
 type PointerType {
-    type: TypeReference
+    type: TypeReference @validateTypeIsNotRef
 }
 
 # represents an anonymous delegate
@@ -71,7 +71,7 @@ union TypeReference = SpecializedType | ArrayType | ByReferenceType | PointerTyp
 
 type MethodParameter {
     type: TypeReference
-    name: String @validateNotEmpty
+    name: String
     hasDefaultValue: Boolean
     defaultValue: Any!
     isParams: Boolean
@@ -80,7 +80,7 @@ type MethodParameter {
 type MethodSignature implements MemberSignature {
     declaringType: TypeSignature
     params: [MethodParameter]
-    name: String @validateNotEmpty
+    name: String
     resultType: TypeReference
     isStatic: Boolean
     accessibility: Accessibility
@@ -99,9 +99,9 @@ type MethodReference implements MemberReference {
 
 type FieldSignature implements MemberSignature {
     declaringType: TypeSignature
-    name: String @validateNotEmpty
+    name: String
     accessibility: Accessibility
-    resultType: TypeReference
+    resultType: TypeReference @validateTypeIsNotRef
     isStatic: Boolean
     isReadonly: Boolean
 }
@@ -114,7 +114,7 @@ type FieldReference implements MemberReference {
 type PropertySignature implements MemberSignature {
     declaringType: TypeSignature
     type: TypeReference
-    name: String @validateNotEmpty
+    name: String
     accessibility: Accessibility
     isStatic: Boolean
     getter: MethodSignature!

@@ -20,6 +20,17 @@ namespace Coberec.ExprCS
             functionType: _ => true
         );
 
+        /// <summary> Returns true, if the type can not have any super classes </summary>
+        public bool IsSealed() => this.Match<bool>(
+            specializedType: t => t.Type.IsValueType || (!t.Type.CanOverride && t.Type.Kind != "delegate"),
+            //                                                                             ^ TODO: more involved (co/contra) variance check?
+            arrayType: t => t.Type.IsSealed(),
+            byReferenceType: _ => true,
+            pointerType: _ => false,
+            genericParameter: _ => false,
+            functionType: _ => false
+        );
+
         public static implicit operator TypeReference(TypeSignature signature)
         {
             if (signature == null) return null;
@@ -74,6 +85,22 @@ namespace Coberec.ExprCS
             this is SpecializedTypeCase s ? specializedType(s.Item) :
             otherwise(this);
 
+        /// <summary> Creates a specialization of System.ValueTuple for the specified <paramref name="types" />. </summary>
+        public static TypeReference Tuple(ImmutableArray<TypeReference> types)
+        {
+            return types.Length switch {
+                0 => TypeSignature.ValueTuple0,
+                1 => TypeSignature.ValueTuple1.Specialize(types),
+                2 => TypeSignature.ValueTuple2.Specialize(types),
+                3 => TypeSignature.ValueTuple3.Specialize(types),
+                4 => TypeSignature.ValueTuple4.Specialize(types),
+                5 => TypeSignature.ValueTuple5.Specialize(types),
+                6 => TypeSignature.ValueTuple6.Specialize(types),
+                7 => TypeSignature.ValueTuple7.Specialize(types),
+                _ => TypeSignature.ValueTupleRest.Specialize(types.EagerSlice(take: 7).Add(Tuple(types.EagerSlice(skip: 7))))
+            };
+        }
+
         public static TypeReference FromType(System.Type type)
         {
             if (type.IsArray)
@@ -89,7 +116,7 @@ namespace Coberec.ExprCS
                 // This check is probably invalid since in Reflection you encounter these type definitions even in return types...
                 // if (type.IsGenericTypeDefinition)
                 //     throw new ArgumentException($"Can not create TypeReference from open (unconstructed) generic type {type}", nameof(type));
-                var args = type.GenericTypeArguments.EagerSelect(FromType);
+                var args = type.GetGenericArguments().EagerSelect(FromType);
                 var signature = TypeSignature.FromType(type.GetGenericTypeDefinition());
                 return TypeReference.SpecializedType(signature, args);
             }

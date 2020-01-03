@@ -55,16 +55,29 @@ namespace Coberec.ExprCS
 
             var t = cx.GetTypeDef(method.DeclaringType);
 
+            var explicitInterface =
+                method.Accessibility == Accessibility.APrivate && method.Name.Contains('.') ?
+                t.GetAllBaseTypes().Where(b => b.Kind == TypeKind.Interface)
+                                   .FirstOrDefault(i => method.Name.StartsWith(i.FullName + ".")) : null;
+
+            var justName = explicitInterface is null ? method.Name
+                                                     : method.Name.Substring(explicitInterface.FullName.Length + 1);
+
             bool filter(IMethod m) => m != null &&
                                       m.Name == method.Name &&
                                       m.Parameters.Count == method.Params.Length &&
+                                      m.TypeParameters.Count == method.TypeParameters.Length &&
+                                      SymbolLoader.TypeRef(m.ReturnType) == method.ResultType && // operators may be overloaded by result type
                                       m.Parameters.Select(p => SymbolLoader.TypeRef(p.Type)).SequenceEqual(method.Params.Select(a => a.Type));
-
             var candidates =
                (!method.HasSpecialName ? t.GetMethods(filter, GetMemberOptions.None) :
                 method.Name == ".ctor" ? t.GetConstructors(filter, GetMemberOptions.None) :
-                method.Name.StartsWith("get_") ? t.GetProperties(p => filter(p.Getter)).Select(p => p.Getter) :
-                method.Name.StartsWith("set_") ? t.GetProperties(p => filter(p.Setter)).Select(p => p.Setter) :
+                justName.StartsWith("get_") ? t.GetProperties(p => filter(p.Getter)).Select(p => p.Getter) :
+                justName.StartsWith("set_") ? t.GetProperties(p => filter(p.Setter)).Select(p => p.Setter) :
+                justName.StartsWith("remove_") ? t.GetEvents(e => filter(e.RemoveAccessor)).Select(p => p.RemoveAccessor) :
+                justName.StartsWith("add_") ? t.GetEvents(e => filter(e.AddAccessor)).Select(p => p.AddAccessor) :
+                justName.StartsWith("op_") ? t.GetMethods(filter, GetMemberOptions.None) :
+                method.Name == "Finalize" ? t.GetMethods(filter, GetMemberOptions.None) :
                 throw new NotSupportedException($"Special name {method.Name} is not supported"))
                .ToList();
 

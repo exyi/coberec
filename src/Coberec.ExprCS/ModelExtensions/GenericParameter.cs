@@ -29,7 +29,20 @@ namespace Coberec.ExprCS
         public static GenericParameter FromType(Type t)
         {
             Assert.True(t.IsGenericParameter);
-            return Get(((object)t.DeclaringMethod ?? t.DeclaringType), t.Name);
+            if (t.DeclaringMethod is object)
+                return Get(t.DeclaringMethod, t.Name);
+            // hack: Reflection API returns that owner of T from ArraySegment<T>.Enumerator is the Enumerator instead of the ArraySegment :/
+            // this piece of ... code corrects that by finding the matching generic type on it's parent
+
+            IEnumerable<Type> allGenericParams(Type t) =>
+                t.DeclaringType is null ? t.GetGenericArguments()
+                                        : allGenericParams(t.DeclaringType)
+                                          .Concat(t.GetGenericArguments().Skip(t.DeclaringType.GetGenericArguments().Length));
+            var tparams = allGenericParams(t.DeclaringType).ToArray();
+            var t2 = tparams[t.GenericParameterPosition];
+            Assert.Equal(t2.Name, t.Name);
+            Assert.Equal(t2.GenericParameterPosition, t.GenericParameterPosition);
+            return Get(t2.DeclaringType, t2.Name);
         }
 
         public override string ToString() => $"{this.Name}({this.Id})";

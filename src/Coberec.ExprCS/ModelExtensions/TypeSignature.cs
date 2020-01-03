@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
+using Coberec.CoreLib;
 using Coberec.CSharpGen;
 using Xunit;
 
@@ -11,6 +12,16 @@ namespace Coberec.ExprCS
     /// <summary> Basic metadata about a type - <see cref="Name" />, <see cref="Kind" />, <see cref="Accessibility" />, ... </summary>
     public partial class TypeSignature
     {
+
+        static partial void ValidateObjectExtension(ref CoreLib.ValidationErrorsBuilder e, TypeSignature t)
+        {
+            if (t.IsValueType)
+            {
+                if (t.CanOverride) e.Add(ValidationErrors.Create($"Can not override value type {t}").Nest("canOverride"));
+                if (t.IsAbstract) e.Add(ValidationErrors.Create($"Can not have abstract value type {t}").Nest("isAbstract"));
+            }
+        }
+
         /// <summary> Signature of <see cref="System.Void" /> </summary>
         public static readonly TypeSignature Void = Struct("Void", NamespaceSignature.System, Accessibility.APublic);
         /// <summary> Signature of <see cref="System.Int32" /> </summary>
@@ -35,6 +46,24 @@ namespace Coberec.ExprCS
         public static readonly TypeSignature IEnumeratorOfT = FromType(typeof(IEnumerable<>));
         /// <summary> Signature of <see cref="System.Nullable{T}" /> </summary>
         public static readonly TypeSignature NullableOfT = FromType(typeof(Nullable<>));
+        /// <summary> Signature of <see cref="System.ValueTuple" /> </summary>
+        public static readonly TypeSignature ValueTuple0 = FromType(typeof(ValueTuple));
+        /// <summary> Signature of <see cref="System.ValueTuple{T1}" /> </summary>
+        public static readonly TypeSignature ValueTuple1 = FromType(typeof(ValueTuple<>));
+        /// <summary> Signature of <see cref="System.ValueTuple{T1, T2}" /> </summary>
+        public static readonly TypeSignature ValueTuple2 = FromType(typeof(ValueTuple<,>));
+        /// <summary> Signature of <see cref="System.ValueTuple{T1, T2, T3}" /> </summary>
+        public static readonly TypeSignature ValueTuple3 = FromType(typeof(ValueTuple<,,>));
+        /// <summary> Signature of <see cref="System.ValueTuple{T1, T2, T3, T4}" /> </summary>
+        public static readonly TypeSignature ValueTuple4 = FromType(typeof(ValueTuple<,,,>));
+        /// <summary> Signature of <see cref="System.ValueTuple{T1, T2, T3, T4, T5}" /> </summary>
+        public static readonly TypeSignature ValueTuple5 = FromType(typeof(ValueTuple<,,,,>));
+        /// <summary> Signature of <see cref="System.ValueTuple{T1, T2, T3, T4, T5, T6}" /> </summary>
+        public static readonly TypeSignature ValueTuple6 = FromType(typeof(ValueTuple<,,,,,>));
+        /// <summary> Signature of <see cref="System.ValueTuple{T1, T2, T3, T4, T5, T6, T7}" /> </summary>
+        public static readonly TypeSignature ValueTuple7 = FromType(typeof(ValueTuple<,,,,,,>));
+        /// <summary> Signature of <see cref="System.ValueTuple{T1, T2, T3, T4, T5, T6, T7, TRest}" /> </summary>
+        public static readonly TypeSignature ValueTupleRest = FromType(typeof(ValueTuple<,,,,,,,>));
 
         /// <summary> Creates a new signature of a `class`. </summary>
         public static TypeSignature Class(string name, TypeOrNamespace parent, Accessibility accessibility, bool canOverride = true, bool isAbstract = false, params GenericParameter[] genericParameters) =>
@@ -75,6 +104,14 @@ namespace Coberec.ExprCS
                 typeParameters: genericParameters.ToImmutableArray()
             );
 
+        /// <summary> Returns total type parameter count (including those from parent types) </summary>
+        public int TotalParameterCount() => this.Parent.Match(ns => 0, t => t.TotalParameterCount()) + this.TypeParameters.Length;
+
+        public string ReflectionName() =>
+            this.Parent.Match(ns => ns.ToString() + ".", t => t.ReflectionName() + "+")
+            + this.Name
+            + (this.TypeParameters.Length > 0 ? "`" + this.TypeParameters.Length : "");
+
         /// <summary> Gets a <see cref="TypeSignature"/> of the specified reflection <se cref="System.Type" />. If the type is generic, it must be the definition without the generic parameters instantiated. All the important metadata is copied from the reflection type, it can be used on any type even though it may not be valid in the specific <see cref="MetadataContext" />. </summary>
         public static TypeSignature FromType(Type type)
         {
@@ -86,12 +123,15 @@ namespace Coberec.ExprCS
             if (type.IsGenericType && !type.IsGenericTypeDefinition)
                 type = type.GetGenericTypeDefinition();
 
-            var parent = type.DeclaringType is object ? FromType(type.DeclaringType) : (TypeOrNamespace)NamespaceSignature.Parse(type.Namespace);
+            var parent = type.DeclaringType is object ? FromType(type.DeclaringType) :
+                         type.Namespace is null       ? (TypeOrNamespace)NamespaceSignature.Global :
+                                                        (TypeOrNamespace)NamespaceSignature.Parse(type.Namespace);
+            var parentGenericArgs = type.DeclaringType?.GetGenericArguments().Length ?? 0;
             var kind =
-                       typeof(Delegate).IsAssignableFrom(type) ? "delegate" :
                        type.IsEnum ? "enum" :
                        type.IsValueType ? "struct" :
                        type.IsInterface ? "interface" :
+                       typeof(MulticastDelegate) == type.BaseType ? "delegate" :
                        type.IsClass ? "class" :
                        throw new NotSupportedException($"Can not translate {type} to TypeSignature");
             var accessibility = type.IsPublic || type.IsNestedPublic ? Accessibility.APublic :
@@ -100,10 +140,10 @@ namespace Coberec.ExprCS
                                 type.IsNestedFamily ? Accessibility.AProtected :
                                 type.IsNestedFamORAssem ? Accessibility.AProtectedInternal :
                                 type.IsNestedFamANDAssem ? Accessibility.APrivateProtected :
-                                throw new NotSupportedException("Unsupported accesibility of "+ type);
+                                                           Accessibility.AInternal;
             var typeName = type.Name.Contains('`') ? type.Name.Substring(0, type.Name.IndexOf("`", StringComparison.Ordinal)) :
                                                      type.Name;
-            return new TypeSignature(typeName, parent, kind, type.IsValueType, !type.IsSealed, type.IsAbstract, accessibility, type.GetGenericArguments().Select(GenericParameter.FromType).ToImmutableArray());
+            return new TypeSignature(typeName, parent, kind, type.IsValueType, !type.IsSealed, type.IsAbstract, accessibility, type.GetGenericArguments().Skip(parentGenericArgs).Select(GenericParameter.FromType).ToImmutableArray());
         }
 
         /// <summary> Returns a specialized with the generic parameter form itself filled in. You probably don't want to use that to create expression, but may be quite useful to get base types with generic parameters from this type. </summary>

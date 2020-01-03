@@ -39,6 +39,7 @@ namespace Coberec.ExprCS
                 var parent = type.DeclaringTypeDefinition != null ?
                              TypeOrNamespace.TypeSignature(Type(type.DeclaringTypeDefinition)) :
                              TypeOrNamespace.NamespaceSignature(Namespace(type.Namespace));
+                var parentGenerics = type.DeclaringTypeDefinition?.TypeParameterCount ?? 0;
                 var kind = type.Kind == TypeKind.Interface ? "interface" :
                            type.Kind == TypeKind.Struct ? "struct" :
                            type.Kind == TypeKind.Class ? "class" :
@@ -46,7 +47,7 @@ namespace Coberec.ExprCS
                            type.Kind == TypeKind.Enum ? "enum" :
                            type.Kind == TypeKind.Delegate ? "delegate" :
                            throw new NotSupportedException($"Type kind {type.Kind} is not supported.");
-                return new TypeSignature(type.Name, parent, kind, isValueType: !(bool)type.IsReferenceType, canOverride: !type.IsSealed && !type.IsStatic, isAbstract: type.IsAbstract || type.IsStatic, TranslateAccessibility(type.Accessibility), type.TypeParameters.Select(GenericParameter).ToImmutableArray());
+                return new TypeSignature(type.Name, parent, kind, isValueType: !(bool)type.IsReferenceType, canOverride: !type.IsSealed && !type.IsStatic, isAbstract: type.IsAbstract || type.IsStatic, TranslateAccessibility(type.Accessibility), type.TypeParameters.Skip(parentGenerics).Select(GenericParameter).ToImmutableArray());
             });
 
         static readonly ConditionalWeakTable<IMethod, MethodSignature> methodSignatureCache = new ConditionalWeakTable<IMethod, MethodSignature>();
@@ -59,7 +60,7 @@ namespace Coberec.ExprCS
                     TypeRef(m.ReturnType),
                     m.IsStatic,
                     TranslateAccessibility(m.Accessibility),
-                    m.IsVirtual,
+                    (m.IsVirtual || m.IsAbstract || m.IsOverride) && !m.IsSealed && !m.DeclaringTypeDefinition.IsSealed && m.DeclaringTypeDefinition.IsReferenceType == true,
                     m.IsOverride,
                     m.IsAbstract,
                     m.IsConstructor || m.IsAccessor || m.IsOperator || m.IsDestructor,
@@ -112,6 +113,7 @@ namespace Coberec.ExprCS
 
         static readonly ConditionalWeakTable<string, NamespaceSignature> namespaceSignatureCache = new ConditionalWeakTable<string, NamespaceSignature>();
         public static NamespaceSignature Namespace(string ns) =>
+            ns.Length == 0 ? NamespaceSignature.Global :
             namespaceSignatureCache.GetValue(ns, NamespaceSignature.Parse);
 
         public static MemberSignature Member(IMember m) =>
@@ -129,6 +131,8 @@ namespace Coberec.ExprCS
             );
 
         public static TypeReference TypeRef(IType type) =>
+            type is null ? throw new ArgumentNullException("type") :
+            type.Kind == TypeKind.Unknown ? throw new ArgumentException($"Can not convert unknown type {type}. Did you forget to include it's assembly in the set of references?", "type") :
             type is TS.Implementation.NullabilityAnnotatedType decoratedType ? TypeRef(decoratedType.TypeWithoutAnnotation) :
             type is ITypeDefinition td ? TypeReference.SpecializedType(Type(td), ImmutableArray<TypeReference>.Empty) :
             type is TS.ByReferenceType refType ? TypeReference.ByReferenceType(TypeRef(refType.ElementType)) :
@@ -137,8 +141,8 @@ namespace Coberec.ExprCS
             type is TS.ParameterizedType paramType ? TypeReference.SpecializedType(
                                                          Type(paramType.GenericType.GetDefinition()),
                                                          paramType.TypeArguments.Select(TypeRef).ToImmutableArray()) :
+            type is TS.TupleType tupleType ? TypeReference.Tuple(tupleType.ElementTypes.EagerSelect(TypeRef)) :
             type is TS.ITypeParameter typeParam ? TypeReference.GenericParameter(GenericParameter(typeParam)) :
             throw new NotImplementedException($"Type reference '{type}' of type '{type.GetType().Name}' is not supported.");
-
     }
 }

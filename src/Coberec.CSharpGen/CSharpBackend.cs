@@ -468,7 +468,7 @@ namespace Coberec.CSharpGen
 
                         var methodArgs = s.Args.Select(a => new E.MethodParameter(findType(a.Type), a.Name)).ToImmutableArray();
                         var returnType = findType(s.ResultType);
-                        var newMethod = new E.MethodSignature(declaringType.Signature, methodArgs, s.Name, returnType, isStatic: s.Kind == ExternalSymbolKind.StaticMethod, E.Accessibility.APublic, true, false, false, false, ImmutableArray<E.GenericParameter>.Empty);
+                        var newMethod = new E.MethodSignature(declaringType.Signature, methodArgs, s.Name, returnType, isStatic: s.Kind == ExternalSymbolKind.StaticMethod, E.Accessibility.APublic, false, false, false, false, ImmutableArray<E.GenericParameter>.Empty);
                         types[s.DeclaredIn] = declaringType.AddMember(E.MethodDef.CreateWithArray(newMethod, _ => E.Expression.Default(returnType)));
                         break;
                     }

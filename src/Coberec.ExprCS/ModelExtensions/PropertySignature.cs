@@ -80,6 +80,7 @@ namespace Coberec.ExprCS
 
         public static PropertySignature FromReflection(R.PropertyInfo prop)
         {
+            prop = MethodSignature.SanitizeDeclaringTypeGenerics(prop);
             var declaringType = TypeSignature.FromType(prop.DeclaringType);
             var get = prop.GetMethod?.Apply(MethodSignature.FromReflection);
             var set = prop.SetMethod?.Apply(MethodSignature.FromReflection);

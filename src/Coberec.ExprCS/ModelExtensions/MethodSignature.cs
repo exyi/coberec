@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using Coberec.CoreLib;
 using Coberec.CSharpGen;
 using Xunit;
 using R = System.Reflection;
@@ -11,6 +12,35 @@ namespace Coberec.ExprCS
     /// <summary> Basic metadata about a method - <see cref="Name" />, <see cref="Accessibility" />, <see cref="Params" />, <see cref="DeclaringType" />, ... </summary>
     public partial class MethodSignature
     {
+        static partial void ValidateObjectExtension(ref CoreLib.ValidationErrorsBuilder e, MethodSignature m)
+        {
+            if (m.IsConstructor() && m.IsStatic)
+                e.Add(ValidationErrors.Create($"Constructor '{m}' can't be static").Nest("isStatic"));
+            if (m.IsStaticConstructor() && !m.IsStatic)
+                e.Add(ValidationErrors.Create($"Static constructor '{m}' must be static").Nest("isStatic"));
+
+            if (m.IsAbstract && m.DeclaringType?.IsAbstract == false)
+                e.Add(ValidationErrors.Create($"Can not declare abstract method in {m.DeclaringType}").Nest("isAbstract"));
+            if (m.IsAbstract && !m.IsVirtual)
+                e.Add(ValidationErrors.Create($"Can not declare abstract method that is not virtual").Nest("isVirtual"));
+            if (m.Accessibility == Accessibility.APrivate && (m.IsVirtual || m.IsOverride))
+                e.Add(ValidationErrors.Create($"Can not declare virtual or override method that is private").Nest("accessibility"));
+            if (m.IsStatic)
+            {
+                if (m.IsVirtual) e.Add(ValidationErrors.Create($"Can not declare virtual static method").Nest("isVirtual"));
+                if (m.IsOverride) e.Add(ValidationErrors.Create($"Can not declare override static method").Nest("isOverride"));
+                if (m.IsAbstract) e.Add(ValidationErrors.Create($"Can not declare abstract static method").Nest("isAbstract"));
+            }
+            if (!m.DeclaringType.CanOverride)
+            {
+                if (m.IsVirtual) e.Add(ValidationErrors.Create($"Can not declare virtual method in {m.DeclaringType}").Nest("isVirtual"));
+                // if (m.IsOverride) e.Add(ValidationErrors.Create($"Can not declare override method in {m.DeclaringType}").Nest("isOverride"));
+                if (m.IsAbstract) e.Add(ValidationErrors.Create($"Can not declare abstract method in {m.DeclaringType}").Nest("isAbstract"));
+                if (m.DeclaringType.IsAbstract && !m.IsStatic)
+                    e.Add(ValidationErrors.Create($"Can not declare non-stattic method in {m.DeclaringType}").Nest("isStatic"));
+            }
+        }
+
         /// <summary> Signature of method <see cref="Object.ToString" /> </summary>
         public static readonly MethodSignature Object_ToString = MethodReference.FromLambda<object>(a => a.ToString()).Signature;
         /// <summary> Signature of method <see cref="Object.GetType" /> </summary>
@@ -105,12 +135,22 @@ namespace Coberec.ExprCS
         }
 
         /// <summary> Returns true if this method is a constructor (only standard instance constructor counts, for static ones see <see cref="IsStaticConstructor" /> </summary>
-        public bool IsConstructor() => this.HasSpecialName && this.Name == ".ctor" && !this.IsStatic;
+        public bool IsConstructor() => this.HasSpecialName && this.Name == ".ctor";
         /// <summary> Returns true if this method is a static constructor (for instance ones see <see cref="IsConstructor" /> </summary>
-        public bool IsStaticConstructor() => this.HasSpecialName && this.Name == ".cctor" && this.IsStatic;
+        public bool IsStaticConstructor() => this.HasSpecialName && this.Name == ".cctor";
+
+        internal static T SanitizeDeclaringTypeGenerics<T>(T m)
+            where T: R.MemberInfo
+        {
+            if (m.DeclaringType.IsGenericTypeDefinition || !m.DeclaringType.IsGenericType)
+                return m;
+            var d = m.DeclaringType.GetGenericTypeDefinition();
+            return d.GetMembers(R.BindingFlags.DeclaredOnly | R.BindingFlags.Public | R.BindingFlags.NonPublic | R.BindingFlags.Instance | R.BindingFlags.Static).OfType<T>().Single(m2 => m2.MetadataToken == m.MetadataToken);
+        }
 
         public static MethodSignature FromReflection(R.MethodBase method)
         {
+            method = SanitizeDeclaringTypeGenerics(method.IsGenericMethod ? ((R.MethodInfo)method).GetGenericMethodDefinition() : method);
             var declaringType = TypeSignature.FromType(method.DeclaringType);
             var accessibility = method.IsPublic ? Accessibility.APublic :
                                 method.IsAssembly ? Accessibility.AInternal :
@@ -119,13 +159,14 @@ namespace Coberec.ExprCS
                                 method.IsFamilyOrAssembly ? Accessibility.AProtectedInternal :
                                 method.IsFamilyAndAssembly ? Accessibility.APrivateProtected :
                                 throw new NotSupportedException("Unsupported accessibility of " + method);
-            var parameters = method.GetParameters().EagerSelect(p =>
-                new MethodParameter(TypeReference.FromType(p.ParameterType),
-                                    p.Name,
+            var parameters = method.GetParameters().EagerSelect(p => {
+                var t = TypeReference.FromType(p.ParameterType);
+                return new MethodParameter(t,
+                                    p.Name ?? "",
                                     p.HasDefaultValue,
-                                    p.HasDefaultValue ? p.DefaultValue : null,
-                                    p.IsDefined(typeof(ParamArrayAttribute), true)
-            ));
+                                    p.HasDefaultValue ? CanonicalizeDefaultValue(p.DefaultValue, t) : null,
+                                    p.IsDefined(typeof(ParamArrayAttribute), true));
+            });
             var genericParameters =
                 method.IsGenericMethodDefinition ? method.GetGenericArguments() :
                 method.IsGenericMethod           ? ((R.MethodInfo)method).GetGenericMethodDefinition().GetGenericArguments() :
@@ -133,18 +174,31 @@ namespace Coberec.ExprCS
             var returnType =
                 method is R.MethodInfo mi ? TypeReference.FromType(mi.ReturnType) :
                                             TypeSignature.Void;
+            var isDestructor = method.Name == "Finalize" && !method.IsStatic && method is R.MethodInfo min && min.ReturnType == typeof(void) && min.GetParameters().Length == 0;
             return new MethodSignature(declaringType,
                                        parameters,
                                        method.Name,
                                        returnType,
                                        method.IsStatic,
                                        accessibility,
-                                       method.IsVirtual,
+                                       method.IsVirtual && !method.IsFinal && declaringType.CanOverride,
                                        isOverride: (method as R.MethodInfo)?.GetBaseDefinition() != method,
                                        method.IsAbstract,
-                                       method.IsSpecialName,
+                                       method.IsSpecialName || isDestructor,
                                        genericParameters.EagerSelect(GenericParameter.FromType)
             );
+        }
+
+        static object CanonicalizeDefaultValue(object obj, TypeReference type)
+        {
+            if (obj == null) return obj;
+            if (obj is string && type == TypeSignature.String) return obj;
+            if (obj.GetType().IsPrimitive) return obj;
+            if (obj.GetType().IsEnum)
+            {
+                return Convert.ChangeType(obj, Enum.GetUnderlyingType(obj.GetType()));
+            }
+            throw new NotSupportedException($"{obj} {obj.GetType()} {type}");
         }
 
     }

@@ -105,15 +105,17 @@ namespace Coberec.ExprCS
             GetNamespace(ns.Parent).GetChildNamespace(ns.Name) ?? throw new Exception($"Could not resolve namespace {ns}.");
 
         /// <summary> Finds ILSpy's ITypeDefinition based on ExprCS TypeSignature. The ITypeDefinition has access to the module contents, so it's much stronger than TypeSignature. </summary>
-        internal ITypeDefinition GetTypeDef(TypeSignature type) =>
+        public ITypeDefinition GetTypeDef(TypeSignature type) =>
             (ITypeDefinition)declaredEntities.GetValueOrDefault(type) ??
            (definedTypes.ContainsKey(type) ? throw new Exception($"Type {type} has been added to MetadataContext, but it hasn't been comited, so the ILSpy metadata can not be obtained.") :
             type.Parent.Match(
                 ns => GetNamespace(ns).GetTypeDefinition(type.Name, type.TypeParameters.Length) ?? throw new InvalidOperationException($"Type {type.GetFullTypeName()} could not be found, namespace {ns} does not exist"),
-                parentType => GetTypeDef(parentType)
-                              .GetNestedTypes(t => t.Name == type.Name && t.TypeParameterCount == type.TypeParameters.Length)
-                              .SingleOrDefault()
-                              ?.GetDefinition() ?? throw new Exception($"Nested type {type} does not exist on {parentType}`")
+                parentType => {
+                    var parent = GetTypeDef(parentType);
+                    return parent.GetNestedTypes(t => t.Name == type.Name && t.TypeParameterCount - parent.TypeParameterCount == type.TypeParameters.Length, GetMemberOptions.IgnoreInheritedMembers)
+                                 .SingleOrDefault()
+                                 ?.GetDefinition() ?? throw new Exception($"Nested type {type} does not exist on {parentType}`");
+                }
             ));
 
         /// <summary> Finds a type signature by a <paramref name="name" />. Will only look for type definitions (e.g. <see cref="String" />), not type references (<see cref="T:String[]" /> or <see cref="List{String}" />). </summary>
@@ -405,7 +407,26 @@ namespace Coberec.ExprCS
                 typeof(string).Assembly.GetName(),
                 typeof(System.Collections.StructuralComparisons).Assembly.GetName(),
                 typeof(ValueTuple<int, int>).Assembly.GetName(),
-                typeof(Uri).Assembly.GetName()
+                typeof(Uri).Assembly.GetName(),
+                typeof(System.Text.RegularExpressions.Regex).Assembly.GetName(),
+                typeof(System.Linq.Expressions.ExpressionType).Assembly.GetName(),
+                typeof(System.ComponentModel.PropertyChangedEventHandler).Assembly.GetName(),
+                typeof(System.IO.Directory).Assembly.GetName(),
+                typeof(System.Xml.Linq.XElement).Assembly.GetName(),
+                typeof(System.ComponentModel.ITypeDescriptorContext).Assembly.GetName(),
+                typeof(System.ComponentModel.IContainer).Assembly.GetName(),
+                typeof(System.IServiceProvider).Assembly.GetName(),
+                typeof(System.Resources.IResourceWriter).Assembly.GetName(),
+                typeof(System.Linq.IGrouping<string, int>).Assembly.GetName(),
+                typeof(System.Collections.Generic.ISet<int>).Assembly.GetName(),
+                typeof(System.Xml.XmlWriter).Assembly.GetName(),
+                typeof(System.Drawing.Color).Assembly.GetName(),
+                typeof(System.Collections.Specialized.BitVector32).Assembly.GetName(),
+                typeof(System.Collections.Concurrent.ConcurrentDictionary<int, int>).Assembly.GetName(),
+                typeof(System.Diagnostics.TraceSwitch).Assembly.GetName(),
+                typeof(System.Security.Cryptography.SHA1).Assembly.GetName(),
+                typeof(System.Diagnostics.FileVersionInfo).Assembly.GetName(),
+                typeof(System.IO.StringReader).Assembly.GetName(),
                 // new AssemblyName("netstandard")
             })
             let location = AssemblyLoadContext.Default.LoadFromAssemblyName(r).Location

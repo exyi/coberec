@@ -7,6 +7,14 @@ namespace Coberec.ExprCS
 {
     public partial class NamespaceSignature
     {
+        static partial void ValidateObjectExtension(ref ValidationErrorsBuilder e, NamespaceSignature obj)
+        {
+            if (obj.Parent is null && !string.IsNullOrEmpty(obj.Name))
+                e.Add(ValidationErrors.Create($"Namespace {obj.Name} must have a parent (did you intent to use NamespaceSignature.Global as a parent?)").Nest("parent"));
+            if (string.IsNullOrEmpty(obj.Name) && obj.Parent is object)
+                e.Add(ValidationErrors.Create($"Namespace in {obj.Parent} must have a non-empty name.").Nest("name"));
+        }
+
         public override string ToString() =>
             Parent == Global || Parent == null ? Name :
             $"{Parent}.{Name}";
