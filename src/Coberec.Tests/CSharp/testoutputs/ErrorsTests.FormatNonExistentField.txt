@@ -1,0 +1,6 @@
+Syntax Error GraphQL (2:1) Field 'f' does not exist
+1: 
+2: type A @format(t: "{f} does not exist") {
+   ^
+3:     g: Int
+

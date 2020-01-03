@@ -87,7 +87,7 @@ namespace GeneratedProject.ModelNamespace
 
 		public override string ToString()
 		{
-			return "y {p = " + P.ToString() + "}";
+			return string.Concat("y {p = ", P, "}");
 		}
 
 		public override int GetHashCode()

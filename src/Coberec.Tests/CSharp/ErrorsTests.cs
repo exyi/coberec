@@ -164,5 +164,15 @@ type A {
 }
 "));
         }
+
+        [Fact]
+        public void FormatNonExistentField()
+        {
+            check.CheckString(GetCompilationErrors(@"
+type A @format(t: ""{f} does not exist"") {
+    g: Int
+}
+"));
+        }
     }
 }

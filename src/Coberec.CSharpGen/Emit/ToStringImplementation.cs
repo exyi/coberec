@@ -102,7 +102,7 @@ namespace Coberec.CSharpGen.Emit
                     yield return (FragmentKind.Field, format.Substring(fieldStart, Math.Min(i, format.Length) - fieldStart));
                     i++;
                 }
-                else
+                else if (i < format.Length)
                 {
                     throw new Exception($"Unexpected {format[i]} in '{format}' at {i}");
                 }

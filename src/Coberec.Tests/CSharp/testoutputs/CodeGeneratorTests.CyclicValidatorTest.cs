@@ -68,7 +68,7 @@ namespace GeneratedProject.ModelNamespace
 
 		public override string ToString()
 		{
-			return "MyType {f1 = " + F1.ToString() + ", f2 = " + F2.ToString() + ", f3 = " + F3.ToString() + ", f4 = " + F4.ToString() + "}";
+			return string.Concat("MyType {f1 = ", F1, ", f2 = ", F2, ", f3 = ", F3, ", f4 = ", F4, "}");
 		}
 
 		public override int GetHashCode()

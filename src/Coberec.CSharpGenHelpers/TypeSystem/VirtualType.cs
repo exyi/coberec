@@ -111,9 +111,9 @@ namespace Coberec.CSharpGen.TypeSystem
             return visitor.VisitTypeDefinition(this);
         }
 
-        public bool Equals(IType other) => this.ReflectionName == other.ReflectionName;
+        public bool Equals(IType other) => other is object && this.ReflectionName == other.ReflectionName;
 
-        public override bool Equals(object other) => other is IType t && this.Equals(t);
+        public override bool Equals(object other) => this.Equals(other as IType);
         public override int GetHashCode() => this.ReflectionName.GetHashCode();
 
         public IEnumerable<IMethod> GetAccessors(Predicate<IMethod> filter = null, GetMemberOptions options = GetMemberOptions.None) => GetMethods(filter, options).Where(m => m.IsAccessor);
