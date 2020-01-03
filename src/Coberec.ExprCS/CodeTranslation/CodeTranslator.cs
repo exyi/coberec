@@ -71,9 +71,9 @@ namespace Coberec.ExprCS.CodeTranslation
 
         ILInstruction ToILInstruction(Result r, ILVariable resultVar)
         {
-            Result copyOutput(ILVariable output)
+            Result copyOutput(Result output)
             {
-                if (output == null)
+                if (output.IsVoid)
                 {
                     Assert.Null(resultVar);
                     return Result.Nop;
@@ -81,11 +81,11 @@ namespace Coberec.ExprCS.CodeTranslation
                 else
                 {
                     Assert.NotNull(resultVar);
-                    return new Result(new ExpressionStatement(new StLoc(resultVar, new LdLoc(output))));
+                    return new Result(new ExpressionStatement(new StLoc(resultVar, output.Instr())));
                 }
             }
 
-            if (r.Output == null && r.Statements.Count == 1 && r.Statements[0] is ExpressionStatement expr)
+            if (r.IsVoid && r.Statements.Count == 1 && r.Statements[0] is ExpressionStatement expr)
             {
                 Assert.Null(expr.Output);
                 Assert.Null(resultVar);
@@ -93,12 +93,12 @@ namespace Coberec.ExprCS.CodeTranslation
             }
 
             return this.BuildBContainer(
-                Result.Concat(r, copyOutput(r.Output)));
+                Result.Concat(r, copyOutput(r)));
         }
 
         BlockContainer BuildBContainer(Result r)
         {
-            var isVoid = r.Output == null;
+            var isVoid = r.IsVoid;
             var container = new IL.BlockContainer(expectedResultType: isVoid ? IL.StackType.Void : r.Output.StackType);
             var block = new IL.Block();
 
@@ -126,7 +126,7 @@ namespace Coberec.ExprCS.CodeTranslation
             if (block.HasReachableEndpoint())
             {
                 if (isVoid) block.Instructions.Add(new IL.Leave(container));
-                else        block.Instructions.Add(new IL.Leave(container, value: r.LdOutput()));
+                else        block.Instructions.Add(new IL.Leave(container, value: r.Instr()));
             }
 
             container.Blocks.Add(block);
@@ -195,13 +195,13 @@ namespace Coberec.ExprCS.CodeTranslation
                 e => TranslateLowerable(e));
             var expectedType = expr.Type();
             if (expectedType == TypeSignature.Void)
-                Assert.Null(result.Output);
+                Assert.True(result.IsVoid);
             else
-                Assert.NotNull(result.Output);
+                Assert.False(result.IsVoid);
             if (expectedType is TypeReference.FunctionTypeCase fn)
             {
-                Assert.Equal(StackType.O, result.Output.StackType);
-                var invokeMethod = result.Output.Type.GetDelegateInvokeMethod();
+                Assert.Equal(StackType.O, result.Type.GetStackType());
+                var invokeMethod = result.Type.GetDelegateInvokeMethod();
                 Assert.NotNull(invokeMethod);
                 Assert.Equal(invokeMethod.Parameters.Count, fn.Item.Params.Length);
                 Assert.Equal(invokeMethod.Parameters.Select(p => SymbolLoader.TypeRef(p.Type)), fn.Item.Params.Select(p => p.Type));
@@ -211,7 +211,7 @@ namespace Coberec.ExprCS.CodeTranslation
             else if (expectedType != TypeSignature.Void)
             {
                 var t = this.Metadata.GetTypeReference(expectedType);
-                Assert.Equal(t.FullName, result.Output.Type.FullName);
+                Assert.Equal(t.FullName, result.Type.FullName);
             }
 
             return result;
@@ -221,11 +221,11 @@ namespace Coberec.ExprCS.CodeTranslation
         Result TranslateNot(NotExpression item)
         {
             var r = this.TranslateExpression(item.Expr);
-            Assert.NotNull(r.Output);
-            var expr = Comp.LogicNot(r.LdOutput());
+            Assert.False(r.IsVoid);
+            var expr = Comp.LogicNot(r.Instr());
             return Result.Concat(
                 r,
-                Result.Expression(r.Output.Type, expr)
+                Result.Expression(r.Type, expr)
             );
         }
 
@@ -242,18 +242,18 @@ namespace Coberec.ExprCS.CodeTranslation
 
             var value = this.TranslateExpression(e.Value);
 
-            Assert.NotNull(value.Output);
+            Assert.False(value.IsVoid);
             Assert.NotEqual(TypeSignature.Void, e.Variable.Type); // TODO: add support for voids?
-            Assert.Equal(value.Output.Type, this.Metadata.GetTypeReference(e.Variable.Type));
+            Assert.Equal(value.Type, this.Metadata.GetTypeReference(e.Variable.Type));
 
-            var ilVar = new ILVariable(VariableKind.Local, value.Output.Type);
+            var ilVar = new ILVariable(VariableKind.Local, value.Type);
             ilVar.Name = e.Variable.Name;
             this.Parameters.Add(e.Variable.Id, ilVar);
             var target = this.TranslateExpression(e.Target);
             this.Parameters.Remove(e.Variable.Id);
             return Result.Concat(
                 value,
-                new Result(ImmutableList.Create<Statement>(new ExpressionStatement(new StLoc(ilVar, value.LdOutput())))),
+                new Result(ImmutableList.Create<Statement>(new ExpressionStatement(new StLoc(ilVar, value.Instr())))),
                 target);
         }
 
@@ -307,7 +307,7 @@ namespace Coberec.ExprCS.CodeTranslation
             {
                 Assert.Null(resultVar);
                 var value = this.TranslateExpression(e.Value);
-                Assert.Null(value.Output);
+                Assert.True(value.IsVoid);
                 return Result.Concat(
                     value,
                     new Result(ImmutableList.Create(breakStmt))
@@ -317,13 +317,13 @@ namespace Coberec.ExprCS.CodeTranslation
             {
                 var value = this.TranslateExpression(e.Value);
 
-                Assert.NotNull(value.Output);
+                Assert.False(value.IsVoid);
                 Assert.NotNull(resultVar);
 
                 return Result.Concat(
                     value,
                     new Result(ImmutableList.Create(
-                        new ExpressionStatement(output: resultVar, instruction: value.LdOutput()),
+                        new ExpressionStatement(output: resultVar, instruction: value.Instr()),
                         breakStmt
                     ))
                 );
@@ -339,7 +339,7 @@ namespace Coberec.ExprCS.CodeTranslation
                 return TranslateExpression((bool)constant.Item.Value ? item.IfTrue : item.IfFalse);
 
             var condition = this.TranslateExpression(item.Condition);
-            Assert.NotNull(condition.Output);
+            Assert.False(condition.IsVoid);
             var ifTrue = this.TranslateExpression(item.IfTrue);
             var ifFalse = this.TranslateExpression(item.IfFalse);
 
@@ -352,7 +352,7 @@ namespace Coberec.ExprCS.CodeTranslation
                 condition,
                 new Result(
                     output: resultVar,
-                    new ExpressionStatement(new IfInstruction(condition.LdOutput(), ifTrueC, ifFalseC)))
+                    new ExpressionStatement(new IfInstruction(condition.Instr(), ifTrueC, ifFalseC)))
             );
 
             // var elseBlock = new Block();
@@ -407,15 +407,15 @@ namespace Coberec.ExprCS.CodeTranslation
 
             var to = this.Metadata.GetTypeReference(e.Type);
 
-            var conversion = this.Metadata.CSharpConversions.ExplicitConversion(value.Output.Type, to);
+            var conversion = this.Metadata.CSharpConversions.ExplicitConversion(value.Type, to);
             if (!conversion.IsValid)
-                throw new Exception($"There isn't any valid conversion from {value.Output.Type} to {to}.");
+                throw new Exception($"There isn't any valid conversion from {value.Type} to {to}.");
             if (conversion.IsIdentityConversion)
                 return value;
             if (!conversion.IsReferenceConversion && !conversion.IsBoxingConversion && !conversion.IsUnboxingConversion)
-                throw new Exception($"There is not a reference conversion from {value.Output.Type} to {to}, but an '{conversion}' was found");
+                throw new Exception($"There is not a reference conversion from {value.Type} to {to}, but an '{conversion}' was found");
 
-            var input = value.LdOutput();
+            var input = value.Instr();
             var instruction =
                 conversion.IsBoxingConversion ? new Box(input, to) :
                 conversion.IsUnboxingConversion ? new UnboxAny(input, to) :
@@ -438,7 +438,7 @@ namespace Coberec.ExprCS.CodeTranslation
 
             var value = this.TranslateExpression(e.Value);
 
-            var expr = new Conv(value.LdOutput(), targetPrimitive, e.Checked, value.Output.Type.GetSign());
+            var expr = new Conv(value.Instr(), targetPrimitive, e.Checked, value.Type.GetSign());
 
             return Result.Concat(
                 value,
@@ -451,11 +451,11 @@ namespace Coberec.ExprCS.CodeTranslation
             var target = this.TranslateExpression(e.Target);
             var value = this.TranslateExpression(e.Value);
 
-            var type = Assert.IsType<TS.ByReferenceType>(target.Output.Type).ElementType;
+            var type = Assert.IsType<TS.ByReferenceType>(target.Type).ElementType;
 
-            Assert.Equal(type, value.Output.Type);
+            Assert.Equal(type.WithoutNullability(), value.Type.WithoutNullability());
 
-            var load = new StObj(new LdLoc(target.Output), new LdLoc(value.Output), type);
+            var load = new StObj(target.Instr(), value.Instr(), type);
 
             return Result.Concat(
                 target,
@@ -474,7 +474,7 @@ namespace Coberec.ExprCS.CodeTranslation
             var target = e.Target?.Apply(TranslateExpression);
             target = AdjustReference(target, !(bool)field.DeclaringType.IsReferenceType, isReadonly: field.IsReadOnly);
 
-            var load = ILAstFactory.FieldAddr(field, target?.Output);
+            var load = ILAstFactory.FieldAddr(field, target?.Instr());
 
             return Result.Concat(
                 target ?? Result.Nop,
@@ -486,11 +486,11 @@ namespace Coberec.ExprCS.CodeTranslation
         {
             var array = this.TranslateExpression(e.Array);
             var indices = e.Indices.Select(this.TranslateExpression).ToArray();
-            var elementType = Assert.IsType<TS.ArrayType>(array.Output.Type).ElementType;
+            var elementType = Assert.IsType<TS.ArrayType>(array.Type).ElementType;
             var r = new IL.LdElema(
                 elementType,
-                array.LdOutput(),
-                indices.Select(i => i.LdOutput()).ToArray()
+                array.Instr(),
+                indices.Select(i => i.Instr()).ToArray()
             );
             return Result.Concat(
                 array,
@@ -502,8 +502,8 @@ namespace Coberec.ExprCS.CodeTranslation
         Result TranslateAddressOf(AddressOfExpression e)
         {
             var r = TranslateExpression(e.Expr);
-            var addr = new AddressOf(r.LdOutput(), r.Output.Type);
-            var type = new TS.ByReferenceType(r.Output.Type);
+            var addr = new AddressOf(r.Instr(), r.Type);
+            var type = new TS.ByReferenceType(r.Type);
             return Result.Concat(
                 r,
                 Result.Expression(type, addr));
@@ -522,10 +522,10 @@ namespace Coberec.ExprCS.CodeTranslation
         Result TranslateDereference(DereferenceExpression e)
         {
             var r = TranslateExpression(e.Expr);
-            var type = Assert.IsType<TS.ByReferenceType>(r.Output.Type).ElementType;
+            var type = Assert.IsType<TS.ByReferenceType>(r.Type).ElementType;
             return Result.Concat(
                 r,
-                Result.Expression(type, new LdObj(r.LdOutput(), type))
+                Result.Expression(type, new LdObj(r.Instr(), type))
             );
         }
 
@@ -536,7 +536,7 @@ namespace Coberec.ExprCS.CodeTranslation
             var args = e.Args.Select(this.TranslateExpression).ToArray();
 
             var call = new NewObj(method);
-            call.Arguments.AddRange(args.Select(a => a.LdOutput()));
+            call.Arguments.AddRange(args.Select(a => a.Instr()));
 
             return Result.Concat(args.Append(Result.Expression(method.DeclaringType, call)));
         }
@@ -550,7 +550,7 @@ namespace Coberec.ExprCS.CodeTranslation
 
             // TODO: validate indices
 
-            var r = new IL.NewArr(elementType, indices.Select(i => i.LdOutput()).ToArray());
+            var r = new IL.NewArr(elementType, indices.Select(i => i.Instr()).ToArray());
 
             return Result.Concat(
                 Result.Concat(indices),
@@ -558,32 +558,32 @@ namespace Coberec.ExprCS.CodeTranslation
             );
         }
 
-        static Result AdjustReference(ILVariable v, bool wantReference, bool isReadonly)
+        static Result AdjustReference(ILInstruction v, IType instrType, bool wantReference, bool isReadonly)
         {
-            var type = v.Type is TS.ByReferenceType refType ? refType.ElementType : v.Type;
+            var type = instrType is TS.ByReferenceType refType ? refType.ElementType : instrType;
 
             if (wantReference)
             {
-                if (v.StackType == StackType.Ref)
-                    return new Result(v);
+                if (v.ResultType == StackType.Ref)
+                    return Result.Expression(instrType, v);
                 else if (isReadonly)
                     // no need for special variable
-                    return Result.Expression(new TS.ByReferenceType(type), new AddressOf(new LdLoc(v), type));
+                    return Result.Expression(new TS.ByReferenceType(type), new AddressOf(v, type));
                 else
                 {
                     var tmpVar = new ILVariable(VariableKind.StackSlot, type);
                     return Result.Concat(
-                        new Result(new ExpressionStatement(new LdLoc(v), tmpVar)),
+                        new Result(new ExpressionStatement(v, tmpVar)),
                         Result.Expression(new TS.ByReferenceType(type), new LdLoca(tmpVar))
                     );
                 }
             }
             else
             {
-                if (v.StackType == StackType.Ref)
-                    return Result.Expression(type, new LdObj(new LdLoc(v), type));
+                if (v.ResultType == StackType.Ref)
+                    return Result.Expression(type, new LdObj(v, type));
                 else
-                    return new Result(v);
+                    return Result.Expression(type, v);
             }
         }
 
@@ -591,7 +591,7 @@ namespace Coberec.ExprCS.CodeTranslation
             r == null ? null :
             Result.Concat(
                 r,
-                AdjustReference(r.Output, wantReference, isReadonly)
+                AdjustReference(r.Instr(), r.Type, wantReference, isReadonly)
             );
 
         static bool IsMethodReadonly(MethodReference m, IMethod m_)
@@ -625,8 +625,8 @@ namespace Coberec.ExprCS.CodeTranslation
             target?.ApplyAction(result.Add);
             result.AddRange(args);
 
-            var call = method.IsStatic ? new Call(method) : (CallInstruction)new CallVirt(method) { Arguments = { target.LdOutput() } };
-            call.Arguments.AddRange(args.Select(a => a.LdOutput()));
+            var call = method.IsStatic ? new Call(method) : (CallInstruction)new CallVirt(method) { Arguments = { target.Instr() } };
+            call.Arguments.AddRange(args.Select(a => a.Instr()));
             var isVoid = e.Method.Signature.ResultType == TypeSignature.Void;
             result.Add(isVoid ?
                        new Result(new ExpressionStatement(call)) :
@@ -650,24 +650,24 @@ namespace Coberec.ExprCS.CodeTranslation
                 // primitive comparison
                 if (op == "==" || op == "!=")
                 {
-                    if (left.Output.Type.IsReferenceType == false && left.Output.Type.GetStackType() == StackType.O)
-                        throw new Exception($"Can not use '==' and '!=' operators for non-enum and non-primitive type {left.Output.Type}. If you wanted to call an overloaded operator, please the a method call expression.");
+                    if (left.Type.IsReferenceType == false && left.Type.GetStackType() == StackType.O)
+                        throw new Exception($"Can not use '==' and '!=' operators for non-enum and non-primitive type {left.Type}. If you wanted to call an overloaded operator, please the a method call expression.");
 
                     return Result.Concat(
                         left, right,
                         Result.Expression(boolType, new IL.Comp(
                             op == "==" ? ComparisonKind.Equality : ComparisonKind.Inequality,
                             Sign.None,
-                            left.LdOutput(),
-                            right.LdOutput()
+                            left.Instr(),
+                            right.Instr()
                         ))
                     );
                 }
                 else
                 {
-                    var stackType = left.Output.Type.GetStackType();
+                    var stackType = left.Type.GetStackType();
                     if (stackType == StackType.O || stackType == StackType.Ref || stackType == StackType.Unknown)
-                        throw new Exception($"Can not use comparison operators for non-integer type {left.Output.Type}. If you wanted to call an overloaded operator, please the a method call expression.");
+                        throw new Exception($"Can not use comparison operators for non-integer type {left.Type}. If you wanted to call an overloaded operator, please the a method call expression.");
 
                     return Result.Concat(
                         left, right,
@@ -679,9 +679,9 @@ namespace Coberec.ExprCS.CodeTranslation
                                 ">=" => ComparisonKind.GreaterThanOrEqual,
                                 _ => throw new NotSupportedException($"Comparison operator {op} is not supported.")
                             },
-                            left.Output.Type.GetSign(),
-                            left.LdOutput(),
-                            right.LdOutput()
+                            left.Type.GetSign(),
+                            left.Instr(),
+                            right.Instr()
                         ))
                     );
                 }
@@ -725,7 +725,10 @@ namespace Coberec.ExprCS.CodeTranslation
             public readonly ImmutableList<Statement> Statements;
             public readonly ILVariable Output;
 
-            public LdLoc LdOutput() => new LdLoc(this.Output);
+            public IType Type => Output?.Type;
+            public bool IsVoid => Output == null;
+
+            public LdLoc Instr() => new LdLoc(this.Output);
 
             public static Result Nop = new Result();
             public bool IsNop => this.Statements.Count == 0 && Output is null;

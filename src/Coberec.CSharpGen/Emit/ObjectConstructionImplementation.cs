@@ -158,7 +158,6 @@ namespace Coberec.CSharpGen.Emit
             this TypeSignature type,
             EmitContext cx,
             M.TypeDef typeSchema,
-            TypeSymbolNameMapping typeMapping,
             (M.TypeField schema, FieldReference field)[] fields,
             IEnumerable<ValidatorUsage> validators,
             bool needsNoValidationConstructor,
@@ -168,7 +167,7 @@ namespace Coberec.CSharpGen.Emit
             var defaultValues = GetDefaultParameterValues(fields);
 
             var fieldNames = fields.Select(f => (f.schema.Name, f.field)).ToArray();
-            var validator = ValidationImplementation.ImplementValidateIfNeeded(type, cx, typeSchema, typeMapping, validators, fieldNames, validateMethodExtension);
+            var validator = ValidationImplementation.ImplementValidateIfNeeded(type, cx, typeSchema, validators, fieldNames, validateMethodExtension);
             var privateNoValidationVersion = needsNoValidationConstructor && validator is object;
             var ctor1core = CreateConstructorCore(type, cx, fieldNames, privateNoValidationVersion, needsNoValidationConstructor ? null : validator.Signature);
             var (validatedCtor, benevolentCtor) =

@@ -74,5 +74,9 @@ namespace Coberec.ExprCS
         public static readonly TypeSignature ValueTuple7 = FromType(typeof(ValueTuple<,,,,,,>));
         /// <summary> Signature of <see cref="System.ValueTuple{T1, T2, T3, T4, T5, T6, T7, TRest}" /> </summary>
         public static readonly TypeSignature ValueTupleRest = FromType(typeof(ValueTuple<,,,,,,,>));
+
+        /// <summary> Signature of <see cref="System.Collections.Immutable.ImmutableArray{T}" /> </summary>
+        public static readonly TypeSignature ImmutableArrayOfT = FromType(typeof(ImmutableArray<>));
+
     }
 }

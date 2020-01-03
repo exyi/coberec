@@ -9,11 +9,11 @@ namespace NS
 			int.Parse("123456789");
 			if (Thread.CurrentThread.IsBackground)
 			{
-				goto IL_0009;
+				goto IL_000a;
 			}
 			int.Parse("123456789");
-			goto IL_0009;
-			IL_0009:
+			goto IL_000a;
+			IL_000a:
 			int.Parse("123456789");
 			return 12;
 		}

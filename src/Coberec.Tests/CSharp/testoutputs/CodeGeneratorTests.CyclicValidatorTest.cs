@@ -66,6 +66,11 @@ namespace GeneratedProject.ModelNamespace
 			return ValidationResult.CreateErrorsOrValue(ValidateObject(result), result);
 		}
 
+		public override string ToString()
+		{
+			return "MyType {f1 = " + F1.ToString() + ", f2 = " + F2.ToString() + ", f3 = " + F3.ToString() + ", f4 = " + F4.ToString() + "}";
+		}
+
 		public override int GetHashCode()
 		{
 			return (F1, F2, F3, F4).GetHashCode();

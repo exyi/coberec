@@ -38,6 +38,11 @@ namespace GeneratedProject.ModelNamespace
 			return Create(field543.ToImmutableArray(), abcSS);
 		}
 
+		public override string ToString()
+		{
+			return string.Concat("Test123 {Field543 = [", string.Join<string>(", ", (IEnumerable<string>)Field543), "], abcSS = ", (object)(object)AbcSS, "}");
+		}
+
 		public override int GetHashCode()
 		{
 			return (StructuralComparisons.StructuralEqualityComparer.GetHashCode(Field543), AbcSS).GetHashCode();

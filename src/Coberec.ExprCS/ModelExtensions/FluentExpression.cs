@@ -64,6 +64,7 @@ namespace Coberec.ExprCS
 
         /// <summary> Creates a reference conversion of <paramref name="value" /> to <see cref="System.Object" /> </summary>
         public static Expression Box(this Expression value) =>
+            value.Type() == TypeSignature.Object ? value :
             Expression.ReferenceConversion(value, TypeSignature.Object);
 
         public static Expression Invoke(this Expression function, params Expression[] args)

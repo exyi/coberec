@@ -15,6 +15,11 @@ namespace GeneratedProject.ModelNamespace
 			return ValidationResult.Create(result);
 		}
 
+		public override string ToString()
+		{
+			return "a {}";
+		}
+
 		public override int GetHashCode()
 		{
 			return 42;

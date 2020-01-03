@@ -33,7 +33,7 @@ namespace Coberec.ExprCS.CodeTranslation
 
             if (e.Function is Expression.ParameterCase variable && this.ActiveLocalFunctions.TryGetValue(variable.Item.Id, out var localFunction))
             {
-                var call = CallLocalFunction(localFunction, args.Select(a => new LdLoc(a.Output)));
+                var call = CallLocalFunction(localFunction, args.Select(a => a.Instr()));
                 return Result.Concat(
                     args.Append(Result.Expression(localFunction.Method.ReturnType, call))
                 );
@@ -41,14 +41,14 @@ namespace Coberec.ExprCS.CodeTranslation
             else
             {
                 var target = TranslateExpression(e.Function);
-                var functionRealType = target.Output.Type;
+                var functionRealType = target.Type;
                 Assert.Equal(TS.TypeKind.Delegate, functionRealType.Kind);
 
                 var invokeMethod = functionRealType.GetDelegateInvokeMethod();
 
                 var call = new Call(invokeMethod);
-                call.Arguments.Add(new LdLoc(target.Output));
-                call.Arguments.AddRange(args.Select(a => new LdLoc(a.Output)));
+                call.Arguments.Add(target.Instr());
+                call.Arguments.AddRange(args.Select(a => a.Instr()));
                 return Result.Concat(
                     args.Append(Result.Expression(invokeMethod.ReturnType, call))
                         .Prepend(target)
@@ -147,7 +147,7 @@ namespace Coberec.ExprCS.CodeTranslation
                      this.Metadata.GetTypeReference(e.Type);
             var target = this.TranslateExpression(e.Value);
 
-            var invokeMethod = target.Output.Type.GetDelegateInvokeMethod();
+            var invokeMethod = target.Type.GetDelegateInvokeMethod();
             Assert.NotNull(invokeMethod);
             var fromFnType = new FunctionType(invokeMethod.Parameters.Select(SymbolLoader.Parameter).ToImmutableArray(), SymbolLoader.TypeRef(invokeMethod.ReturnType));
             // if the result is function compatible with the delegate -> return it
@@ -157,13 +157,13 @@ namespace Coberec.ExprCS.CodeTranslation
             }
 
             // attempt standard reference conversion
-            var conversion = this.Metadata.CSharpConversions.ExplicitConversion(target.Output.Type, to);
+            var conversion = this.Metadata.CSharpConversions.ExplicitConversion(target.Type, to);
             if (conversion.IsIdentityConversion)
                 return target;
             if (conversion.IsReferenceConversion)
                 return Result.Concat(
                     target,
-                    Result.Expression(to, new LdLoc(target.Output))
+                    Result.Expression(to, target.Instr())
                 );
 
             // reference conversion did not work? lets just create a lambda that will invoke the old function

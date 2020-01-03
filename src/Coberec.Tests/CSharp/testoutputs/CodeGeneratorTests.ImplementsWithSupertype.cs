@@ -14,6 +14,11 @@ namespace GeneratedProject.ModelNamespace
 			return ValidationResult.Create(result);
 		}
 
+		public override string ToString()
+		{
+			return "a {}";
+		}
+
 		public override int GetHashCode()
 		{
 			return 42;
@@ -78,6 +83,11 @@ namespace GeneratedProject.ModelNamespace
 		{
 			Y result = new Y(default(NoNeedForValidationSentinel), p);
 			return ValidationResult.CreateErrorsOrValue(ValidateObject(result), result);
+		}
+
+		public override string ToString()
+		{
+			return "y {p = " + P.ToString() + "}";
 		}
 
 		public override int GetHashCode()

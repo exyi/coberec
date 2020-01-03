@@ -46,9 +46,9 @@ namespace Coberec.ExprCS.CodeTranslation
                 throw new NotSupportedException($"Constant '{constant}' of type '{constant.GetType()}' with declared type '{type}' is not supported.");
         }
 
-        public static ILInstruction FieldAddr(IField field, ILVariable target) =>
+        public static ILInstruction FieldAddr(IField field, ILInstruction target) =>
             target is object ?
-            new LdFlda(new LdLoc(target), field) :
+            new LdFlda(target, field) :
             //                                                                 ^ needs to be reference for structs and not reference for not objects
             (ILInstruction)new LdsFlda(field);
 

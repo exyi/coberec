@@ -223,7 +223,7 @@ namespace Coberec.CSharpGen.Emit
         static MethodReference Method_Builder_Add = MethodReference.FromLambda<ValidationErrorsBuilder>(b => b.Add(default));
         static MethodReference Method_Builder_Build = MethodReference.FromLambda<ValidationErrorsBuilder>(b => b.Build());
 
-        public static MethodDef ImplementValidateIfNeeded(TypeSignature type, EmitContext cx, M.TypeDef typeSchema, TypeSymbolNameMapping typeMapping, IEnumerable<ValidatorUsage> validators, (string name, FieldReference field)[] fields, MethodSignature validateMethodExtension)
+        public static MethodDef ImplementValidateIfNeeded(TypeSignature type, EmitContext cx, M.TypeDef typeSchema, IEnumerable<ValidatorUsage> validators, (string name, FieldReference field)[] fields, MethodSignature validateMethodExtension)
         {
             var methodParams = new[] { new MethodParameter(type.SpecializeByItself(), "obj") };
             var validationMethod = MethodSignature.Static("ValidateObject", type, Accessibility.APrivate, Type_Errors, methodParams);

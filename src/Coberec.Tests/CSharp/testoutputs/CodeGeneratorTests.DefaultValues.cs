@@ -63,6 +63,11 @@ namespace GeneratedProject.ModelNamespace
 			return ValidationResult.CreateErrorsOrValue(ValidateObject(result), result);
 		}
 
+		public override string ToString()
+		{
+			return string.Concat("Composite123 {StringF = ", StringF, ", NullableStringF = ", NullableStringF, ", NullableIntF = ", NullableIntF, ", IntF = ", IntF, ", FloatF = ", (object)(object)FloatF, ", NullListF = [", string.Join<string>(", ", NullListF), "], ThisF = ", ThisF, "}");
+		}
+
 		public override int GetHashCode()
 		{
 			return (StringF, NullableStringF, NullableIntF, IntF, FloatF, NullListF, ThisF).GetHashCode();

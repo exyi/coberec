@@ -55,6 +55,7 @@ namespace Coberec.ExprCS
             if (!this.IsValueType || this.Parent != NamespaceSignature.System) return false;
 
             return this == Int32 ||
+                   this == Boolean ||
                    this == Int64 ||
                    this == Int16 ||
                    this == UInt32 ||

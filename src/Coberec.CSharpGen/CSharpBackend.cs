@@ -201,7 +201,6 @@ namespace Coberec.CSharpGen
             var (noValCtor, publicCtor, bCtor, validateMethod, _) = type.AddObjectCreationStuff(
                 cx,
                 typeDef,
-                typeMapping,
                 new[] { (new TypeField("value", TypeRef.ActualType("String"), null, new Directive[0]), valueField.Signature.SpecializeFromDeclaringType() ) },
                 this.GetValidators(typeDef),
                 needsNoValidationConstructor: true,
@@ -280,11 +279,11 @@ namespace Coberec.CSharpGen
 
             var valExtension = AddValidationExtension(type);
 
+            var fields = props.Select(k => (k.schema, k.field.Signature.SpecializeFromDeclaringType())).ToArray();
             var (noValCtor, publicCtor, benevolentCtor, validateMethod, defaults) = type.AddObjectCreationStuff(
                 cx,
                 typeDef,
-                typeMapping,
-                props.Select(k => (k.schema, k.field.Signature.SpecializeFromDeclaringType())).ToArray(),
+                fields,
                 this.GetValidators(typeDef),
                 needsNoValidationConstructor: true,
                 validateMethodExtension: valExtension?.Signature);
@@ -292,6 +291,9 @@ namespace Coberec.CSharpGen
             var (createFn, benevolentCreate) = type.AddCreateFunction(cx, validateMethod?.Signature, noValCtor.Signature, default);
 
             result = result.AddMember(noValCtor, (object)publicCtor == noValCtor ? null : publicCtor, benevolentCtor, validateMethod, createFn, benevolentCreate, valExtension);
+
+            var toStringFn = ToStringImplementation.ImplementToString(type, cx, typeDef, fields);
+            result = result.AddMember(toStringFn);
 
             cx.Metadata.RegisterTypeMod(type, _ => { }, vtype => {
 

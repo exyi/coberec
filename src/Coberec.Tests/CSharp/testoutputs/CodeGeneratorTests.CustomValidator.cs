@@ -37,6 +37,11 @@ namespace GeneratedProject.ModelNamespace
 			return ValidationResult.CreateErrorsOrValue(ValidateObject(result), result);
 		}
 
+		public override string ToString()
+		{
+			return "CustomValidatorTest {f1 = " + F1 + "}";
+		}
+
 		public override int GetHashCode()
 		{
 			return F1.GetHashCode();

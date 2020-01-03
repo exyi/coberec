@@ -46,6 +46,11 @@ namespace GeneratedProject.ModelNamespace
 
 		static partial void ValidateObjectExtension(ref ValidationErrorsBuilder e, Composite123 obj);
 
+		public override string ToString()
+		{
+			return string.Concat("Composite123 {Field543 = ", Field543, ", abcSS = ", (object)(object)AbcSS, "}");
+		}
+
 		public override int GetHashCode()
 		{
 			return (Field543, AbcSS).GetHashCode();
