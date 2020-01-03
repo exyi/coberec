@@ -211,7 +211,7 @@ namespace Coberec.ExprCS
                 _ => GetTypeReference(cx, sgn.ResultType),
                 sgn.IsOverride,
                 isVirtual: sgn.IsVirtual && !sgn.IsOverride,
-                isSealed: sgn.IsOverride && !sgn.IsVirtual,
+                isSealed: sgn.IsOverride && !sgn.IsVirtual && sgn.DeclaringType.CanOverride,
                 sgn.IsAbstract,
                 sgn.IsStatic,
                 isHidden,

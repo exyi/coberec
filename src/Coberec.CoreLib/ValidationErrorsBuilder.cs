@@ -31,6 +31,8 @@ namespace Coberec.CoreLib
             this.index++;
         }
 
+        public bool HasErrors => this.r is object;
+
         public ValidationErrors Build()
         {
             if (this.r == null) return null;

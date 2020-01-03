@@ -89,7 +89,7 @@ namespace Coberec.ExprCS
         public static MethodSignature Override(TypeSignature declaringType, MethodSignature overridenMethod, bool isVirtual = true, bool isAbstract = false)
         {
             overridenMethod = overridenMethod.Clone();
-            return overridenMethod.With(declaringType, name: overridenMethod.Name, isVirtual: isVirtual, isOverride: true, isAbstract: isAbstract);
+            return overridenMethod.With(declaringType, name: overridenMethod.Name, isVirtual: isVirtual && declaringType.CanOverride, isOverride: true, isAbstract: isAbstract);
         }
 
         /// <summary> Fills in the generic parameters. </summary>
