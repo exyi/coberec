@@ -75,14 +75,16 @@ namespace Coberec.ExprCS
             clauses.Aggregate(AndAlso) :
             Expression.Constant(true);
 
+        /// <summary> Calls the specified static method. It will automatically fill in optional parameters </summary>
         public static Expression StaticMethodCall(MethodReference method, params Expression[] args) =>
             StaticMethodCall(method, args.AsEnumerable());
+        /// <summary> Calls the specified static method. It will automatically fill in optional parameters </summary>
         public static Expression StaticMethodCall(MethodReference method, IEnumerable<Expression> args)
         {
             if (!method.Signature.IsStatic)
                 throw new ArgumentException($"Static method was expected, got {method}", nameof(method));
-            Assert.Equal(method.Params().Select(p => p.Type), args.Select(a => a.Type()));
-            return MethodCall(method, args.ToImmutableArray(), target: null);
+            var pargs = FluentExpression.PrepareArguments(args.ToImmutableArray(), method);
+            return MethodCall(method, pargs, target: null);
         }
 
         public static Expression StaticFieldAccess(FieldReference field)

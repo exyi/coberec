@@ -42,7 +42,7 @@ namespace GeneratedProject.ModelNamespace
 		public Test123(ImmutableArray<string> field543, ImmutableArray<int> someName, int? abcSS)
 			: this(default(NoNeedForValidationSentinel), field543, someName, abcSS)
 		{
-			ValidateObject(this).ThrowErrors("Could not initialize Test123 due to validation errors");
+			ValidateObject(this).ThrowErrors("Could not initialize Test123 due to validation errors", this);
 		}
 
 		public Test123(IEnumerable<string> field543, IEnumerable<int> someName, int? abcSS)

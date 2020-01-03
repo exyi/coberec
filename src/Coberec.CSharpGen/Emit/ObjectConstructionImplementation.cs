@@ -45,8 +45,9 @@ namespace Coberec.CSharpGen.Emit
                 if (validationMethod is object)
                     statements = statements.Append(
                         Expression.StaticMethodCall(validationMethod)
-                        .CallMethod(MethodReference.FromLambda<ValidationErrors>(e => e.ThrowErrors("")),
-                                    Expression.Constant($"Could not initialize {declaringType.Name} due to validation errors")
+                        .CallMethod(MethodReference.FromLambda<ValidationErrors>(e => e.ThrowErrors("", null)),
+                                    Expression.Constant($"Could not initialize {declaringType.Name} due to validation errors"),
+                                    @this.Box()
                         )
                     );
 
@@ -66,8 +67,9 @@ namespace Coberec.CSharpGen.Emit
                 return new [] {
                     baseCall,
                     Expression.StaticMethodCall(validationMethod, @this)
-                    .CallMethod(MethodReference.FromLambda<ValidationErrors>(e => e.ThrowErrors("")),
-                                Expression.Constant($"Could not initialize {declaringType.Name} due to validation errors")
+                    .CallMethod(MethodReference.FromLambda<ValidationErrors>(e => e.ThrowErrors("", null)),
+                                Expression.Constant($"Could not initialize {declaringType.Name} due to validation errors"),
+                                @this.Box()
                     )
                 }.ToBlock();
             });

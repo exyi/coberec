@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using Coberec.CSharpGen;
 using Xunit;
 
 namespace Coberec.ExprCS
@@ -26,7 +27,7 @@ namespace Coberec.ExprCS
         public static Expression CallMethod(this Expression target, MethodReference method, IEnumerable<Expression> args) =>
             CallMethod(target, method, args.ToArray());
 
-        /// <summary> Calls the specified instance method on the <paramref name="target" />. Can be also used to call extension methods </summary>
+        /// <summary> Calls the specified instance method on the <paramref name="target" />. Can be also used to call extension methods and it will automatically fill in optional parameters </summary>
         public static Expression CallMethod(this Expression target, MethodReference method, params Expression[] args)
         {
             if (method.Signature.IsStatic)
@@ -34,8 +35,23 @@ namespace Coberec.ExprCS
                 return Expression.StaticMethodCall(method, args.Prepend(target));
             else
             {
-                return Expression.MethodCall(method, args.ToImmutableArray(), target);
+                var pargs = PrepareArguments(args.ToImmutableArray(), method);
+                return Expression.MethodCall(method, pargs, target);
             }
+        }
+
+        internal static ImmutableArray<Expression> PrepareArguments(ImmutableArray<Expression> args, MethodReference method)
+        {
+            if (method.Signature.Params.Length <= args.Length) return args;
+            //                                  ^ if it's out of range, just let the validation fail
+            // add the optional arguments
+            var optParams =
+                method.Params()
+                .EagerSlice(skip: args.Length)
+                .EagerSelect(p => p.HasDefaultValue ? Expression.Constant(p.DefaultValue, p.Type) : null);
+            var valid = optParams.All(x => x is object);
+            if (valid) return args.AddRange(optParams);
+            else return args; // just let the validation fail
         }
 
         /// <summary> Gets a reference pointing to the instance <paramref name="field" /> on the <paramref name="target" /> </summary>

@@ -17,7 +17,7 @@ namespace GeneratedProject.ModelNamespace
 		public Equals2(string value)
 			: this(default(NoNeedForValidationSentinel), value)
 		{
-			ValidateObject(this).ThrowErrors("Could not initialize Equals due to validation errors");
+			ValidateObject(this).ThrowErrors("Could not initialize Equals due to validation errors", this);
 		}
 
 		private static ValidationErrors ValidateObject(Equals2 obj)

@@ -75,16 +75,20 @@ namespace Coberec.CoreLib
     {
         public ValidationErrors Validation { get; }
         public string ValidationMessage { get; }
-        public ValidationErrorException(ValidationErrors validation, string message = "Validation error") : base(validation.ToErrorMessage(message))
+        private readonly object _validatedObject;
+        public Type ValidatedObjectType => _validatedObject?.GetType();
+        public ValidationErrorException(ValidationErrors validation, string message = "Validation error", object validatedObject = null) : base(validation.ToErrorMessage(message, validatedObject: validatedObject))
         {
             this.Validation = validation ?? throw new ArgumentNullException(nameof(validation));
             this.ValidationMessage = message;
+            this._validatedObject = validatedObject;
         }
 
-        public ValidationErrorException(ValidationErrors validation, string message, Exception innerException) : base(validation.ToErrorMessage(message), innerException)
+        public ValidationErrorException(ValidationErrors validation, string message, Exception innerException, object validatedObject = null) : base(validation.ToErrorMessage(message, validatedObject: validatedObject), innerException)
         {
             this.Validation = validation ?? throw new ArgumentNullException(nameof(validation));
             this.ValidationMessage = message;
+            this._validatedObject = validatedObject;
         }
     }
     public static class ValidationErrorsExtensionMethods
@@ -129,12 +133,19 @@ namespace Coberec.CoreLib
                     yield return msg;
             }
         }
-        public static string ToErrorMessage(this ValidationErrors errors, string message = "Validation has failed", int softLengthLimit = 1024, string objPath = "")
+        public static string ToErrorMessage(this ValidationErrors errors, string message = "Validation has failed", int softLengthLimit = 4096, string objPath = "", object validatedObject = null)
         {
-            if (errors.IsValid()) return objPath.Length == 0 ? "Object is valid" : $"Object {objPath} is valid";
+            if (errors.IsValid())
+            {
+                var objName = validatedObject is null ? "" : " {" + validatedObject + "}";
+                if (objPath.Length > 0) objName += " at " + objPath;
+                return $"Object{objName} is valid";
+            }
 
             var result = new System.Text.StringBuilder();
             result.Append(message);
+            if (validatedObject is object)
+                result.Append(" {").Append(validatedObject).Append("}");
             result.Append(": ");
 
             var first = true;
@@ -154,7 +165,7 @@ namespace Coberec.CoreLib
             }
             return result.ToString();
         }
-        public static void ThrowErrors(this ValidationErrors errors, string message = "Validation has failed")
+        public static void ThrowErrors(this ValidationErrors errors, string message = "Validation has failed", object validatedObject = null)
         {
             if (!errors.IsValid())
                 throw new ValidationErrorException(errors, message);

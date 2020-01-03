@@ -32,7 +32,7 @@ namespace GeneratedProject.ModelNamespace
 		public MyType(MyType f1, string f2, string f3, MyType f4)
 			: this(default(NoNeedForValidationSentinel), f1, f2, f3, f4)
 		{
-			ValidateObject(this).ThrowErrors("Could not initialize MyType due to validation errors");
+			ValidateObject(this).ThrowErrors("Could not initialize MyType due to validation errors", this);
 		}
 
 		private static ValidationErrors ValidateObject(MyType obj)

@@ -66,7 +66,7 @@ namespace GeneratedProject.ModelNamespace
 		public Y(A p)
 			: this(default(NoNeedForValidationSentinel), p)
 		{
-			ValidateObject(this).ThrowErrors("Could not initialize y due to validation errors");
+			ValidateObject(this).ThrowErrors("Could not initialize y due to validation errors", this);
 		}
 
 		private static ValidationErrors ValidateObject(Y obj)

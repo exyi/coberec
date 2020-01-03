@@ -17,7 +17,7 @@ namespace GeneratedProject.ModelNamespace
 		public Scalar123(string value)
 			: this(default(NoNeedForValidationSentinel), value)
 		{
-			ValidateObject(this).ThrowErrors("Could not initialize Scalar123 due to validation errors");
+			ValidateObject(this).ThrowErrors("Could not initialize Scalar123 due to validation errors", this);
 		}
 
 		private static ValidationErrors ValidateObject(Scalar123 obj)

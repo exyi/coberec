@@ -17,7 +17,7 @@ namespace GeneratedProject.ModelNamespace
 		public CustomValidatorTest(string f1)
 			: this(default(NoNeedForValidationSentinel), f1)
 		{
-			ValidateObject(this).ThrowErrors("Could not initialize CustomValidatorTest due to validation errors");
+			ValidateObject(this).ThrowErrors("Could not initialize CustomValidatorTest due to validation errors", this);
 		}
 
 		private static ValidationErrors ValidateObject(CustomValidatorTest obj)

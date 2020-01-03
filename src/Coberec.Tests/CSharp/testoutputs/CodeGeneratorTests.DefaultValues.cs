@@ -49,7 +49,7 @@ namespace GeneratedProject.ModelNamespace
 		public Composite123(string stringF = "abcd", string nullableStringF = null, int? nullableIntF = null, int? intF = 12, double floatF = 12.12, ImmutableArray<string>? nullListF = null, Composite123 thisF = null)
 			: this(default(NoNeedForValidationSentinel), stringF, nullableStringF, nullableIntF, intF, floatF, nullListF, thisF)
 		{
-			ValidateObject(this).ThrowErrors("Could not initialize Composite123 due to validation errors");
+			ValidateObject(this).ThrowErrors("Could not initialize Composite123 due to validation errors", this);
 		}
 
 		private static ValidationErrors ValidateObject(Composite123 obj)

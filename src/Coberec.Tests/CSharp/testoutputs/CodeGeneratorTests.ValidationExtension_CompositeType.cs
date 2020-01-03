@@ -22,7 +22,7 @@ namespace GeneratedProject.ModelNamespace
 		public Composite123(string field543, int abcSS)
 			: this(default(NoNeedForValidationSentinel), field543, abcSS)
 		{
-			ValidateObject(this).ThrowErrors("Could not initialize Composite123 due to validation errors");
+			ValidateObject(this).ThrowErrors("Could not initialize Composite123 due to validation errors", this);
 		}
 
 		private static ValidationErrors ValidateObject(Composite123 obj)
