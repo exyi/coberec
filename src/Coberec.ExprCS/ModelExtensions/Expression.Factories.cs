@@ -66,7 +66,12 @@ namespace Coberec.ExprCS
         {
             Assert.Equal(TypeSignature.Boolean, a.Type());
             Assert.Equal(TypeSignature.Boolean, b.Type());
-            return Expression.Conditional(a, b, Expression.Constant(false));
+            if (a is Expression.ConstantCase { Item: { Value: bool a_const } })
+                return a_const ? b : Expression.Constant(false);
+            else if (b is Expression.ConstantCase { Item: { Value: bool b_const } })
+                return b_const ? a : Expression.Constant(false);
+            else
+                return Expression.Conditional(a, b, Expression.Constant(false));
         }
 
         public static Expression AndAlso(params Expression[] clauses) => AndAlso(clauses.AsEnumerable());

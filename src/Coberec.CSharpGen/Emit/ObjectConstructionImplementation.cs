@@ -133,7 +133,7 @@ namespace Coberec.CSharpGen.Emit
                     Expression nonNullable(Expression e) => e.CallMethod(Method_ToImmutableArray.SpecializeFromDeclaringType(t));
                     Expression nullable(Expression e) =>
                         Expression.Conditional(
-                            Expression.Binary("==", e.Box(), Expression.Default(TypeSignature.Object)),
+                            e.IsNull(),
                             Expression.Default(type),
                             e.CallMethod(Method_ToImmutableArray.SpecializeFromDeclaringType(t))
                                 .Apply(ExpressionFactory.Nullable_Create)

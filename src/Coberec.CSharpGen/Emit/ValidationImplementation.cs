@@ -160,26 +160,18 @@ namespace Coberec.CSharpGen.Emit
 
             Expression createFieldNullcheck(Expression expr, string fieldName)
             {
-                if (def.AcceptsNull) return null;
+                if (def.AcceptsNull) return Expression.Constant(true);
 
                 var member = getFieldMember(fieldName);
-                // var fieldType = (typeSchema.Core as TypeDefCore.CompositeCase)?.Fields.Single(f => f.Name == fieldName).Type;
-                var fieldExpr = expr.AccessMember(member);
-                if (member.ResultType().IsNullableValueType())
-                    return ExpressionFactory.Nullable_HasValue(fieldExpr);
-                else if (member.ResultType().IsReferenceType == true)
-                    return Expression.Binary("!=", fieldExpr.Box(), Expression.Constant<object>(null));
-                else return null;
+                return expr.AccessMember(member).IsNull().Not();
             }
 
             Expression checkForNulls(Expression @this)
             {
-                var nullchecks = fields
-                                 .Where(f => f.Length > 0)
-                                 .Select(f => createFieldNullcheck(@this, f.Single()))
-                                 .Where(f => f != null)
-                                 .ToArray();
-                return Expression.AndAlso(nullchecks);
+                return Expression.AndAlso(
+                           fields
+                           .Where(f => f.Length > 0)
+                           .Select(f => createFieldNullcheck(@this, f.Single())));
             }
 
             var parameters = new Dictionary<MethodParameter, ObjExpr>();

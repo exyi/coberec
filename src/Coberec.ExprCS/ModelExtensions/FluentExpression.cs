@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -58,6 +59,13 @@ namespace Coberec.ExprCS
         public static Expression AccessField(this Expression target, FieldReference field) =>
             Expression.FieldAccess(field, target);
 
+        /// <summary> Gets a value of the instance <paramref name="field" /> on the <paramref name="target" />. If you want to get the reference, use <see cref="AccessField(Expression, FieldReference)" /> </summary>
+        public static Expression ReadField(this Expression target, FieldReference field) =>
+            Expression.FieldAccess(field, target).Dereference();
+        /// <summary> Writes <paramref name="value" /> into the <paramref name="field" /> on the <paramref name="target" />. </summary>
+        public static Expression AssignField(this Expression target, FieldReference field, Expression value) =>
+            Expression.FieldAccess(field, target).ReferenceAssign(value);
+
         /// <summary> Creates a reference conversion of <paramref name="value" /> to <paramref name="type" /> </summary>
         public static Expression ReferenceConvert(this Expression value, TypeReference type) =>
             Expression.ReferenceConversion(value, type);
@@ -79,6 +87,35 @@ namespace Coberec.ExprCS
         public static Expression Invoke(this Expression function, ImmutableArray<Expression> args)
         {
             return Expression.Invoke(function, args);
+        }
+
+        /// <summary> Creates an boolean negation expression. </summary>
+        public static Expression Not(this Expression expression) =>
+            expression is Expression.ConstantCase { Item: { Value: var constant } } ? Expression.Constant(!(bool)constant) :
+            expression is Expression.NotCase { Item: { Expr: var expr } } ? expr :
+            Expression.Not(expression);
+
+        /// <summary> Creates a lambda function. This expression will be a body. </summary>
+        public static Expression AsFunction(this Expression functionBody, params ParameterExpression[] parameters) => functionBody.AsFunction(parameters.ToImmutableArray());
+        /// <summary> Creates a lambda function. This expression will be a body. </summary>
+        public static Expression AsFunction(this Expression functionBody, IEnumerable<ParameterExpression> parameters) => functionBody.AsFunction(parameters.ToImmutableArray());
+        /// <summary> Creates a lambda function. This expression will be a body. </summary>
+        public static Expression AsFunction(this Expression functionBody, ImmutableArray<ParameterExpression> parameters)
+        {
+            return Expression.Function(parameters.EagerSelect(p => new MethodParameter(p.Type, p.Name)), parameters, functionBody);
+        }
+
+        /// <summary> Returns expression "<paramref name="expr" /> is null". Works for reference types and for nullable value types (<see cref="System.Nullable{T}" />). When the expr is different value type, constant `false` is returned. </summary>
+        public static Expression IsNull(this Expression expr)
+        {
+            var type = expr.Type();
+            if (type.IsGenericInstanceOf(TypeSignature.NullableOfT))
+                return ExpressionFactory.Nullable_HasValue(expr).Not();
+            else return type.IsReferenceType switch {
+                true => Expression.Binary("==", expr, Expression.Constant(null, type)),
+                false => Expression.Constant(false),
+                null => throw new Exception($"Can not check type {type} for nulls.")
+            };
         }
     }
 }
