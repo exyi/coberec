@@ -204,15 +204,14 @@ namespace Coberec.CSharpGen.Emit
 
             var call = Expression.StaticMethodCall(
                 method,
-                method.Params.Select(p => parameters.GetValue(p).Invoke(@this)));
+                method.Params.Select(p => parameters[p](@this)));
             foreach (var field in fields.First())
             {
                 // TODO: properly represent errors of more than one field
-                call = Expression.StaticMethodCall(
+                call = call.CallMethod(
                             MethodReference.FromLambda<ValidationErrors>(e => e.Nest("")),
-                            call,
                             Expression.Constant(field)
-                        );
+                       );
             }
             var condition = checkForNulls(@this);
             return (condition, call);
@@ -246,12 +245,12 @@ namespace Coberec.CSharpGen.Emit
         static Expression CreateFullValidator(List<(Expression condition, Expression validator)> validateCalls, Expression @this, MethodSignature validateMethodExtension)
         {
             var resultV = ParameterExpression.Create(Type_Builder, "e");
-            var modifications = validateCalls.Select(v => Expression.IfThen(v.condition, Expression.VariableReference(resultV).CallMethod(Method_Builder_Add, v.validator)));
+            var modifications = validateCalls.Select(v => Expression.IfThen(v.condition, resultV.Ref().CallMethod(Method_Builder_Add, v.validator)));
             if (validateMethodExtension is object)
-                modifications = modifications.Append(Expression.StaticMethodCall(validateMethodExtension, Expression.VariableReference(resultV), @this));
+                modifications = modifications.Append(Expression.StaticMethodCall(validateMethodExtension, resultV.Ref(), @this));
 
             return modifications
-                   .ToBlock(result: Expression.VariableReference(resultV).CallMethod(Method_Builder_Build))
+                   .ToBlock(result: resultV.Ref().CallMethod(Method_Builder_Build))
                    .Where(resultV, Expression.Default(Type_Builder));
         }
 

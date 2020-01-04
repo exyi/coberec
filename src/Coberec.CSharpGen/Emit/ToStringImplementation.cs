@@ -49,7 +49,7 @@ namespace Coberec.CSharpGen.Emit
 
         static Expression[] FormatField(ParameterExpression @this, FieldReference field)
         {
-            var access = Expression.FieldAccess(field, Expression.VariableReference(@this)).Dereference();
+            var access = @this.Ref().AccessField(field).Dereference();
             var nunwrap = access.Type().UnwrapNullableValueType() ?? field.ResultType();
             if (nunwrap.IsGenericInstanceOf(TypeSignature.ImmutableArrayOfT))
             {

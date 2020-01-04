@@ -72,6 +72,8 @@ namespace GeneratedProject.ModelNamespace
 
 		public abstract T Match<T>(Func<string, T> constant, Func<string, T> constantExpression);
 
+		public abstract override int GetHashCode();
+
 		private protected abstract bool EqualsCore(Expression b);
 
 		public virtual bool Equals(Expression b)

@@ -399,6 +399,9 @@ namespace Coberec.CSharpGen
                 type, cases.Select(c => (c.caseType, c.caseName)).ToArray());
             result = result.AddMember(baseMatch);
 
+            var abstractGetHashCode = E.MethodDef.InterfaceDef(E.MethodSignature.Override(type, E.MethodSignature.Object_GetHashCode, isAbstract: true));
+            result = result.AddMember(abstractGetHashCode);
+
             for (int i = 0; i < cases.Length; i++)
             {
                 var caseMatch = MatchFunctionImplementation.ImplementMatchCase(cases[i].caseType, baseMatch.Signature, i);

@@ -105,7 +105,7 @@ namespace Coberec.ExprCS.CodeTranslation
 
             Assert.True(delegateType.GetDelegateInvokeMethod() is object, $"Can not create a lambda of type {delegateType} as it's not a delegate.");
 
-            var parameters = e.Params.Select(p => MetadataDefiner.CreateParameter(this.Metadata, p)).ToImmutableArray();
+            var parameters = e.Params.EagerSelect(p => MetadataDefiner.CreateParameter(this.Metadata, p));
             var fakeName = $"<{this.GeneratedMethod.Name}>somethingsomething";
             var method = new VirtualMethod(
                 this.GeneratedMethod.DeclaringTypeDefinition,
@@ -174,8 +174,8 @@ namespace Coberec.ExprCS.CodeTranslation
             // hack: we add the function to a temporary function so the lambda does not take ownership of it.
             new ILFunction(null, 10000, new ICSharpCode.Decompiler.TypeSystem.GenericContext(), new BlockContainer(), ILFunctionKind.Delegate).Variables.Add(ilVar);
             this.Parameters.Add(targetVar.Id, ilVar);
-            var args = fromFnType.Params.Select(p => ParameterExpression.Create(p.Type, p.Name)).ToImmutableArray();
-            var newFunction = TranslateFunction(new FunctionExpression(fromFnType.Params, args, Expression.Invoke(Expression.FunctionConversion(targetVar, fromFnType), args.Select(a => (Expression)a).ToImmutableArray())));
+            var args = fromFnType.Params.EagerSelect(p => ParameterExpression.Create(p.Type, p.Name));
+            var newFunction = TranslateFunction(new FunctionExpression(fromFnType.Params, args, targetVar.Read().FunctionConvert(fromFnType).Invoke(args.EagerSelect(a => a.Read()))));
             this.Parameters.Remove(targetVar.Id);
             // here, we remove the temporary hack function from ilVar
             ilVar.Function.Variables.Remove(ilVar);

@@ -62,14 +62,23 @@ namespace Coberec.ExprCS
         public static Expression ReferenceConvert(this Expression value, TypeReference type) =>
             Expression.ReferenceConversion(value, type);
 
+        /// <summary> Creates a function conversion of <paramref name="value" /> to <paramref name="type" /> </summary>
+        public static Expression FunctionConvert(this Expression value, TypeReference type) =>
+            Expression.FunctionConversion(value, type);
+
         /// <summary> Creates a reference conversion of <paramref name="value" /> to <see cref="System.Object" /> </summary>
         public static Expression Box(this Expression value) =>
             value.Type() == TypeSignature.Object ? value :
             Expression.ReferenceConversion(value, TypeSignature.Object);
 
-        public static Expression Invoke(this Expression function, params Expression[] args)
+        /// <summary> Creates a function invocation expression - invokes the <paramref name="function" /> with the specified <paramref name="args" /> </summary>
+        public static Expression Invoke(this Expression function, params Expression[] args) => Invoke(function, args.ToImmutableArray());
+        /// <summary> Creates a function invocation expression - invokes the <paramref name="function" /> with the specified <paramref name="args" /> </summary>
+        public static Expression Invoke(this Expression function, IEnumerable<Expression> args) => Invoke(function, args.ToImmutableArray());
+        /// <summary> Creates a function invocation expression - invokes the <paramref name="function" /> with the specified <paramref name="args" /> </summary>
+        public static Expression Invoke(this Expression function, ImmutableArray<Expression> args)
         {
-            return Expression.Invoke(function, args.ToImmutableArray());
+            return Expression.Invoke(function, args);
         }
     }
 }

@@ -82,7 +82,7 @@ namespace Coberec.CSharpGen.Emit
         {
             return MethodDef.CreateWithArray(benevolent, args_ => {
                 var (target, args) = main.IsStatic ? (null, args_)
-                                                   : ((Expression)args_[0], args_.EagerSlice(skip: 1));
+                                                   : (args_[0].Read(), args_.EagerSlice(skip: 1));
                 return Expression.MethodCall(
                     main.SpecializeFromDeclaringType(benevolent.TypeParameters.EagerSelect(TypeReference.GenericParameter)),
                     args.EagerZip(transforms, (a, t) => t(a)),

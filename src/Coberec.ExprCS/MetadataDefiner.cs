@@ -233,7 +233,7 @@ namespace Coberec.ExprCS
                 var m2 = new VirtualMethod(type, TS.Accessibility.Private, i.DeclaringType.FullName + "." + i.Name, _ => i.Parameters, _ => i.ReturnType, typeParameters: i.TypeParameters.Select<ITypeParameter, Func<IEntity, int, ITypeParameter>>(p => (owner, index) => new TS.Implementation.DefaultTypeParameter(owner, index, name: p.Name)).ToArray(), explicitImplementations: new IMember[] { i });
                 var m2_def = MethodDef.CreateWithArray(
                     method.Signature.Clone().With(resultType: newReturnType),
-                    args => ((Expression)args[0]).CallMethod(method.Signature, args.Skip(1).Select(Expression.Parameter)).ReferenceConvert(newReturnType)
+                    args => args[0].Ref().CallMethod(method.Signature, args.Skip(1).Select(Expression.Parameter)).ReferenceConvert(newReturnType)
                 );
                 m2.BodyFactory = CreateBodyFactory(m2, m2_def, cx);
                 type.Methods.Add(m2);
@@ -259,13 +259,13 @@ namespace Coberec.ExprCS
                 if (getter is object)
                 {
                     type.Methods.Add(getter);
-                    var g_def = MethodDef.CreateWithArray(getter_s, args => ((Expression)args[0]).CallMethod(property.Getter.Signature, args.Skip(1).Select(Expression.Parameter)).ReferenceConvert(newReturnType));
+                    var g_def = MethodDef.CreateWithArray(getter_s, args => args[0].Ref().CallMethod(property.Getter.Signature, args.Skip(1).Select(Expression.Parameter)).ReferenceConvert(newReturnType));
                     getter.BodyFactory = CreateBodyFactory(getter, g_def, cx);
                 }
                 if (setter is object)
                 {
                     type.Methods.Add(setter);
-                    var g_def = MethodDef.CreateWithArray(setter_s, args => ((Expression)args[0]).CallMethod(property.Setter.Signature, args.Skip(1).Select(Expression.Parameter)));
+                    var g_def = MethodDef.CreateWithArray(setter_s, args => args[0].Ref().CallMethod(property.Setter.Signature, args.Skip(1).Select(Expression.Parameter)));
                     setter.BodyFactory = CreateBodyFactory(setter, g_def, cx);
                 }
                 type.Properties.Add(p2);

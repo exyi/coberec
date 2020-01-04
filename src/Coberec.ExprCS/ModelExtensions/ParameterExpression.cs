@@ -20,5 +20,18 @@ namespace Coberec.ExprCS
         public static ParameterExpression CreateThisParam(MethodSignature method, string name = "this") =>
             method.IsStatic ? throw new Exception($"Can't create parameter expression for method {method.DeclaringType.Name}.{method.Name} as it's static") :
             CreateThisParam(method.DeclaringType);
+
+
+        /// <summary> Just returns expression that reads value of this parameter. </summary>
+        public Expression Read() => Expression.Parameter(this);
+        /// <summary> Creates an expression with a reference to this local variable. Note that assigning to the reference will only work if it the parameter is mutable. </summary>
+        public Expression Ref() => Expression.VariableReference(this);
+        /// <summary> Creates assignment expression from this parameter and the specified <paramref name="value" />. Note that it only works when the variable is mutable. </summary>
+        public Expression Assign(Expression value)
+        {
+            if (!Mutable)
+                throw new Exception($"Can not assign {value} to immutable variable {this}");
+            return Expression.VariableReference(this).ReferenceAssign(value);
+        }
     }
 }

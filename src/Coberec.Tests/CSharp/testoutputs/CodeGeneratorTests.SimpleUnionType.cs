@@ -162,6 +162,8 @@ namespace GeneratedProject.ModelNamespace
 
 		public abstract T Match<T>(Func<Test123, T> test123, Func<string, T> @string);
 
+		public abstract override int GetHashCode();
+
 		private protected abstract bool EqualsCore(Union123 b);
 
 		public virtual bool Equals(Union123 b)
