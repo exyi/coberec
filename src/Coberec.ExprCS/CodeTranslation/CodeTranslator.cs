@@ -23,11 +23,11 @@ namespace Coberec.ExprCS.CodeTranslation
                 return iLSpyMethod.BuildBody(generatedMethod, cx);
 
             var translator = new CodeTranslator(method, generatedMethod, cx);
-            var declaringType = method.Signature.DeclaringType;
+            var declaringType = method.Signature.DeclaringType.SpecializeByItself();
             if (!method.Signature.IsStatic)
             {
                 var firstArgument = method.ArgumentParams.First();
-                if (declaringType.IsValueType)
+                if (declaringType.Type.IsValueType)
                     Assert.Equal(TypeReference.ByReferenceType(declaringType), firstArgument.Type);
                 else
                     Assert.Equal(declaringType, firstArgument.Type);

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection.Metadata;
 using ICSharpCode.Decompiler;
@@ -14,7 +15,7 @@ namespace Coberec.CSharpGen.TypeSystem
 
     public sealed class VirtualType : ITypeDefinition, IHideableMember
     {
-        public VirtualType(TypeKind kind, Accessibility accessibility, FullTypeName name, bool isStatic, bool isSealed, bool isAbstract, ITypeDefinition declaringType = null, IModule parentModule = null, bool isHidden = false)
+        public VirtualType(TypeKind kind, Accessibility accessibility, FullTypeName name, bool isStatic, bool isSealed, bool isAbstract, ITypeDefinition declaringType = null, IModule parentModule = null, bool isHidden = false, Func<IEntity, int, ITypeParameter>[] typeParameters = null)
         {
             if (declaringType == null && parentModule == null) throw new ArgumentException("declaringType or parentModule parameter must be non-null");
             if (name.Name == null) throw new ArgumentException(nameof(name));
@@ -28,6 +29,7 @@ namespace Coberec.CSharpGen.TypeSystem
             this.ParentModule = parentModule ?? declaringType.ParentModule ?? throw new ArgumentNullException(nameof(parentModule));
             this.IsHidden = isHidden;
             this.DirectBaseType = this.ParentModule.Compilation.FindType(KnownTypeCode.Object);
+            this.TypeParameters = typeParameters?.ToImmutableArray().EagerSelect((p, i) => p(this, i)) ?? ImmutableArray<ITypeParameter>.Empty;
         }
 
         public TypeKind Kind { get; }
@@ -39,11 +41,11 @@ namespace Coberec.CSharpGen.TypeSystem
         public ITypeDefinition DeclaringTypeDefinition { get; }
         public IType DeclaringType => this.DeclaringTypeDefinition;
 
-        public int TypeParameterCount => 0;
+        public int TypeParameterCount => TypeParameters.Count;
 
-        public IReadOnlyList<ITypeParameter> TypeParameters => EmptyList<ITypeParameter>.Instance;
+        public IReadOnlyList<ITypeParameter> TypeParameters { get; }
 
-        public IReadOnlyList<IType> TypeArguments => EmptyList<IType>.Instance;
+        IReadOnlyList<IType> IType.TypeArguments => TypeParameters;
 
         public IType DirectBaseType { get; set; }
         public readonly List<IType> ImplementedInterfaces = new List<IType>();

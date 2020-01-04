@@ -54,6 +54,10 @@ namespace Coberec.ExprCS
         /// <summary> Signature of constructor <see cref="Nullable{T}.Nullable(T)" /> </summary>
         public static readonly MethodSignature NullableOfT_Constructor = MethodReference.FromLambda(() => new int?(34)).Signature;
 
+        /// <summary> Gets signature of public parameterless constructor. Note that this method does not check if it actually exists, so the compilation may fail in later phase. </summary>
+        public static MethodSignature ImplicitConstructor(TypeSignature declaringType) =>
+            Constructor(declaringType, declaringType.IsAbstract ? Accessibility.AProtected : Accessibility.APublic);
+
         /// <summary> Creates new method signature that is a constructor </summary>
         public static MethodSignature Constructor(TypeSignature declaringType, Accessibility accessibility, params MethodParameter[] parameters) =>
             Constructor(declaringType, accessibility, parameters.AsEnumerable());
@@ -70,7 +74,10 @@ namespace Coberec.ExprCS
 
         /// <summary> Creates new instance method signature. The method is not override, not virtual, not abstract </summary>
         public static MethodSignature Instance(string name, TypeSignature declaringType, Accessibility accessibility, TypeReference returnType, params MethodParameter[] parameters) =>
-            new MethodSignature(declaringType, parameters.ToImmutableArray(), name, returnType, isStatic: false, accessibility, isVirtual: false, isOverride: false, isAbstract: false, hasSpecialName: false, ImmutableArray<GenericParameter>.Empty);
+            Instance(name, declaringType, accessibility, returnType, ImmutableArray<GenericParameter>.Empty, parameters);
+        /// <summary> Creates new instance method signature. The method is not override, not virtual, not abstract </summary>
+        public static MethodSignature Instance(string name, TypeSignature declaringType, Accessibility accessibility, TypeReference returnType, IEnumerable<GenericParameter> typeParameters, params MethodParameter[] parameters) =>
+            new MethodSignature(declaringType, parameters.ToImmutableArray(), name, returnType, isStatic: false, accessibility, isVirtual: false, isOverride: false, isAbstract: false, hasSpecialName: false, typeParameters.ToImmutableArray());
 
         /// <summary> Creates new instance abstract method signature. It is not override, but you can apply `.With(isOverride: true)` to the result to make it. </summary>
         public static MethodSignature Abstract(string name, TypeSignature declaringType, Accessibility accessibility, TypeReference returnType, params MethodParameter[] parameters) =>
@@ -98,7 +105,7 @@ namespace Coberec.ExprCS
 
         /// <summary> Fills in the generic parameters from the declaring type. Useful when using the method inside it's declaring type. </summary>
         public MethodReference SpecializeFromDeclaringType(IEnumerable<TypeReference> methodArgs) =>
-            new MethodReference(this, this.DeclaringType.TypeParameters.EagerSelect(TypeReference.GenericParameter), methodArgs?.ToImmutableArray() ?? ImmutableArray<TypeReference>.Empty);
+            new MethodReference(this, this.DeclaringType.AllTypeParameters().EagerSelect(TypeReference.GenericParameter), methodArgs?.ToImmutableArray() ?? ImmutableArray<TypeReference>.Empty);
         /// <summary> Fills in the generic parameters from the declaring type. Useful when using the method inside it's declaring type. </summary>
         public MethodReference SpecializeFromDeclaringType(params TypeReference[] methodArgs) =>
             SpecializeFromDeclaringType(methodArgs.AsEnumerable());

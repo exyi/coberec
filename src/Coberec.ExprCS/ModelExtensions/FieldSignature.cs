@@ -22,7 +22,7 @@ namespace Coberec.ExprCS
 
         /// <summary> Fills in the generic parameters from the declaring type. Useful when using the field inside it's declaring type. </summary>
         public FieldReference SpecializeFromDeclaringType() =>
-            new FieldReference(this, this.DeclaringType.TypeParameters.EagerSelect(TypeReference.GenericParameter));
+            new FieldReference(this, this.DeclaringType.AllTypeParameters().EagerSelect(TypeReference.GenericParameter));
 
         public static implicit operator FieldReference(FieldSignature signature)
         {

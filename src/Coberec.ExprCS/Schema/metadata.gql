@@ -53,7 +53,7 @@ type ArrayType {
 }
 
 type ByReferenceType {
-    type: TypeReference @validateTypeIsNotRef
+    type: TypeReference
 }
 
 type PointerType {

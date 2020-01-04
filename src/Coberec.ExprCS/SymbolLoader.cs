@@ -35,7 +35,8 @@ namespace Coberec.ExprCS
 
         static readonly ConditionalWeakTable<ITypeDefinition, TypeSignature> typeSignatureCache = new ConditionalWeakTable<ITypeDefinition, TypeSignature>();
         public static TypeSignature Type(IType type) =>
-            typeSignatureCache.GetValue(type.GetDefinition(), type => {
+            !(type.GetDefinition() is ITypeDefinition typeDef) ? throw new ArgumentException($"Type '{type}' does not have a definition, so type signature can not be loaded. Did you intent to use SymbolLoader.TypeRef?", nameof(type)) :
+            typeSignatureCache.GetValue(typeDef, type => {
                 var parent = type.DeclaringTypeDefinition != null ?
                              TypeOrNamespace.TypeSignature(Type(type.DeclaringTypeDefinition)) :
                              TypeOrNamespace.NamespaceSignature(Namespace(type.Namespace));
@@ -134,7 +135,7 @@ namespace Coberec.ExprCS
             type is null ? throw new ArgumentNullException("type") :
             type.Kind == TypeKind.Unknown ? throw new ArgumentException($"Can not convert unknown type {type}. Did you forget to include it's assembly in the set of references?", "type") :
             type is TS.Implementation.NullabilityAnnotatedType decoratedType ? TypeRef(decoratedType.TypeWithoutAnnotation) :
-            type is ITypeDefinition td ? TypeReference.SpecializedType(Type(td), ImmutableArray<TypeReference>.Empty) :
+            type is ITypeDefinition td ? Type(td).SpecializeByItself() :
             type is TS.ByReferenceType refType ? TypeReference.ByReferenceType(TypeRef(refType.ElementType)) :
             type is TS.PointerType ptrType ? TypeReference.PointerType(TypeRef(ptrType.ElementType)) :
             type is TS.ArrayType arrType ? TypeReference.ArrayType(TypeRef(arrType.ElementType), arrType.Dimensions) :

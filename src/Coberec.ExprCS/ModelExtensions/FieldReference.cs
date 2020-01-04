@@ -3,14 +3,23 @@ using System.Collections.Generic;
 using System.Linq;
 using R = System.Reflection;
 using LE = System.Linq.Expressions;
+using Coberec.CoreLib;
 
 namespace Coberec.ExprCS
 {
     /// <summary> Represents a reference to a field. The generic parameters of the parent class are substituted - this class is basically <see cref="FieldSignature" /> + generic arguments </summary>
     public partial class FieldReference
     {
+        static partial void ValidateObjectExtension(ref CoreLib.ValidationErrorsBuilder e, FieldReference f)
+        {
+            if (f.Signature is null) return;
+            var expectedCount = f.Signature.DeclaringType.TotalParameterCount();
+            if (expectedCount != f.TypeParameters.Length)
+                e.Add(ValidationErrors.Create($"Declaring type {f.Signature.DeclaringType} expected {expectedCount} parameters, got [{string.Join(", ", f.TypeParameters)}]"));
+        }
+
         public SpecializedType DeclaringType() => new SpecializedType(this.Signature.DeclaringType, this.TypeParameters);
-        public TypeReference ResultType() => Signature.ResultType.SubstituteGenerics(Signature.DeclaringType.TypeParameters, this.TypeParameters);
+        public TypeReference ResultType() => Signature.ResultType.SubstituteGenerics(Signature.DeclaringType.AllTypeParameters(), this.TypeParameters);
 
         public override string ToString() => FieldSignature.ToString(Signature, ResultType());
 

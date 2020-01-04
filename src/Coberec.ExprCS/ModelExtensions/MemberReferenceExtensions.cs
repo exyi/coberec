@@ -13,5 +13,15 @@ namespace Coberec.ExprCS
                 FieldReference f => f.ResultType(),
                 var x => throw new ArgumentException($"Can not get ResultType of {x.GetType()} - {x}")
             };
+
+        /// <summary> Gets declaring type of the specified member. It is has no declaring type (e.g. a type in namespace), `null` is returned. </summary>
+        public static TypeSignature DeclaringType(this MemberSignature member) =>
+            member switch {
+                MethodSignature m => m.DeclaringType,
+                PropertySignature p => p.DeclaringType,
+                FieldSignature f => f.DeclaringType,
+                TypeSignature t => t.Parent.Match(ns => null, t => t),
+                var x => throw new ArgumentException($"Can not get ResultType of {x.GetType()} - {x}")
+            };
     }
 }

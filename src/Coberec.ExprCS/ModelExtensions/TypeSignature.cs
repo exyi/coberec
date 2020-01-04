@@ -23,6 +23,10 @@ namespace Coberec.ExprCS
         }
         /// <summary> Returns total type parameter count (including those from parent types) </summary>
         public int TotalParameterCount() => this.Parent.Match(ns => 0, t => t.TotalParameterCount()) + this.TypeParameters.Length;
+        /// <summary> Returns all type parameters (including those from parent types) </summary>
+        public ImmutableArray<GenericParameter> AllTypeParameters() =>
+            this.Parent.Match(ns => ImmutableArray<GenericParameter>.Empty, t => t.AllTypeParameters())
+            .AddRange(this.TypeParameters);
 
         public string ReflectionName() =>
             this.Parent.Match(ns => ns.ToString() + ".", t => t.ReflectionName() + "+")
@@ -30,7 +34,7 @@ namespace Coberec.ExprCS
             + (this.TypeParameters.Length > 0 ? "`" + this.TypeParameters.Length : "");
 
         /// <summary> Returns a specialized with the generic parameter form itself filled in. You probably don't want to use that to create expression, but may be quite useful to get base types with generic parameters from this type. </summary>
-        public SpecializedType SpecializeByItself() => new SpecializedType(this, this.TypeParameters.EagerSelect(TypeReference.GenericParameter));
+        public SpecializedType SpecializeByItself() => new SpecializedType(this, this.AllTypeParameters().EagerSelect(TypeReference.GenericParameter));
 
         /// <summary> Asserts that the type signature is not generic and then makes a <see cref="SpecializedType" /> from itself. </summary>
         public SpecializedType NotGeneric()
@@ -46,7 +50,8 @@ namespace Coberec.ExprCS
         public SpecializedType Specialize(IEnumerable<TypeReference> args)
         {
             var argsA = args.ToImmutableArray();
-            Assert.Equal(argsA.Length, this.TypeParameters.Length); // TODO: does it work for nested types?
+            if (argsA.Length != TotalParameterCount())
+                throw new ArgumentException($"Can not specialize type '{this}' by [{string.Join(", ", argsA)}]. Expected {TotalParameterCount()} type parameters.", nameof(args));
             return new SpecializedType(this, argsA);
         }
 

@@ -65,7 +65,7 @@ namespace Coberec.ExprCS
                 return this;
             Assert.Equal(parameters.Length, parameters.Distinct().Count());
             return this.Match(
-                specializedType: t => t.With(genericParameters: t.GenericParameters.EagerSelect(t => t.SubstituteGenerics(parameters, arguments))),
+                specializedType: t => t.SubstituteGenerics(parameters, arguments),
                 arrayType: t => t.With(type: t.Type.SubstituteGenerics(parameters, arguments)),
                 byReferenceType: t => t.With(type: t.Type.SubstituteGenerics(parameters, arguments)),
                 pointerType: t => t.With(type: t.Type.SubstituteGenerics(parameters, arguments)),
@@ -84,6 +84,11 @@ namespace Coberec.ExprCS
         public T MatchST<T>(Func<SpecializedType, T> specializedType, Func<TypeReference, T> otherwise) =>
             this is SpecializedTypeCase s ? specializedType(s.Item) :
             otherwise(this);
+
+        /// <summary> Creates a specialization of System.ValueTuple for the specified <paramref name="types" />. </summary>
+        public static TypeReference Tuple(IEnumerable<TypeReference> types) => Tuple(types.ToImmutableArray());
+        /// <summary> Creates a specialization of System.ValueTuple for the specified <paramref name="types" />. </summary>
+        public static TypeReference Tuple(params TypeReference[] types) => Tuple(types.ToImmutableArray());
 
         /// <summary> Creates a specialization of System.ValueTuple for the specified <paramref name="types" />. </summary>
         public static TypeReference Tuple(ImmutableArray<TypeReference> types)

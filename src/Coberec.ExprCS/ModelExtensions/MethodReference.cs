@@ -24,10 +24,10 @@ namespace Coberec.ExprCS
         }
 
         public SpecializedType DeclaringType() => new SpecializedType(this.Signature.DeclaringType, this.TypeParameters);
-        public TypeReference ResultType() => Signature.ResultType.SubstituteGenerics(Signature.TypeParameters, this.MethodParameters).SubstituteGenerics(Signature.DeclaringType.TypeParameters, this.TypeParameters);
+        public TypeReference ResultType() => Signature.ResultType.SubstituteGenerics(Signature.TypeParameters, this.MethodParameters).SubstituteGenerics(Signature.DeclaringType.AllTypeParameters(), this.TypeParameters);
         public ImmutableArray<MethodParameter> Params() =>
             Signature.Params.EagerSelect(p => p.SubstituteGenerics(Signature.TypeParameters, this.MethodParameters)
-                                               .SubstituteGenerics(Signature.DeclaringType.TypeParameters, this.TypeParameters));
+                                               .SubstituteGenerics(Signature.DeclaringType.AllTypeParameters(), this.TypeParameters));
         public string Name() => Signature.Name;
 
         public override string ToString() =>

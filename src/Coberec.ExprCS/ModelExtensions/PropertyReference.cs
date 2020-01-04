@@ -20,7 +20,7 @@ namespace Coberec.ExprCS
         }
 
         public SpecializedType DeclaringType() => new SpecializedType(this.Signature.DeclaringType, this.TypeParameters);
-        public TypeReference Type() => Signature.Type.SubstituteGenerics(Signature.DeclaringType.TypeParameters, this.TypeParameters);
+        public TypeReference Type() => Signature.Type.SubstituteGenerics(Signature.DeclaringType.AllTypeParameters(), this.TypeParameters);
         public MethodReference Getter() =>
             Signature.Getter == null ? null :
             new MethodReference(Signature.Getter, this.TypeParameters, ImmutableArray<TypeReference>.Empty);

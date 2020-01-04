@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Coberec.CoreLib;
+using Coberec.CSharpGen;
 
 namespace Coberec.ExprCS
 {
@@ -26,6 +27,17 @@ namespace Coberec.ExprCS
                 ns => null,
                 t => t.Specialize(this.GenericParameters.Take(t.TypeParameters.Length).ToImmutableArray())
             );
+
+        public SpecializedType SubstituteGenerics(
+            IEnumerable<GenericParameter> parameters,
+            IEnumerable<TypeReference> arguments) =>
+            this.GenericParameters.Length == 0 ? this :
+            SubstituteGenerics(parameters.ToImmutableArray(), arguments.ToImmutableArray());
+        public SpecializedType SubstituteGenerics(
+            ImmutableArray<GenericParameter> parameters,
+            ImmutableArray<TypeReference> arguments) =>
+            this.GenericParameters.Length == 0 || parameters.Length == 0 ? this :
+            With(genericParameters: GenericParameters.EagerSelect(t => t.SubstituteGenerics(parameters, arguments)));
 
         public override string ToString() =>
             this.GenericParameters.IsEmpty

@@ -92,6 +92,10 @@ namespace Coberec.ExprCS
             return MethodCall(method, pargs, target: null);
         }
 
+        /// <summary> Creates new object using the specified constructor </summary>
+        public static Expression NewObject(MethodReference constructor, params Expression[] args) =>
+            NewObject(constructor, args.ToImmutableArray());
+
         public static Expression StaticFieldAccess(FieldReference field)
         {
             if (!field.Signature.IsStatic)

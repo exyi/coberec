@@ -38,7 +38,7 @@ namespace Coberec.ExprCS
 
         /// <summary> Fills in the generic parameters from the declaring type. Useful when using the property inside it's declaring type. </summary>
         public PropertyReference SpecializeFromDeclaringType() =>
-            new PropertyReference(this, this.DeclaringType.TypeParameters.EagerSelect(TypeReference.GenericParameter));
+            new PropertyReference(this, this.DeclaringType.AllTypeParameters().EagerSelect(TypeReference.GenericParameter));
 
         public static implicit operator PropertyReference(PropertySignature signature)
         {

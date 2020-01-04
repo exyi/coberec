@@ -291,15 +291,17 @@ namespace Coberec.ExprCS
 
         /// <summary> Gets all implemented interfaces of this specific <paramref name="type" />. Does not include the transitively implemented ones from its base types. </summary>
         public IEnumerable<SpecializedType> GetDirectImplements(SpecializedType type) =>
-            type.GenericParameters.Length > 0 ? throw new NotImplementedException() : // TODO
-            this.definedTypes.TryGetValue(type.Type, out var t) ? t.Implements :
-            GetTypeDef(type.Type).DirectBaseTypes.Where(b => b.Kind == TypeKind.Interface).Select(SymbolLoader.TypeRef).Select(t => Assert.IsType<TypeReference.SpecializedTypeCase>(t).Item);
+           (this.definedTypes.TryGetValue(type.Type, out var t) ? t.Implements :
+            GetTypeDef(type.Type).DirectBaseTypes.Where(b => b.Kind == TypeKind.Interface).Select(SymbolLoader.TypeRef).Select(t => Assert.IsType<TypeReference.SpecializedTypeCase>(t).Item)
+           )
+            .Select(t => t.SubstituteGenerics(type.Type.AllTypeParameters(), type.GenericParameters));
 
         /// <summary> Gets all base type signatures of the specified <paramref name="type" />. </summary>
         public IEnumerable<SpecializedType> GetBaseTypes(SpecializedType type) =>
-            type.GenericParameters.Length > 0 ? throw new NotImplementedException() : // TODO
-            this.definedTypes.TryGetValue(type.Type, out var t) ? GetBaseTypes(t.Extends ?? TypeSignature.Object.NotGeneric()).Append(t.Extends ?? TypeSignature.Object.NotGeneric()) :
-            GetTypeDef(type.Type).GetAllBaseTypes().Select(SymbolLoader.TypeRef).Select(t => Assert.IsType<TypeReference.SpecializedTypeCase>(t).Item);
+           (this.definedTypes.TryGetValue(type.Type, out var t) ? GetBaseTypes(t.Extends ?? TypeSignature.Object.NotGeneric()).Append(t.Extends ?? TypeSignature.Object.NotGeneric()) :
+            GetTypeDef(type.Type).GetAllBaseTypes().Select(SymbolLoader.TypeRef).Select(t => Assert.IsType<TypeReference.SpecializedTypeCase>(t).Item)
+           )
+            .Select(t => t.SubstituteGenerics(type.Type.AllTypeParameters(), type.GenericParameters));
 
 
         private Dictionary<TypeSignature, List<ILSpyArbitraryTypeModification>> typeMods = new Dictionary<TypeSignature, List<ILSpyArbitraryTypeModification>>();
@@ -334,6 +336,7 @@ namespace Coberec.ExprCS
         /// <param name="isExternal">If true, the type will not be included in the generated config. It will be however treated as already present in the code, so the generated code will be aware that it exists.</param>
         public void AddType(TypeDef type, Func<Exception, bool> errorHandler = null, bool isExternal = false)
         {
+            type = TypeFixer.Fix(type, this);
             this.definedTypes.Add(type.Signature, type);
             this.definedTypeNames.Add(type.Signature.GetFullTypeName(), type);
             this.waitingTypes.Add((type, errorHandler, isExternal));

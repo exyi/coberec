@@ -16,7 +16,7 @@ namespace Coberec.ExprCS
 
             if (!m.Signature.IsStatic && me.Target is object)
                 if (m.DeclaringType() != me.Target.Type().UnwrapReference())
-                    e.Add(ValidationErrors.Create($"Instance method declared on '{m.DeclaringType()}' can not be invoked with target of type '{me.Target.Type().UnwrapReference()}'").Nest("target"));
+                    e.Add(ValidationErrors.Create($"Instance method declared on '{m.DeclaringType()}' can not be invoked with target of type '{me.Target.Type()}'").Nest("target"));
             if (me.Args.Length != m.Signature.Params.Length)
                 e.Add(ValidationErrors.Create($"Can not call method '{m}' with {me.Args.Length} arguments."));
             else

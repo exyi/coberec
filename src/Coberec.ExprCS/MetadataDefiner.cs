@@ -37,10 +37,21 @@ namespace Coberec.ExprCS
 
         public static TS.IType GetTypeReference(this MetadataContext c, TypeReference tref) =>
             tref.Match(
-                specializedType =>
-                    specializedType.GenericParameters.IsEmpty ? (IType)c.GetTypeDef(specializedType.Type) :
-                    new ParameterizedType(c.GetTypeDef(specializedType.Type),
-                        specializedType.GenericParameters.Select(p => GetTypeReference(c, p))),
+                st => {
+                    if (st.GenericParameters.IsEmpty)
+                        return (IType)c.GetTypeDef(st.Type);
+                    var genericType =
+                        // when we have a parent type, we first need specialize it, then we can specialize our type
+                        // st.DeclaringType() is SpecializedType declaringType ?
+                        // c.GetTypeReference(declaringType).GetNestedTypes(t => t.Name == st.Type.Name && t.TypeParameterCount == st.Type.TypeParameters.Length).Single() :
+                        c.GetTypeDef(st.Type);
+
+                    return new ParameterizedType(
+                        genericType,
+                        st.GenericParameters
+                        //   .Skip(st.GenericParameters.Length - st.Type.TypeParameters.Length)
+                          .Select(p => GetTypeReference(c, p)));
+                },
                 arrayType => new TS.ArrayType(c.Compilation, GetTypeReference(c, arrayType.Type), arrayType.Dimensions),
                 byrefType => new TS.ByReferenceType(GetTypeReference(c, byrefType.Type)),
                 pointerType => new TS.PointerType(GetTypeReference(c, pointerType.Type)),
@@ -96,9 +107,11 @@ namespace Coberec.ExprCS
         public static IMethod GetMethod(this MetadataContext cx, MethodReference method)
         {
             var m = GetMethod(cx, method.Signature);
-            return m.Specialize(new TypeParameterSubstitution(
+            var result = m.Specialize(new TypeParameterSubstitution(
                 method.TypeParameters.EagerSelect(t => GetTypeReference(cx, t)).NullIfEmpty(),
                 method.MethodParameters.EagerSelect(t => GetTypeReference(cx, t)).NullIfEmpty()));
+            Assert.Equal(SymbolLoader.TypeRef(result.ReturnType), method.ResultType());
+            return result;
         }
 
         public static IField GetField(this MetadataContext cx, FieldSignature field)
@@ -113,7 +126,9 @@ namespace Coberec.ExprCS
         public static IField GetField(this MetadataContext cx, FieldReference field)
         {
             var f = GetField(cx, field.Signature);
-            return (IField)f.Specialize(new TypeParameterSubstitution(field.TypeParameters.EagerSelect(t => GetTypeReference(cx, t)).NullIfEmpty(), null));
+            var result = (IField)f.Specialize(new TypeParameterSubstitution(field.TypeParameters.EagerSelect(t => GetTypeReference(cx, t)).NullIfEmpty(), null));
+            Assert.Equal(SymbolLoader.TypeRef(result.ReturnType), field.ResultType());
+            return result;
         }
 
         public static IProperty GetProperty(this MetadataContext cx, PropertySignature prop)
@@ -129,7 +144,9 @@ namespace Coberec.ExprCS
         public static IProperty GetProperty(this MetadataContext cx, PropertyReference prop)
         {
             var p = GetProperty(cx, prop.Signature);
-            return (IProperty)p.Specialize(new TypeParameterSubstitution(prop.TypeParameters.EagerSelect(t => GetTypeReference(cx, t)).NullIfEmpty(), null));
+            var result = (IProperty)p.Specialize(new TypeParameterSubstitution(prop.TypeParameters.EagerSelect(t => GetTypeReference(cx, t)).NullIfEmpty(), null));
+            Assert.Equal(SymbolLoader.TypeRef(result.ReturnType), prop.ResultType());
+            return result;
         }
 
         public static IMember GetMember(this MetadataContext cx, MemberSignature sgn) =>
@@ -165,6 +182,8 @@ namespace Coberec.ExprCS
                        sgn.Kind == "class" ? TypeKind.Class :
                        throw new NotSupportedException($"Type kind '{sgn.Kind}' is not supported.");
 
+            var genericBaseIndex = sgn.DeclaringType()?.TotalParameterCount() ?? 0;
+
             var vt = new VirtualType(
                 kind,
                 GetAccessibility(sgn.Accessibility),
@@ -173,7 +192,10 @@ namespace Coberec.ExprCS
                 isSealed: !sgn.CanOverride,
                 sgn.IsAbstract,
                 sgn.Parent is TypeOrNamespace.TypeSignatureCase tt ? cx.GetTypeDef(tt.Item) : null,
-                parentModule: cx.MainILSpyModule
+                parentModule: cx.MainILSpyModule,
+                typeParameters:
+                    (sgn.DeclaringType()?.Apply(cx.GetTypeDef)?.TypeParameters ?? Enumerable.Empty<ITypeParameter>()).Select<ITypeParameter, Func<IEntity, int, ITypeParameter>>(p => (_, __) => p)
+                    .Concat(sgn.TypeParameters.Select<GenericParameter, Func<IEntity, int, ITypeParameter>>(p => (owner, index) => cx.GenericParameterStore.Register(p, owner, index))).ToArray()
             );
 
             Assert.Equal((bool)vt.IsReferenceType, !sgn.IsValueType);
@@ -233,7 +255,7 @@ namespace Coberec.ExprCS
                 var m2 = new VirtualMethod(type, TS.Accessibility.Private, i.DeclaringType.FullName + "." + i.Name, _ => i.Parameters, _ => i.ReturnType, typeParameters: i.TypeParameters.Select<ITypeParameter, Func<IEntity, int, ITypeParameter>>(p => (owner, index) => new TS.Implementation.DefaultTypeParameter(owner, index, name: p.Name)).ToArray(), explicitImplementations: new IMember[] { i });
                 var m2_def = MethodDef.CreateWithArray(
                     method.Signature.Clone().With(resultType: newReturnType),
-                    args => args[0].Ref().CallMethod(method.Signature, args.Skip(1).Select(Expression.Parameter)).ReferenceConvert(newReturnType)
+                    args => args[0].Read().CallMethod(method.Signature, args.Skip(1).Select(Expression.Parameter)).ReferenceConvert(newReturnType)
                 );
                 m2.BodyFactory = CreateBodyFactory(m2, m2_def, cx);
                 type.Methods.Add(m2);
