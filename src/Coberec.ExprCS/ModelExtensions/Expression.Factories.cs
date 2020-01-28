@@ -103,5 +103,32 @@ namespace Coberec.ExprCS
 
             return Expression.FieldAccess(field, null);
         }
+
+        /// <summary> Gets a value of the static <paramref name="field" />. If you want to get the reference, use <see cref="StaticFieldAccess(FieldReference)" /> </summary>
+        public static Expression StaticFieldRead(FieldReference field) =>
+            Expression.StaticFieldAccess(field).Dereference();
+        /// <summary> Writes <paramref name="value" /> into the static <paramref name="property" />. </summary>
+        public static Expression StaticFieldAssign(FieldReference field, Expression value) =>
+            Expression.StaticFieldAccess(field).ReferenceAssign(value);
+
+
+        /// <summary> Calls getter of the static <paramref name="property" />. </summary>
+        public static Expression StaticPropertyRead(PropertyReference property)
+        {
+            if (!property.Signature.IsStatic)
+                throw new ArgumentException($"Static property was expected, got {property}", nameof(property));
+            var getter = property.Getter();
+            if (getter is null) throw new ArgumentException($"Can not read property {property}", nameof(property));
+            return Expression.MethodCall(getter, ImmutableArray<Expression>.Empty, null);
+        }
+        /// <summary> Writes <paramref name="value" /> into the static <paramref name="property" />. </summary>
+        public static Expression StaticPropertyAssign(PropertyReference property, Expression value)
+        {
+            if (!property.Signature.IsStatic)
+                throw new ArgumentException($"Static property was expected, got {property}", nameof(property));
+            var setter = property.Setter();
+            if (setter is null) throw new ArgumentException($"Can not write to property {property}", nameof(property));
+            return Expression.MethodCall(setter, ImmutableArray.Create(value), null);
+        }
     }
 }

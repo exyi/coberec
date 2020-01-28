@@ -100,8 +100,20 @@ namespace Coberec.ExprCS
         }
 
         /// <summary> Fills in the generic parameters. </summary>
+        /// <param name="typeArgs">Generic arguments of the declaring type. May be null instead of empty.</param>
+        /// <param name="methodArgs">Generic arguments of the method. May be null instead of empty.</param>
         public MethodReference Specialize(IEnumerable<TypeReference> typeArgs, IEnumerable<TypeReference> methodArgs) =>
             new MethodReference(this, typeArgs?.ToImmutableArray() ?? ImmutableArray<TypeReference>.Empty, methodArgs?.ToImmutableArray() ?? ImmutableArray<TypeReference>.Empty);
+
+
+        /// <summary> Fills in the generic parameters. Both arguments for the declaring type and for the method should be specified. </summary>
+        public MethodReference Specialize(params TypeReference[] allGenericArgs)
+        {
+            var declaringTypeParam = this.DeclaringType.TotalParameterCount();
+            var typeArgs = allGenericArgs.EagerSlice(take: declaringTypeParam);
+            var methodArgs = allGenericArgs.EagerSlice(skip: declaringTypeParam);
+            return new MethodReference(this, typeArgs, methodArgs);
+        }
 
         /// <summary> Fills in the generic parameters from the declaring type. Useful when using the method inside it's declaring type. </summary>
         public MethodReference SpecializeFromDeclaringType(IEnumerable<TypeReference> methodArgs) =>

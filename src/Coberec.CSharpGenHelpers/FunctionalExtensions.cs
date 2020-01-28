@@ -142,6 +142,22 @@ namespace Coberec.CSharpGen
             if (skip < 0 || take < 0) throw new ArgumentException();
             var take_ = take ?? arr.Length - skip;
             if (skip == 0 && take_ == arr.Length) return arr;
+            if (take_ == 0) return ImmutableArray<T>.Empty;
+
+            var builder = ImmutableArray.CreateBuilder<T>(initialCapacity: take_);
+            for (int i = 0; i < take_; i++)
+            {
+                builder.Add(arr[i + skip]);
+            }
+            return builder.MoveToImmutable();
+        }
+
+        public static ImmutableArray<T> EagerSlice<T>(this T[] arr, int skip = 0, int? take = null)
+        {
+            if (skip < 0 || take < 0) throw new ArgumentException();
+            var take_ = take ?? arr.Length - skip;
+            if (skip == 0 && take_ == arr.Length) return arr.ToImmutableArray();
+            if (take_ == 0) return ImmutableArray<T>.Empty;
 
             var builder = ImmutableArray.CreateBuilder<T>(initialCapacity: take_);
             for (int i = 0; i < take_; i++)

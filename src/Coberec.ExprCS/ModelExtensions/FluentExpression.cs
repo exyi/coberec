@@ -20,10 +20,6 @@ namespace Coberec.ExprCS
         public static Expression ToBlock(this IEnumerable<Expression> expressions, Expression result = null) =>
             Expression.Block(expressions.ToImmutableArray(), result ?? Expression.Nop);
 
-        /// <summary> Calls the getter of the specified <paramref name="property" /> </summary>
-        public static Expression ReadProperty(this Expression target, PropertyReference property) =>
-            Expression.MethodCall(property.Getter(), ImmutableArray<Expression>.Empty, target);
-
         /// <summary> Calls the specified instance method on the <paramref name="target" />. Can be also used to call extension methods </summary>
         public static Expression CallMethod(this Expression target, MethodReference method, IEnumerable<Expression> args) =>
             CallMethod(target, method, args.ToArray());
@@ -65,6 +61,25 @@ namespace Coberec.ExprCS
         /// <summary> Writes <paramref name="value" /> into the <paramref name="field" /> on the <paramref name="target" />. </summary>
         public static Expression AssignField(this Expression target, FieldReference field, Expression value) =>
             Expression.FieldAccess(field, target).ReferenceAssign(value);
+
+        /// <summary> Calls getter of the static <paramref name="property" />. </summary>
+        public static Expression ReadProperty(this Expression target, PropertyReference property)
+        {
+            if (property.Signature.IsStatic)
+                throw new ArgumentException($"Instance property was expected, got {property}", nameof(property));
+            var getter = property.Getter();
+            if (getter is null) throw new ArgumentException($"Can not read property {property}", nameof(property));
+            return Expression.MethodCall(getter, ImmutableArray<Expression>.Empty, target);
+        }
+        /// <summary> Writes <paramref name="value" /> into the static <paramref name="property" />. </summary>
+        public static Expression AssignProperty(this Expression target, PropertyReference property, Expression value)
+        {
+            if (property.Signature.IsStatic)
+                throw new ArgumentException($"Instance property was expected, got {property}", nameof(property));
+            var setter = property.Setter();
+            if (setter is null) throw new ArgumentException($"Can not write to property {property}", nameof(property));
+            return Expression.MethodCall(setter, ImmutableArray.Create(value), target);
+        }
 
         /// <summary> Creates a reference conversion of <paramref name="value" /> to <paramref name="type" /> </summary>
         public static Expression ReferenceConvert(this Expression value, TypeReference type) =>

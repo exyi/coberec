@@ -119,6 +119,9 @@ namespace Coberec.ExprCS
             ));
 
         /// <summary> Finds a type signature by a <paramref name="name" />. Will only look for type definitions (e.g. <see cref="String" />), not type references (<see cref="T:String[]" /> or <see cref="List{String}" />). </summary>
+        /// <remarks>
+        /// In case you'd like to get the specialized <see cref="TypeReference" /> you can use <seealso cref="TryFindType(string)" />
+		/// </remarks>
         public TypeSignature TryFindTypeDef(string name)
         {
             var fullTypeName = new FullTypeName(name);
@@ -132,6 +135,9 @@ namespace Coberec.ExprCS
         }
 
         /// <summary> Finds a type signature by a <paramref name="name" />. Will only look for type definitions (e.g. <see cref="String" />), not type references (<see cref="T:String[]" /> or <see cref="List{String}" />). </summary>
+        /// <remarks>
+        /// In case you'd like to get the specialized <see cref="TypeReference" /> you can use <seealso cref="FindType(string)" />
+		/// </remarks>
         public TypeSignature FindTypeDef(string name) =>
             TryFindTypeDef(name) ?? throw new ArgumentException($"Type {name} could not be found.", nameof(name));
 
@@ -143,7 +149,9 @@ namespace Coberec.ExprCS
         /// <summary> Finds a type reference by a <paramref name="name" />. Will look for both type definitions (e.g. <see cref="String" />) and for type references (<see cref="T:String[]" /> or <see cref="List{String}" />). Returns null if the type can not be found. </summary>
         /// <remarks>
 		/// Expected syntax: <c>NamespaceName '.' TopLevelTypeName ['`'#] { '+' NestedTypeName ['`'#] }</c>
-		/// where # are type parameter counts
+		/// where # are type parameter counts.!--
+        ///
+        /// In case you'd like to get the generic <see cref="TypeSignature" /> you can use <seealso cref="TryFindTypeDef(string)" />
 		/// </remarks>
 
         public TypeReference TryFindType(string name)
@@ -162,6 +170,12 @@ namespace Coberec.ExprCS
         }
 
         /// <summary> Finds a type reference by a <paramref name="name" />. Will look for both type definitions (e.g. <see cref="String" />) and for type references (<see cref="T:String[]" /> or <see cref="List{String}" />). Throws an exception if the type can not be found. </summary>
+        /// <remarks>
+		/// Expected syntax: <c>NamespaceName '.' TopLevelTypeName ['`'#] { '+' NestedTypeName ['`'#] }</c>
+		/// where # are type parameter counts.!--
+        ///
+        /// In case you'd like to get the generic <see cref="TypeSignature" /> you can use <seealso cref="FindTypeDef(string)" />
+		/// </remarks>
         public TypeReference FindType(string name) =>
             TryFindType(name) ?? throw new ArgumentException($"Type reference {name} could be found.", nameof(name));
 
@@ -342,7 +356,7 @@ namespace Coberec.ExprCS
             this.waitingTypes.Add((type, errorHandler, isExternal));
         }
 
-        /// <summary> Generates the "real" types from the symbolic <see cref="TypeDef" />s. When this method is called, all symbols used in the metadata must be already added to the context (using <see cref="AddType(TypeDef,Action{Exception},bool)" />) </summary>
+        /// <summary> Generates the "real" types from the symbolic <see cref="TypeDef" />s. When this method is called, all symbols used in the metadata must be already added to the context (using <see cref="AddType(TypeDef,Func{Exception, bool},bool)" />) </summary>
         public void CommitWaitingTypes()
         {
             var sortedTypes = MetadataDefiner.SortDefinitions(this.waitingTypes.Select(t => t.type).ToArray());
