@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Immutable;
+using System.Linq;
 using CheckTestOutput;
 using Xunit;
 
@@ -25,6 +26,63 @@ namespace Coberec.ExprCS.Tests.Docs
             cx.AddTestExpr(value, pTuple);
             cx.AddTestExpr(assignment, pTuple);
             cx.AddTestExpr(value2);
+
+            check.CheckOutput(cx);
+        }
+
+        [Fact]
+        public void Conditions()
+        {
+            Expression myString = pString1.Read();
+            Expression cond = Expression.Conditional(
+                myString.IsNull(),
+                Expression.Constant("<empty>"),
+                myString
+            );
+            cx.AddTestExpr(cond, pString1);
+            Expression a = p1.Read();
+            Expression cond2 = Expression.Conditional(
+                Expression.Binary(">", a, Expression.Constant(10)),
+                Expression.StaticMethodCall(
+                    MethodReference.FromLambda(() => Console.WriteLine(1)),
+                    a),
+                Expression.Nop
+            );
+            cx.AddTestExpr(cond2, p1);
+            Expression cond3 = Expression.IfThen(
+                Expression.Binary(">", a, Expression.Constant(10)),
+                Expression.StaticMethodCall(
+                    MethodReference.FromLambda(() => Console.WriteLine(1)),
+                    a)
+            );
+            cx.AddTestExpr(cond3, p1);
+
+            check.CheckOutput(cx);
+        }
+
+        [Fact]
+        public void Blocks()
+        {
+            MethodReference writeLineM = MethodReference.FromLambda(() => Console.WriteLine(""));
+            MethodReference readLineM = MethodReference.FromLambda(() => Console.ReadLine());
+            Expression expr = Expression.Block(
+                ImmutableArray.Create(
+                    Expression.StaticMethodCall(
+                        writeLineM,
+                        Expression.Constant("Enter the output file path: ")
+                    )
+                ),
+                Expression.StaticMethodCall(readLineM)
+            );
+            cx.AddTestExpr(expr);
+
+            Expression listOfWrites =
+                Enumerable.Range(1, 30)
+                .Select(i => $"Line {i}")
+                .Select(Expression.Constant)
+                .Select(a => Expression.StaticMethodCall(writeLineM, a))
+                .ToBlock();
+            cx.AddTestExpr(listOfWrites);
 
             check.CheckOutput(cx);
         }

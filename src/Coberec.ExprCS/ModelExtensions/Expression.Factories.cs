@@ -62,7 +62,11 @@ namespace Coberec.ExprCS
             return ArrayIndex(array, dimensions.ToImmutableArray());
         }
 
-        public static Expression AndAlso(Expression a, Expression b)
+        /// <summary> Represents `this &amp;&amp; b` boolean expression. Expression `b` is evaluated only if `this` is true. </summary>
+        public Expression And(Expression b) => And(this, b);
+
+        /// <summary> Represents `a &amp;&amp; b` boolean expression. Expression `b` is evaluated only if `a` is true. </summary>
+        public static Expression And(Expression a, Expression b)
         {
             Assert.Equal(TypeSignature.Boolean, a.Type());
             Assert.Equal(TypeSignature.Boolean, b.Type());
@@ -74,11 +78,36 @@ namespace Coberec.ExprCS
                 return Expression.Conditional(a, b, Expression.Constant(false));
         }
 
-        public static Expression AndAlso(params Expression[] clauses) => AndAlso(clauses.AsEnumerable());
-        public static Expression AndAlso(IEnumerable<Expression> clauses) =>
+        /// <summary> Represents `clauses[0] &amp;&amp; clauses[1] ...` boolean expression. Expression is evaluated only if all preceding expressions are true. </summary>
+        public static Expression And(params Expression[] clauses) => And(clauses.AsEnumerable());
+        /// <summary> Represents `clauses[0] &amp;&amp; clauses[1] ...` boolean expression. Expression is evaluated only if all preceding expressions are true. </summary>
+        public static Expression And(IEnumerable<Expression> clauses) =>
             clauses.Any() ?
-            clauses.Aggregate(AndAlso) :
+            clauses.Aggregate(And) :
             Expression.Constant(true);
+
+        /// <summary> Represents `a || b` boolean expression. Expression `b` is evaluated only if `a` is false. </summary>
+        public Expression Or(Expression b) => Or(this, b);
+        /// <summary> Represents `a || b` boolean expression. Expression `b` is evaluated only if `a` is false. </summary>
+        public static Expression Or(Expression a, Expression b)
+        {
+            Assert.Equal(TypeSignature.Boolean, a.Type());
+            Assert.Equal(TypeSignature.Boolean, b.Type());
+            if (a is Expression.ConstantCase { Item: { Value: bool a_const } })
+                return a_const ? Expression.Constant(true) : a;
+            else if (b is Expression.ConstantCase { Item: { Value: bool b_const } })
+                return b_const ? Expression.Constant(true) : b ;
+            else
+                return Expression.Conditional(a, Expression.Constant(true), b);
+        }
+
+        /// <summary> Represents `clauses[0] || clauses[1] ...` boolean expression. Expression is evaluated only if all preceding expressions are false. </summary>
+        public static Expression Or(params Expression[] clauses) => Or(clauses.AsEnumerable());
+        /// <summary> Represents `clauses[0] || clauses[1] ...` boolean expression. Expression is evaluated only if all preceding expressions are false. </summary>
+        public static Expression Or(IEnumerable<Expression> clauses) =>
+            clauses.Any() ?
+            clauses.Aggregate(Or) :
+            Expression.Constant(false);
 
         /// <summary> Calls the specified static method. It will automatically fill in optional parameters </summary>
         public static Expression StaticMethodCall(MethodReference method, params Expression[] args) =>

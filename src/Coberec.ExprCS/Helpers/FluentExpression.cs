@@ -104,11 +104,11 @@ namespace Coberec.ExprCS
             return Expression.Invoke(function, args);
         }
 
-        /// <summary> Creates an boolean negation expression. </summary>
-        public static Expression Not(this Expression expression) =>
-            expression is Expression.ConstantCase { Item: { Value: var constant } } ? Expression.Constant(!(bool)constant) :
-            expression is Expression.NotCase { Item: { Expr: var expr } } ? expr :
-            Expression.Not(expression);
+        /// <summary> Creates expression `!expr`. If expression is constant, it is folded immediately. </summary>
+        public static Expression Not(this Expression expr) =>
+            expr is Expression.ConstantCase { Item: { Value: var constant } } ? Expression.Constant(!(bool)constant) :
+            expr is Expression.NotCase { Item: { Expr: var innerExpr } } ? innerExpr :
+            Expression.Not(expr);
 
         /// <summary> Creates a lambda function. This expression will be a body. </summary>
         public static Expression AsFunction(this Expression functionBody, params ParameterExpression[] parameters) => functionBody.AsFunction(parameters.ToImmutableArray());
@@ -120,7 +120,7 @@ namespace Coberec.ExprCS
             return Expression.Function(parameters.EagerSelect(p => new MethodParameter(p.Type, p.Name)), parameters, functionBody);
         }
 
-        /// <summary> Returns expression "<paramref name="expr" /> is null". Works for reference types and for nullable value types (<see cref="System.Nullable{T}" />). When the expr is different value type, constant `false` is returned. </summary>
+        /// <summary> Returns expression `<paramref name="expr" /> is null`. Works for reference types and for nullable value types (<see cref="System.Nullable{T}" />). When the expr is different value type, constant `false` is returned. </summary>
         public static Expression IsNull(this Expression expr)
         {
             var type = expr.Type();

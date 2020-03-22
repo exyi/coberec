@@ -168,7 +168,7 @@ namespace Coberec.CSharpGen.Emit
 
             Expression checkForNulls(Expression @this)
             {
-                return Expression.AndAlso(
+                return Expression.And(
                            fields
                            .Where(f => f.Length > 0)
                            .Select(f => createFieldNullcheck(@this, f.Single())));

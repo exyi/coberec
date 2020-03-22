@@ -109,7 +109,13 @@ namespace Coberec.ExprCS
             (ITypeDefinition)declaredEntities.GetValueOrDefault(type) ??
            (definedTypes.ContainsKey(type) ? throw new Exception($"Type {type} has been added to MetadataContext, but it hasn't been comited, so the ILSpy metadata can not be obtained.") :
             type.Parent.Match(
-                ns => GetNamespace(ns).GetTypeDefinition(type.Name, type.TypeParameters.Length) ?? throw new InvalidOperationException($"Type {type.GetFullTypeName()} could not be found, namespace {ns} does not exist"),
+                ns => {
+                    var ilspyNs = GetNamespace(ns);
+                    var foundType = ilspyNs.GetTypeDefinition(type.Name, type.TypeParameters.Length) ??
+                        throw new InvalidOperationException($"Type {type.GetFullTypeName()} could not be found, namespace {ns} does not contain such type.");
+                    Assert.Equal(type, SymbolLoader.Type(foundType));
+                    return foundType;
+                },
                 parentType => {
                     var parent = GetTypeDef(parentType);
                     return parent.GetNestedTypes(t => t.Name == type.Name && t.TypeParameterCount - parent.TypeParameterCount == type.TypeParameters.Length, GetMemberOptions.IgnoreInheritedMembers)
@@ -444,6 +450,7 @@ namespace Coberec.ExprCS
                 typeof(System.Security.Cryptography.SHA1).Assembly.GetName(),
                 typeof(System.Diagnostics.FileVersionInfo).Assembly.GetName(),
                 typeof(System.IO.StringReader).Assembly.GetName(),
+                typeof(System.Console).Assembly.GetName()
                 // new AssemblyName("netstandard")
             })
             let location = AssemblyLoadContext.Default.LoadFromAssemblyName(r).Location
