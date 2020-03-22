@@ -132,5 +132,12 @@ namespace Coberec.ExprCS
                 null => throw new Exception($"Can not check type {type} for nulls.")
             };
         }
+
+        public static Expression NullCoalesce(this Expression a, Expression b)
+        {
+            var aAlias = ParameterExpression.Create(a.Type(), "tmp");
+            return Expression.Conditional(aAlias.Read().IsNull().Not(), aAlias, b)
+                   .Where(aAlias, a);
+        }
     }
 }

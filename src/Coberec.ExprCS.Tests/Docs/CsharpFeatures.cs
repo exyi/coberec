@@ -87,6 +87,17 @@ namespace Coberec.ExprCS.Tests.Docs
             check.CheckOutput(cx);
         }
 
+        [Fact]
+        public void NullCoalesce()
+        {
+            MethodReference readLineM = MethodReference.FromLambda(() => Console.ReadLine());
+            cx.AddTestExpr(pString1.Read().NullCoalesce(Expression.Constant("<null>")), pString1);
+            cx.AddTestExpr(Expression.StaticMethodCall(readLineM).NullCoalesce(Expression.Constant("<null>")));
+            cx.AddTestExpr(pNullInt.Read().NullCoalesce(ExpressionFactory.Nullable_Create(Expression.Constant(-1))), pNullInt);
+            // cx.AddTestExpr(pNullInt.Read().NullCoalesce(Expression.Constant(-1)), pNullInt);
+
+            check.CheckOutput(cx);
+        }
 
 
         OutputChecker check = new OutputChecker("testoutput");
@@ -95,6 +106,7 @@ namespace Coberec.ExprCS.Tests.Docs
         ParameterExpression p2 = ParameterExpression.Create(TypeSignature.Int32, "p2");
         ParameterExpression pBool1 = ParameterExpression.Create(TypeSignature.Boolean, "pBool1");
         ParameterExpression pString1 = ParameterExpression.Create(TypeSignature.String, "pString1");
+        ParameterExpression pNullInt = ParameterExpression.Create(TypeSignature.NullableOfT.Specialize(TypeSignature.Int32), "pNullInt");
         ParameterExpression pObject = ParameterExpression.Create(TypeSignature.Object, "pObject");
         ParameterExpression pTime = ParameterExpression.Create(TypeSignature.TimeSpan, "pTime");
         ParameterExpression pTuple = ParameterExpression.Create(TypeReference.FromType(typeof(ValueTuple<string, int>)), "pTuple");

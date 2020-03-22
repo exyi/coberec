@@ -18,6 +18,7 @@
     <ProjectReference Include="..\Coberec.ExprCS\Coberec.ExprCS.csproj" />
 
     <Compile Remove="testoutput/*.cs" />
+    <Compile Remove="Docs/testoutput/*.cs" />
   </ItemGroup>
 
 </Project>
