@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using CheckTestOutput;
@@ -95,6 +96,72 @@ namespace Coberec.ExprCS.Tests.Docs
             cx.AddTestExpr(Expression.StaticMethodCall(readLineM).NullCoalesce(Expression.Constant("<null>")));
             cx.AddTestExpr(pNullInt.Read().NullCoalesce(ExpressionFactory.Nullable_Create(Expression.Constant(-1))), pNullInt);
             // cx.AddTestExpr(pNullInt.Read().NullCoalesce(Expression.Constant(-1)), pNullInt);
+
+            check.CheckOutput(cx);
+        }
+
+        [Fact]
+        public void NewObject()
+        {
+            var ctor = MethodReference.FromLambda(() => new System.Collections.Generic.List<int>(0));
+            cx.AddTestExpr(Expression.NewObject(ctor, Expression.Constant(100)));
+
+            check.CheckOutput(cx);
+        }
+
+        [Fact]
+        public void Boxing()
+        {
+            cx.AddTestExpr(pTime.Read().Box(), pTime);
+            cx.AddTestExpr(pTime.Read().ReferenceConvert(TypeReference.FromType(typeof(IEquatable<TimeSpan>))), pTime);
+            // the same thing works for reference types, although it's not really boxing
+            cx.AddTestExpr(pString1.Read().Box(), pString1);
+            cx.AddTestExpr(pString1.Read().ReferenceConvert(TypeReference.FromType(typeof(IEnumerable<char>))), pString1);
+
+            check.CheckOutput(cx);
+        }
+
+        [Fact]
+        public void Functions()
+        {
+            // parameterless `() => 1`
+
+            Expression fn1 = Expression.Function(Expression.Constant(1));
+
+            // (bool a) => a ? 1 : 2
+
+            ParameterExpression pA = ParameterExpression.Create(TypeSignature.Boolean, "a");
+            Expression fn2 = Expression.Function(
+                Expression.Conditional(pA, Expression.Constant(1), Expression.Constant(2)),
+                pA
+            );
+
+            cx.AddTestExpr(fn1.Invoke());
+            cx.AddTestExpr(fn2.Invoke(Expression.Constant(true)));
+
+            var func = TypeReference.FromType(typeof(Func<bool, int>));
+            cx.AddTestExpr(fn2.FunctionConvert(func));
+
+            check.CheckOutput(cx);
+        }
+
+        [Fact]
+        public void LocalFunction()
+        {
+            ParameterExpression pA = ParameterExpression.Create(TypeSignature.Boolean, "a");
+            Expression fn2 = Expression.Function(
+                Expression.Conditional(pA, Expression.Constant(1), Expression.Constant(2)),
+                pA
+            );
+            ParameterExpression localFn2 = ParameterExpression.Create(fn2.Type(), "fn2");
+
+            cx.AddTestExpr(
+                Expression.Binary("+",
+                    localFn2.Read().Invoke(Expression.Constant(true)),
+                    localFn2.Read().Invoke(Expression.Constant(false))
+                )
+                .Where(localFn2, fn2)
+            );
 
             check.CheckOutput(cx);
         }

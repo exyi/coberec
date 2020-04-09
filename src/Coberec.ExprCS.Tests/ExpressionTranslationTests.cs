@@ -220,7 +220,7 @@ namespace Coberec.ExprCS.Tests
             var fn2 = Expression.Function(
                         Expression.Conditional(
                             pBool1,
-                            Expression.ReferenceConversion(Expression.Invoke(fn1, ImmutableArray<Expression>.Empty), TypeSignature.Object),
+                            Expression.ReferenceConversion(fn1.Invoke(), TypeSignature.Object),
                             Expression.Constant<object>(null)
                         ),
                         pBool1);
@@ -238,7 +238,7 @@ namespace Coberec.ExprCS.Tests
             var fn2 = Expression.Function(
                         Expression.Conditional(
                             pBool1,
-                            Expression.ReferenceConversion(Expression.Invoke(fn1, ImmutableArray<Expression>.Empty), TypeSignature.Object),
+                            Expression.ReferenceConversion(fn1.Invoke(), TypeSignature.Object),
                             Expression.Constant<object>(null)
                         ),
                         pBool1);

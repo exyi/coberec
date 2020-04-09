@@ -657,6 +657,17 @@ namespace Coberec.ExprCS.CodeTranslation
         Result TranslateBinary(BinaryExpression e)
         {
             var op = e.Operator;
+
+            // error messages for known C# operators that should not be used like this
+            var err = op switch {
+                "&&" => "Can't use `&&` operator in BinaryExpression, use Expression.And(a, b) instead.",
+                "||" => "Can't use `||` operator in BinaryExpression, use Expression.Or(a, b) instead.",
+                "??" => "Can't use `??` operator in BinaryExpression, use a.NullCoalesce(b) instead.",
+                var x when x.EndsWith("=") => $"Can't use operation+assignment `{x}` in binary expression. Split it into two operations.",
+                _ => null
+            };
+            if (err is object) throw new NotSupportedException(err);
+
             var type = e.Right.Type();
             Assert.Equal(e.Left.Type(), type);
 
@@ -667,6 +678,9 @@ namespace Coberec.ExprCS.CodeTranslation
             var left = args[0];
             var right = args[1];
 
+            Assert.Equal(left.ResultType, left_raw.Type.GetStackType());
+            Assert.Equal(right.ResultType, right_raw.Type.GetStackType());
+
             if (e.IsComparison())
             {
                 var boolType = this.Metadata.Compilation.FindType(KnownTypeCode.Boolean);
@@ -674,7 +688,7 @@ namespace Coberec.ExprCS.CodeTranslation
                 if (op == "==" || op == "!=")
                 {
                     if (left_raw.Type.IsReferenceType == false && left_raw.Type.GetStackType() == StackType.O)
-                        throw new Exception($"Can not use '==' and '!=' operators for non-enum and non-primitive type {left_raw.Type}. If you wanted to call an overloaded operator, please the a method call expression.");
+                        throw new Exception($"Cannot not use '==' and '!=' operators for non-enum and non-primitive type {left_raw.Type}. If you wanted to call an overloaded operator, please use the a method call expression.");
 
                     return Result.Concat(
                         args_r,
@@ -690,7 +704,7 @@ namespace Coberec.ExprCS.CodeTranslation
                 {
                     var stackType = left_raw.Type.GetStackType();
                     if (stackType == StackType.O || stackType == StackType.Ref || stackType == StackType.Unknown)
-                        throw new Exception($"Can not use comparison operators for non-integer type {left_raw.Type}. If you wanted to call an overloaded operator, please the a method call expression.");
+                        throw new Exception($"Cannot not use comparison operators for non-integer type {left_raw.Type}. If you wanted to call an overloaded operator, please use the a method call expression.");
 
                     return Result.Concat(
                         args_r,
@@ -709,7 +723,37 @@ namespace Coberec.ExprCS.CodeTranslation
                     );
                 }
             }
-            throw new NotImplementedException();
+            else
+            {
+                var stackType = left_raw.Type.GetStackType();
+                if (stackType == StackType.O || stackType == StackType.Ref || stackType == StackType.Unknown)
+                    throw new Exception($"Cannot use arithmentic operators for non-integer type {left_raw.Type}. If you wanted to call an overloaded operator, please use the a method call expression.");
+
+                Assert.Equal(left_raw.Type, right_raw.Type);
+
+                return Result.Concat(
+                    args_r,
+                    Result.Expression(left_raw.Type, new IL.BinaryNumericInstruction(
+                        op switch {
+                            "+" => BinaryNumericOperator.Add,
+                            "&" => BinaryNumericOperator.BitAnd,
+                            "|" => BinaryNumericOperator.BitOr,
+                            "^" => BinaryNumericOperator.BitXor,
+                            "/" => BinaryNumericOperator.Div,
+                            "*" => BinaryNumericOperator.Mul,
+                            "%" => BinaryNumericOperator.Rem,
+                            "<<" => BinaryNumericOperator.ShiftLeft,
+                            ">>" => BinaryNumericOperator.ShiftRight,
+                            "-" => BinaryNumericOperator.Sub,
+                            _ => throw new NotSupportedException($"Numeric operator {op} is not supported.")
+                        },
+                        left,
+                        right,
+                        checkForOverflow: false,
+                        left_raw.Type.GetSign()
+                    ))
+                );
+            }
         }
 
         Result TranslateConstant(ConstantExpression e)

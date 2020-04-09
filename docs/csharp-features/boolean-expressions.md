@@ -43,3 +43,7 @@ Expression.And(
 )
 
 ```
+
+## Negation
+
+Negation is represented by `NotExpression`, and easiest way to negate an expression is using the `expr.Not()` method
