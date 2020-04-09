@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
-using static Coberec.MetaSchema.FormatResult;
+using static Coberec.MetaSchema.FmtToken;
 
 namespace Coberec.Tests
 {

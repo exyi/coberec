@@ -18,7 +18,7 @@ namespace Coberec.MetaSchema
         {
             public PrimitiveCase() {}
             private protected override void Seal() {}
-            public override FormatResult Format(FormatResult directives) => directives;
+            public override FmtToken Format(FmtToken directives) => directives;
         }
 
         public sealed class UnionCase: TypeDefCore
@@ -34,7 +34,12 @@ namespace Coberec.MetaSchema
             public ImmutableArray<TypeRef> Options { get; }
 
             private protected override void Seal() {}
-            public override FormatResult Format(FormatResult directives) => FormatResult.Concat(directives, "= ", FormatResult.Join(" | ", Options.Select(f => f.Format())));
+            public override FmtToken Format(FmtToken directives) =>
+                FmtToken.Concat(
+                    directives,
+                    "= ",
+                    FmtToken.Join(" | ", Options, FmtToken.IntegerTokenMap())
+                ).WithTokenNames(null, "", "core.options");
         }
 
         public sealed class InterfaceCase: TypeDefCore
@@ -49,7 +54,14 @@ namespace Coberec.MetaSchema
             public ImmutableArray<TypeField> Fields { get; }
 
             private protected override void Seal() {}
-            public override FormatResult Format(FormatResult directives) => FormatResult.Concat(directives, "{", FormatResult.Block(Fields.Select(f => FormatResult.Concat(f.Format(), ","))), "}");
+            public override FmtToken Format(FmtToken directives) =>
+                FmtToken.Concat(
+                    directives,
+                    "{",
+                    FmtToken.Block(Fields.Select(f => FmtToken.Concat(f.Format(), ",")))
+                            .WithIntegerTokenMap(),
+                    "}"
+                ).WithTokenNames(null, "", "core", "");
         }
 
         public sealed class CompositeCase: TypeDefCore
@@ -63,10 +75,17 @@ namespace Coberec.MetaSchema
             public ImmutableArray<TypeField> Fields { get; }
             public ImmutableArray<TypeRef> Implements { get; }
             private protected override void Seal() {}
-            public override FormatResult Format(FormatResult directives) => FormatResult.Concat(
-                Implements.Length > 0 ? FormatResult.Concat(" implements ", FormatResult.Concat(Implements.Select(f => FormatResult.Concat(f.Format(), " "))))
-                                      : "",
-                directives, "{", FormatResult.Block(Fields.Select(f => FormatResult.Concat(f.Format(), ","))), "}");
+            public override FmtToken Format(FmtToken directives) =>
+                FmtToken.Concat(
+                    Implements.Length > 0 ? FmtToken.Concat(" implements ", FmtToken.Concat(Implements.Select(f => FmtToken.Concat(f, " "))).WithIntegerTokenMap())
+                                          : "",
+                    directives,
+                    "{",
+                    FmtToken.Block(Fields.Select(f => FmtToken.Concat(f, ",")))
+                            .WithIntegerTokenMap(),
+                    "}"
+                )
+                .WithTokenNames("core.implements", null, "", "core.fields", "");
         }
 
         public T Match<T>(Func<PrimitiveCase, T> primitive,
@@ -79,7 +98,7 @@ namespace Coberec.MetaSchema
             this is CompositeCase c ? composite(c) :
             throw new Exception("wtf");
 
-        public abstract FormatResult Format(FormatResult directives);
+        public abstract FmtToken Format(FmtToken directives);
         public override string ToString() => Format("").ToString();
     }
 }

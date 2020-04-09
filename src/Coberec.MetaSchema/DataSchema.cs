@@ -153,15 +153,19 @@ namespace Coberec.MetaSchema
         public ImmutableArray<Entity> Entities { get; }
         public ImmutableArray<TypeDef> Types { get; }
 
-        public FormatResult Format(string rootType)
+        public FmtToken Format(string rootType)
         {
-            if (Entities.Length == 0 && Types.Any(t => t.Name == rootType))
+            if (Entities.Length >= 0 && Types.Any(t => t.Name == rootType))
                 throw new InvalidOperationException($"Type with name '{rootType}' already exists in the schema so it can't be root type.");
 
-            return FormatResult.Block(
-                FormatResult.Block(Types.Select(e => e.Format())),
+            return FmtToken.Block(
+                FmtToken.Block(Types).WithIntegerTokenMap(),
                 Entities.Length == 0 && rootType != null ? "" :
-                    FormatResult.Concat("type ", rootType, "{", FormatResult.Block(Entities.Select(s => s.Format())), "}")
+                    FmtToken.Concat("type ", rootType, "{", FmtToken.Block(Entities).WithIntegerTokenMap(), "}")
+            )
+            .WithTokenNames(
+                "types",
+                "entities"
             );
         }
         public override string ToString() => Format("Entities").ToString();

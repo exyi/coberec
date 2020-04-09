@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace Coberec.MetaSchema
 {
-    public sealed class Entity
+    public sealed class Entity: ITokenFormatable
     {
         public Entity(string name, string description, IEnumerable<Directive> directives, TypeRef type)
         {
@@ -20,8 +20,8 @@ namespace Coberec.MetaSchema
         public ImmutableArray<Directive> Directives { get; }
         public TypeRef Type { get; }
 
-        FormatResult FormatDirectives() => FormatResult.Concat(Directives.Select(d => FormatResult.Concat(" ", d.Format())));
-        public FormatResult Format() => FormatResult.Concat(Name, "(id: ID): ", Type, "?", FormatDirectives());
+        FmtToken FormatDirectives() => FmtToken.Concat(Directives.Select(d => FmtToken.Concat(" ", d.Format())));
+        public FmtToken Format() => FmtToken.Concat(Name, "(id: ID): ", Type, "?", FormatDirectives());
         public override string ToString() => Format().ToString();
     }
 }

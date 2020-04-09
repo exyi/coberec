@@ -6,7 +6,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Coberec.MetaSchema
 {
-    public class Directive
+    public class Directive: ITokenFormatable
     {
         public Directive(string name, JObject args)
         {
@@ -26,10 +26,11 @@ namespace Coberec.MetaSchema
                 return s.ToString();
             }
         }
-        private FormatResult FormatArgs() => FormatResult.Join(", ", Args.Properties().Select(p => FormatResult.Concat(p.Name, ": ", FormatArg(p.Value))));
-        public FormatResult Format() =>
-            Args.Count == 0 ? FormatResult.Concat("@", Name) :
-            FormatResult.Concat("@", Name, "(", FormatArgs(), ")");
+        private FmtToken FormatArgs() => FmtToken.Join(", ", Args.Properties().Select(p => FmtToken.Concat(p.Name, ": ", FormatArg(p.Value))), FmtToken.IntegerTokenMap());
+        public FmtToken Format() =>
+            Args.Count == 0 ? FmtToken.Concat("@", Name) :
+            FmtToken.Concat("@", Name, "(", FormatArgs(), ")")
+                    .WithTokenNames("", "name", "", "args", "");
 
         public override string ToString() => Format().ToString();
     }

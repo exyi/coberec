@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 
 namespace Coberec.MetaSchema
 {
-    public abstract class TypeRef
+    public abstract class TypeRef: ITokenFormatable
     {
             //                    ___
             //                  //   \\
@@ -42,7 +43,7 @@ namespace Coberec.MetaSchema
                 TypeName = typeName;
             }
             public string TypeName { get; }
-            public override FormatResult Format() => TypeName;
+            public override FmtToken Format() => FmtToken.Single(TypeName, "typeName");
             public override bool Equals(object obj) =>
                 obj is ActualTypeCase o && this.TypeName.Equals(o.TypeName);
             public override int GetHashCode() => (TypeName, 67464).GetHashCode();
@@ -56,7 +57,10 @@ namespace Coberec.MetaSchema
             }
 
             public TypeRef Type { get; }
-            public override FormatResult Format() => FormatResult.Concat(Type.Format(), "!");
+            public override FmtToken Format() =>
+                FmtToken.Concat(
+                    ImmutableArray.Create<object>(Type, "!"),
+                    new [] { "type", "" });
             public override bool Equals(object obj) =>
                 obj is NullableTypeCase o && this.Type.Equals(o.Type);
             public override int GetHashCode() => (Type.GetHashCode(), 76545476).GetHashCode();
@@ -71,7 +75,11 @@ namespace Coberec.MetaSchema
 
             public TypeRef Type { get; }
 
-            public override FormatResult Format() => FormatResult.Concat("[", Type.Format(), "]");
+            public override FmtToken Format() =>
+                FmtToken.Concat(
+                    ImmutableArray.Create<object>("[", Type, "]"),
+                    new [] { "", "type", "" }
+                );
             public override bool Equals(object obj) =>
                 obj is ListTypeCase o && this.Type.Equals(o.Type);
             public override int GetHashCode() => (Type.GetHashCode(), 3564364).GetHashCode();
@@ -85,7 +93,7 @@ namespace Coberec.MetaSchema
             this is ListTypeCase l ? list(l) :
             throw new Exception("wtf");
 
-        public abstract FormatResult Format();
+        public abstract FmtToken Format();
         public override string ToString() => Format().ToString();
     }
 }

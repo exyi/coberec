@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace Coberec.MetaSchema
 {
-    public class TypeDef
+    public class TypeDef: ITokenFormatable
     {
         public TypeDef(string name, IEnumerable<Directive> directives, TypeDefCore core)
         {
@@ -18,10 +18,14 @@ namespace Coberec.MetaSchema
         public ImmutableArray<Directive> Directives { get; }
         public TypeDefCore Core { get; }
 
-        FormatResult FormatDirectives() => FormatResult.Concat(Directives.Select(d => FormatResult.Concat(d.Format(), " ")));
+        FmtToken FormatDirectives() =>
+            FmtToken.Concat(Directives.Select(d => FmtToken.Concat(d, " ")))
+                .WithIntegerTokenMap()
+                .Name("directives");
         string Keyword() => Core.Match(_ => "scalar", _ => "union", _ => "interface", _ => "type");
 
-        public FormatResult Format() => FormatResult.Concat(Keyword(), " ", Name, " ", Core.Format(FormatDirectives()));
+        public FmtToken Format() => FmtToken.Concat(Keyword(), " ", Name, " ", Core.Format(FormatDirectives()))
+                                            .WithTokenNames("core", "", "name", "", null);
         public override string ToString() => Format().ToString();
     }
 }
