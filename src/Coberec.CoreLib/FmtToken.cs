@@ -17,6 +17,10 @@ namespace Coberec.MetaSchema
         private FmtToken(int indent, bool isBlock, ImmutableArray<object> items, object tokenMap)
         {
             Debug.Assert(isBlock || indent == 0);
+            Debug.Assert(
+                tokenMap is null ||
+                tokenMap is string ||
+                tokenMap is string[] a && a.Length == items.Length);
             this.indent = indent;
             this.isBlock = isBlock;
             this.items = items;
@@ -102,7 +106,7 @@ namespace Coberec.MetaSchema
         public void WriteTo(StringBuilder sb, WriteConfig c) => WriteTo(new StringBuilderFmtTokenSink(sb), c);
         public void WriteTo(StringBuilder sb, int indent, string indentText) => WriteTo(sb, new WriteConfig(indent, indentText));
 
-        public static FmtToken Block(object item, string tokenName = null) => new FmtToken(1, true, ImmutableArray.Create(item), tokenName);
+        public static FmtToken Block(object item) => new FmtToken(1, true, ImmutableArray.Create(item), null);
         public static FmtToken Block(params object[] items) => new FmtToken(1, true, items.ToImmutableArray(), null);
         public static FmtToken Block(ImmutableArray<object> items, string[] tokenNames = null) => new FmtToken(1, true, items, tokenNames);
         public static FmtToken Block(IEnumerable<object> items, string[] tokenNames = null) => new FmtToken(1, true, items.ToImmutableArray(), tokenNames);
@@ -130,7 +134,8 @@ namespace Coberec.MetaSchema
                 first = true;
                 foreach (var t in tokenNames)
                 {
-
+                    if (i >= tokenMap.Length)
+                        break;
                     if (!first | (first = false))
                     {
                         tokenMap[i] = "\\sep";
