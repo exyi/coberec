@@ -663,7 +663,9 @@ namespace Coberec.ExprCS.CodeTranslation
                 "&&" => "Can't use `&&` operator in BinaryExpression, use Expression.And(a, b) instead.",
                 "||" => "Can't use `||` operator in BinaryExpression, use Expression.Or(a, b) instead.",
                 "??" => "Can't use `??` operator in BinaryExpression, use a.NullCoalesce(b) instead.",
-                var x when x.EndsWith("=") => $"Can't use operation+assignment `{x}` in binary expression. Split it into two operations.",
+                "!=" => null,
+                "==" => null,
+                var x when x.EndsWith("=") => $"Can't use operation & assignment operator `{x}` in binary expression. Split it into two operations.",
                 _ => null
             };
             if (err is object) throw new NotSupportedException(err);
