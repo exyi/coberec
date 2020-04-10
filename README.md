@@ -1,18 +1,18 @@
 # COBEREC Generator
 
-This an experimental C# code generator that generates data classes from model written in GraphQL Schema language. It is a tool aiming at generating **COrrect REadable and BEautiful Code**, with priority on the correctness.
+Coberec is a C# code generator project. Actually, two projects in one:
 
+* Coberec.GraphQL generates C# data classes from a model written in GraphQL Schema language.
+* Coberec.ExprCS is a generic abstraction for generating C# code. It's an API built on ILSpy decompiler, that makes it easy to generate C# code safely. More on that below.
 
-## GraphQL Schema
+The tool is aiming at generating **COrrect REadable and BEautiful Code**, with priority on the correctness. I have not really fiddled with formatting and nice syntax, the goal is to produce code that is precise and which behavior is easy to predict.
 
-COBEREC translates a domain model written in GraphQL Schema language into C# immutable classes, so you can declare your domain very easily without any boilerplate. As an intermediate representation, we use a simple representation of the schema, so you can also fairly easily consume it and create db schema, user interfaces or whatever yourself. Well, simply if you don't care about correctness in edge cases or if you already have a simple and robust backend...
+The C# code generator is based on the awesome [ILSpy decompiler](https://github.com/icsharpcode/ilspy) which makes sure that it produces quite nice looking code that always represents what was intended. C# is a very complex language and it would be very hard to accomplish the goals without using ILSpy's backend.
 
-## CSharp generator
+## GraphQL Schema -> C# classes
 
-The C# code generator is based on the awesome ILSpy decompiler which makes sure that it produces quite nice looking code that always represents what was intended. C# is a very complex language and it would be very hard without using ILSpy's backend.
+COBEREC translates a domain model written in GraphQL Schema language into C# immutable classes, so you can declare your domain very easily without any boilerplate. As an intermediate representation, we use a simple representation of the schema, so you can also fairly easily consume it and create db schema, user interfaces or whatever yourself. Well, simply... if you don't care much about correctness in edge cases or if you already have a simple and robust backend (like ExprCS and ILSpy 😉)
 
-
-## Usage
 
 ### Schema
 
@@ -38,69 +38,69 @@ type Robot {
 }
 
 # a type that is either a Robot or a User
-union Create = Robot | User
+union Creature = Robot | User
 
-# you can also define interfaces for things with common properties (if composition does not fit your needs)
+# you can also define interfaces for things with common properties
 ```
-### Compiler
 
-To transform your schema into C# code, you can run the Coberec.CLI program. Use it as follows: `Coberec.CLI.exe input1.gql ... input43.gql --outDir ./GeneratedClasses [--config coberec.config.json] [--namespace MyProject.Model]`
+More on this subproject is on [a separate page](docs/graphql-gen.md)
 
-The parameters are:
+## ExprCS
 
-* `--config configFile.json`: Json file used for configuration of code generator, see config docs for more info. Supports most JSON5 features (unquoted identifiers, trailing commas, C-style comments).
+This is the cooler part (IMHO 🙂) of the project that is built on top of GraphQL codegen but is also a basis for it. I'd be sad if nobody would be using the API, so I'm using it myself on itself ;)
 
-* `--out outFile.cs`: Generated code goes into the specified file. You can use `-` to write to std out.
+ExprCS is an abstraction for generating C# code using a semantic tree similar to `System.Linq.Expressions`. The tree format is declared in GraphQL and it's actually quite simple, see [src/Coberec.ExprCS/Schema](src/Coberec.ExprCS/Schema). Metadata declares type/method/property signatures, expression declares the actual code and composition declares types that glue all that together - method/type/property/field definitions - basically a signature + code.
 
-* `--outDir outDirectory`: Generated code goes into the specified directory. Usually, 1 class goes into 1 file (except for name conflict and nested classes).
+### Semantic model of the code
 
-* `--namespace MyNamespace`: Specifies C# namespace of the generated classes. The same option can be set in the configuration file, but this one has precedence.
+When creating expressions, methods, and types, every symbol must have a known type. We are not building the resulting code in the terms of its syntax, but what it will do. For example, it doesn't care whether a `MethodCallExpression` will be the actual method call in C# or whether it's an invocation of a custom operator. Or, when you want to convert `int` to `long`, you just have to use the `NumericConversionExpression`, no matter that this conversion may be implicit in C#. The resulting code will be clean of it, the conversion will be implicit and the operator method call will be the operator usage.
 
-* `[--input] inputFile.gql`: Add the specified input file into the schema.
+The Expression API is very similar to `System.Linq.Expressions` that may also be used for generating code, but only for runtime-created functions. The major similarity is that everything we handle has a known type, every method call points to the exact overload. This makes it easy to catch errors early and to build very generic code generators (and helpers for them).
 
-* `--verbose`: Prints a bit more information sometimes.
+### Expressions
 
-* `--invertNonNullable`: Makes non-nullable types nullable and vice versa. It's useful hack for the case when almost everything is non-nullable as it's the default with this option.
+Another similarity to `System.Linq.Expressions` is that everything is an expression, there are no statements. This does not mean that the generated code will always be a single expression, it will get expanded into a reasonable C# form.
 
-To run the compiler before build of your project, simply put these lines into the .csproj file:
+How can we run multiple methods after each other or declare variables in the expressions? This is no problem, the expression tree supports [inline blocks](./docs/csharp-features/blocks.md) and [variables](./docs/csharp-features/variables.md). The difference from using statements is that you can use the block/variable definition everywhere - in a method argument, inside a binary operator expression, ... And it will get sorted out automatically, later.
 
-```xml
-<Target Name="BuildCoberec" BeforeTargets="BeforeCompile" Inputs="schema/**" Outputs="GeneratedSchema/**.cs">
-    <Exec Command="dotnet ./path/to/Coberec.CLI.dll --config schema/config.json schema/**.gql --outDir GeneratedSchema --verbose" />
-    <ItemGroup>
-        <Compile Include="GeneratedSchema/**.cs" />
-    </ItemGroup>
-</Target>
-```
-### Configuration
+### Why?
 
-The configuration is basically a JSON file with the serialized EmitSettings class inside. The fundamental configuration options are:
+Why do we need another tool for generating code? We can just concatenate strings or use Roslyn syntax tree when we want to be fancy, right? Being explicit about exact symbols might be a much more annoying than just copy-pasting a piece of code into a template, so what's the point?
 
-* `Namespace`: Specifies C# namespace of the generated classes. It must be specified here or as a command line argument.
-* `PrimitiveTypeMapping`: A dictionary that allows you to add primitive types that map to certain .NET type. For example `{ "Uri": "System.Uri" }` will allow you to use type `Uri` in the schema that will be directly translated to `System.Uri`. You are supposed to specify full name. This can be also used to override the default types.
-* `AdditionalReferences`: A list of path to assemblies that should be taken into account when producing the code. In order to be safe and not produce too much boilerplate, ILSpy has to know metadata about the references and taking this from MSBuild is simply too complicated.
-* `Validators`: Configuration of custom validators. See the validation section for more info.
-* `ExternalSymbols`: A list of descriptions of symbols in the current project. This is required to let ILSpy know about your custom functions that may be used from the schema definition but itself may require a reference to the schema. See the validation section for more info.
-* `EmitWithMethods`: If helper methods for creating a clone with some of the properties changed should be produced. These method are called `With`. (default is **true**)
-* `EmitInterfaceWithMethods`: If the `With` methods should be also on interfaces. (default is **true**)
-* `EmitOptionalWithMethods`: If the `With` methods should have optional parameters. (default is **true**)
-* `WithMethodReturnValidationResult`: If the `With` method should return `ValidationResult<T>` or throw an exception when the validation fails. (default is **true**)
-* `AddJsonPropertyAttributes`: If `[JsonProperty("originalNameFromSchema"]` attributes should be added to the properties if the names are somewhat changed. (default is **true**)
+To be clear, this approach does not fit all use cases very well. If I'd be in a need of a prime table in a C# array, I'd just write a shell script for that. Generating entire API clients or data classes from GraphQL is a different story, however. There is simply too many edge cases emerging from the user's possibilities and glitches of the C# language. Given enough time, every user will need something different, more config options will be added making the templates much more complicated... You can have a look at [NSwag's templates](https://github.com/RicoSuter/NSwag/blob/42d3b64/src/NSwag.CodeGeneration.CSharp/Templates/Client.Class.liquid) if you don't trust this :)
 
-### Validation
+Expressions, which make the output code make everything composable and allow for much nicer code structure. There might an option to include null checks a method, which might be implemented as a conditional prepend of a piece of code to the method body. There is a few more edge cases with handling the nulls (like, the parameter might not be a nullable type), but these will be handled by a different function, independent on the callee. Or, you could even write a transform that would add parameter check into all public methods in the code.
 
-One of the main features of domain model created by this method is that it can enforce it's invariants in the sense that invalid object can't be even created. One of the ways to do that is simply make the invalid states unrepresentable by clever usage of the type system (namely unions) as suggested by https://fsharpforfunandprofit.com/posts/designing-with-types-making-illegal-states-unrepresentable/. Other part is to enforce more subtle validation rules - that the represented values actually can make sense.
+As another example, you might want to handle different types that do a similar thing in the generated code. For example, the user might want to decide, if plain arrays, `List`, `ImmutableArray` or `ImmutableList` should be used in the API. The types have very similar API - for example, you can create all of them from `IEnumerable<T>`, but the way how it's done is different. Composition allows you to write helper functions that will be able to handle all cases based on the supplied type. Or, again, you could even have a postprocessing step that will replace array usage by `List<T>` usage :)
 
-Any field can be annotated by a `@validateXXX` directive. The validators can be registered in the configuration option `Validators`:
+Since all types are known when the result is produced, the backend will handle many edge cases for you - are you using the correct type called `List`? Want to be sure to end up calling the right method overload? Wanted to use the reference `==` instead of an overloaded operator? But don't want to have code cluttered with explicit conversions and `global::System.Collection.Generic`? Thanks to ILSpy (mostly), this is handled for you.
 
-```json
-{
-    "Validators": {
-        "customValidator": { "ValidationMethodName": "MyNamespace.MyClass.CustomValidator" }
-    }
+### Names
+
+One big problem is naming the generated symbols. When the names of types, methods, and properties come from the input (the GraphQL schema, for example), there is a sheer amount of edge cases that must be handled, since not every GraphQL identifier is a valid C# identifier (and this also depends on the context...)
+
+For example, you might want to capitalize the first letter of the properties - convert to PascalCase, so it looks like idiomatic C# API. Since GraphQL is case sensitive, it allows you to have both properties `myProp` and `MyProp`, and this could get you into trouble with non-unique names.
+
+GraphQL also allows almost any sequence of letters to be a identifier - specifically all C# keywords and problematic names like `ToString` or `GetHashCode`. This is a valid GraphQL type:
+
+```csharp
+type GetHashCode {
+    getHashCode: String
+    this: String
+    equals: Boolean
+    a: String
+    get_A: String
 }
 ```
 
-The validation method should be just a method that takes the validated value as parameter.
+All of these edge cases are handled by `Coberec.ExprCS` (the abstraction), not `Coberec.GraphQL`. The user of ExprCS gets these for free (well, symbol renaming must be enabled, since you don't want it in all cases).
 
-By default you can use `@validateNotEmpty` on arrays and string and `@validateRange` on Integers. Note that in GraphQL directives are written after the field - `age: Int @validateRange(low: 0, high: 150)`.
+Maybe you now think that this does not make sense to handle, these are artificial counterexamples... The reality, unfortunately, is that some of these are pretty easy to hit in larger. This is not in the GraphQL version, but github has "+1" and "-1" properties [in their v3 API](https://developer.github.com/v3/emojis/), which may break a lot of automated code generators (if they had that in a machine-readable form...). Glitches just add up quickly and fixing them manually in automated pipelines would be annoying.
+
+### Metadata
+
+Details are on a [separate page](src/metadata.gql), so just briefly. Metadata describes the types, methods, properties, fields, ...  - it's something like the System.Reflection, except that you can create your own symbols. The same classes are used for the types you create and for the types you use from referenced libraries, so there is not much distinction between.
+
+## 
+
+<!-- While in System.Reflection, you can create type out of nowhere using `typeof(X)` or `Type.GetType(...)`, this is not exactly possible here. The context is not implicit, we need to have a `MetadataContext` which contains the information about referenced libraries and also new types defined by you. -->
