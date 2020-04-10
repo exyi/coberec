@@ -166,6 +166,31 @@ namespace Coberec.ExprCS.Tests.Docs
             check.CheckOutput(cx);
         }
 
+        [Fact]
+        public void Variables()
+        {
+            var myVar = ParameterExpression.Create(TypeSignature.Int32, "myVar");
+
+            cx.AddTestExpr(Expression.LetIn(
+                myVar, Expression.Constant(42),
+                target: Expression.Binary("+", myVar, myVar)
+            ));
+
+            var mutableVar = ParameterExpression.CreateMutable(TypeSignature.Int32, "mutableVar");
+
+            cx.AddTestExpr(Expression.LetIn(
+                mutableVar, Expression.Constant(42),
+                target: Expression.Binary("+",
+                    mutableVar,
+                    new [] {
+                        mutableVar.Assign(Expression.Constant(30))
+                    }.ToBlock(mutableVar)
+                )
+            ));
+
+            check.CheckOutput(cx);
+        }
+
 
         OutputChecker check = new OutputChecker("testoutput");
         MetadataContext cx = MetadataContext.Create("MyModule");

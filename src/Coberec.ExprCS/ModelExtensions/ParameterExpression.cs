@@ -26,12 +26,12 @@ namespace Coberec.ExprCS
         public Expression Read() => Expression.Parameter(this);
         /// <summary> Creates an expression with a reference to this local variable. Note that assigning to the reference will only work if it the parameter is mutable. </summary>
         public Expression Ref() => Expression.VariableReference(this);
-        /// <summary> Creates assignment expression from this parameter and the specified <paramref name="value" />. Note that it only works when the variable is mutable. </summary>
-        public Expression Assign(Expression value)
+        /// <summary> Creates assignment expression from this parameter and the specified <paramref name="newValue" />. Note that it only works when the variable is mutable. </summary>
+        public Expression Assign(Expression newValue)
         {
             if (!Mutable)
-                throw new Exception($"Can not assign {value} to immutable variable {this}");
-            return Expression.VariableReference(this).ReferenceAssign(value);
+                throw new Exception($"Can not assign {newValue} to immutable variable {this}");
+            return Expression.VariableReference(this).ReferenceAssign(newValue);
         }
     }
 }

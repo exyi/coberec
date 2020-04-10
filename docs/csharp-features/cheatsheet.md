@@ -35,6 +35,7 @@ Simple mapping table on how to encode C# expression in Coberec expression tree.
 | `new T?(x)` | `ExpressionFactory.Nullable_Create(x)` | [Nullable value types](nullable-value-types.md)
 | `x.Value` (when `x: Nullable<T>`) | `ExpressionFactory.Nullable_Value(x)` | [Nullable value types](nullable-value-types.md)
 | `"abc" + x` | `ExpressionFactory.String_Concat(Expression.Constant("abc"), x)`
+| `Type a = value; rest...` | `Expression.LetIn(ParameterExpression.Create(Type, "a"), value, rest)` | [Variables](./variables.md)
 | `myFunction(a)` (for functions) | `myFunction.Invoke(a)`  | [Functions as Values](functions-as-values.md)
 | `a => a` (create function) | `Expression.Function(aParameter.Read(), aParameter)` | [Functions as Values](functions-as-values.md)
 | `(Func<int, int>)(a => a)` | `theLambda.FunctionConvert(TypeReference.FromType(typeof(Func<int, int>)))`  | [Functions as Values](functions-as-values.md)
