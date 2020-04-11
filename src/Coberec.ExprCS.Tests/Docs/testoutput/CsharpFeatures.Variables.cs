@@ -17,5 +17,13 @@ namespace NS
 			return mutableVar2 + mutableVar;
 		}
 	}
+	public static class TestClass
+	{
+		public static int M(int a)
+		{
+			a++;
+			return a;
+		}
+	}
 }
 

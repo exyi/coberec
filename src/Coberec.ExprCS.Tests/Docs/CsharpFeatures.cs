@@ -188,6 +188,21 @@ namespace Coberec.ExprCS.Tests.Docs
                 )
             ));
 
+            var declaringType = TypeSignature.StaticClass("TestClass", NamespaceSignature.Parse("NS"), Accessibility.APublic);
+            var method = MethodSignature.Static(
+                "M",
+                declaringType,
+                Accessibility.APublic,
+                TypeSignature.Int32,
+                new MethodParameter(TypeSignature.Int32, "a"));
+            var argA = ParameterExpression.CreateMutable(TypeSignature.Int32, "a");
+            var body = new [] {
+                argA.Assign(Expression.Binary("+", argA, Expression.Constant(1)))
+            }.ToBlock(result: argA);
+            var methodDef = new MethodDef(method, new [] { argA }, body);
+
+            cx.AddType(TypeDef.Empty(declaringType).AddMember(methodDef));
+
             check.CheckOutput(cx);
         }
 

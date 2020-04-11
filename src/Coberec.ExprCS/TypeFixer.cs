@@ -12,7 +12,7 @@ namespace Coberec.ExprCS
             // note that none of the referenced types must be defined in `cx`. This function is called before the types are committed.
 
             var kind = type.Signature.Kind;
-            if (kind == "class" && !type.Members.OfType<MethodDef>().Any(m => m.Signature.IsConstructor()))
+            if (kind == "class" && !(type.Signature.IsAbstract && !type.Signature.CanOverride) && !type.Members.OfType<MethodDef>().Any(m => m.Signature.IsConstructor()))
             {
                 type = type.AddMember(
                     MethodDef.Create(MethodSignature.ImplicitConstructor(type.Signature), @this => @this.Read().Box().CallMethod(MethodSignature.Object_Constructor))

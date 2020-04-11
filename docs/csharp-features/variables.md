@@ -42,3 +42,42 @@ return Expression.LetIn(
 ```
 
 You can also see that variable assignment may be done in any subexpression, including the binary operator. It may not lead to the nicest possible code, but it works and in this case even produces pretty output.
+
+### Method Parameters
+
+Method parameters are basically the same things as variables, except that they are defined inside `Coberec.ExprCS.MethodDef`. Method parameters are also immutable by default, but you can change when you want.
+
+
+Let's say we have the following declaring type and method:
+```csharp
+// public static TestClass
+var declaringType = TypeSignature.StaticClass("TestClass", NamespaceSignature.Parse("NS"), Accessibility.APublic);
+// public int M(int a)
+var method = MethodSignature.Static(
+    "M",
+    declaringType,
+    Accessibility.APublic,
+    TypeSignature.Int32,
+    new MethodParameter(TypeSignature.Int32, "a"));
+```
+
+And we want the body `a++; return a`:
+
+```csharp
+var argA = ParameterExpression.CreateMutable(TypeSignature.Int32, "a");
+var body = new [] {
+    argA.Assign(Expression.Binary("+", argA, Expression.Constant(1)))
+}.ToBlock(result: argA);
+```
+
+Then we can just create new `MethodDef` from it:
+
+```csharp
+var methodDef = new MethodDef(method, new [] { argA }, body);
+```
+
+And add it to a type and register to `MetadataContext`:
+
+```csharp
+cx.AddType(TypeDef.Empty(declaringType).AddMember(methodDef));
+```
