@@ -13,7 +13,7 @@ Simple mapping table on how to encode C# expression in Coberec expression tree.
 | `a >> b` | `Expression.Binary(">>", a, b)`
 | `a & b` | `Expression.Binary("&", a, b)`
 | `a && b` | `Expression.And(a, b)` | [Boolean Expressions](boolean-expressions.md)
-| `a || b` | `Expression.Or(a, b)` | [Boolean Expressions](boolean-expressions.md)
+| <code>a &#124;&#124; b</code> | `Expression.Or(a, b)` | [Boolean Expressions](boolean-expressions.md)
 | `!a` | `a.Not()` | [Boolean Expressions](boolean-expressions.md)
 | `a ? b : c` | `Expression.Conditional(a, b, c)` | [Conditions](conditions.md)
 | `if (a) { ...}` | `Expression.IfThen(a, ...)` | [Conditions](conditions.md)
@@ -39,3 +39,6 @@ Simple mapping table on how to encode C# expression in Coberec expression tree.
 | `myFunction(a)` (for functions) | `myFunction.Invoke(a)`  | [Functions as Values](functions-as-values.md)
 | `a => a` (create function) | `Expression.Function(aParameter.Read(), aParameter)` | [Functions as Values](functions-as-values.md)
 | `(Func<int, int>)(a => a)` | `theLambda.FunctionConvert(TypeReference.FromType(typeof(Func<int, int>)))`  | [Functions as Values](functions-as-values.md)
+| `a += b` | `a.Ref().ReferenceCompoundAssign("+", b)` | [References - Compound Assignment](ref-returns.md#compound-assignments)
+| `a.Property += b` | `a.PropertyCompoundAssign(property, "+", b)` | [Accessing Properties](accessing-properties.md)
+| `a.field += b` | `a.FieldCompoundAssign(field, "+", b)` | [Accessing Fields](accessing-fields.md)

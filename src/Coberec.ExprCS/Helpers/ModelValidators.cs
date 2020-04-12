@@ -42,6 +42,7 @@ namespace Coberec.ExprCS
                 Expression.MethodCallCase _ => null, // we don't know if method return readonly ref...
                 Expression.LetInCase l => IsWritableReferenceType(l.Item.Target).Nest("target").Nest("LetIn"),
                 Expression.VariableReferenceCase v => !v.Item.Variable.Mutable ? ValidationErrors.CreateField(new [] { "VariableReference", "variable", "mutable" }, $"Variable {v.Item.Variable} is not mutable") : null,
+                Expression.ParameterCase p => null, // can't track mutability of variables :/
                 var x =>
 #if DEBUG
                     throw new NotSupportedException($"Expression {x} was supposed not to return reference")

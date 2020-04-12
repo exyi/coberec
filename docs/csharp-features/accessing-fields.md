@@ -32,7 +32,14 @@ Expression value = target.ReadField(field);
 Expression assignment = target.AssignField(field, Expression.Default(field.ResultType()));
 ```
 
-Note that the target might be a reference and if you are assigning to a struct field, the target should be a reference. Otherwise, the struct will be cloned before the value is assigned and the result dropped.
+> Note that the target might be a reference and if you are assigning to a struct field, the target should be a reference. Otherwise, the struct will be cloned before the value is assigned and the result dropped.
+
+You can also use C# compound assignment (operators like `+=`, `&=`, ...) with fields:
+
+```csharp
+// target.Field += 100
+Expression assignment = target.FieldCompoundAssign(field, "+", Expression.Constant(100));
+```
 
 ### Getting the `FieldReference`
 

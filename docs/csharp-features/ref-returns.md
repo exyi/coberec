@@ -49,6 +49,18 @@ var aVal = Expression.ReferenceAssign(target: aRef, value: myValue);
 
 or `aRef.ReferenceAssign(value: myValue)` if you prefer the fluent syntax.
 
+### Compound Assignments
+
+C# allows using compound assignment (operators like `+=`, `&=`, ...) on reference -like expressions (references, variables, fields, properties). In ExprCS, these expression may be built like this:
+
+```csharp
+// a += 100
+Expression assignment =
+    aRef.ReferenceCompoundAssign("+", Expression.Constant(100));
+```
+
+> Note that this does not work for properties, since you can't take a reference to a property. There [another helper for properties](accessing-properties.md#accessing-properties), however.
+
 ### Reference passing
 
 You can pass the reference as any other value (unlike in C#). For example, this C# method:

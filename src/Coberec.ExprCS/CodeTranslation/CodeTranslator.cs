@@ -665,7 +665,7 @@ namespace Coberec.ExprCS.CodeTranslation
                 "??" => "Can't use `??` operator in BinaryExpression, use a.NullCoalesce(b) instead.",
                 "!=" => null,
                 "==" => null,
-                var x when x.EndsWith("=") => $"Can't use operation & assignment operator `{x}` in binary expression. Split it into two operations.",
+                var x when x.EndsWith("=") => $"Can't use compound operator `{x}` in binary expression. Use `e.ReferenceCompoundAssign(x)` or similar helper.",
                 _ => null
             };
             if (err is object) throw new NotSupportedException(err);

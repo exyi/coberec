@@ -136,7 +136,7 @@ namespace Coberec.ExprCS
         /// <summary> Gets a value of the static <paramref name="field" />. If you want to get the reference, use <see cref="StaticFieldAccess(FieldReference)" /> </summary>
         public static Expression StaticFieldRead(FieldReference field) =>
             Expression.StaticFieldAccess(field).Dereference();
-        /// <summary> Writes <paramref name="value" /> into the static <paramref name="property" />. </summary>
+        /// <summary> Writes <paramref name="value" /> into the static <paramref name="field" />. </summary>
         public static Expression StaticFieldAssign(FieldReference field, Expression value) =>
             Expression.StaticFieldAccess(field).ReferenceAssign(value);
 

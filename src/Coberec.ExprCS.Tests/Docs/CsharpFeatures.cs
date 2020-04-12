@@ -15,18 +15,39 @@ namespace Coberec.ExprCS.Tests.Docs
         [Fact]
         public void AccessingFields()
         {
-            FieldReference field = FieldReference.FromLambda<(string, int)>(s => s.Item1);
-            Expression target = pTuple;
+            FieldReference field1 = FieldReference.FromLambda<(string, int)>(s => s.Item1);
+            FieldReference field2 = FieldReference.FromLambda<(string, int)>(s => s.Item2);
 
-            Expression value = target.AccessField(field).Dereference();
-            Expression assignment = target.AccessField(field).ReferenceAssign(Expression.Default(field.ResultType()));
+            Expression value = pTuple.Read().AccessField(field1).Dereference();
+            Expression value2 = pTuple.Ref().AccessField(field1).Dereference();
+            Expression assignment = pTuple.Ref().AccessField(field1).ReferenceAssign(Expression.Default(field1.ResultType()));
 
             FieldReference staticField = FieldReference.FromLambda<object>(_ => ImmutableArray<int>.Empty);
-            var value2 = Expression.StaticFieldAccess(staticField).Dereference();
+            var value3 = Expression.StaticFieldAccess(staticField).Dereference();
 
             cx.AddTestExpr(value, pTuple);
+            cx.AddTestExpr(value2, pTuple);
             cx.AddTestExpr(assignment, pTuple);
-            cx.AddTestExpr(value2);
+            cx.AddTestExpr(value3);
+
+            cx.AddTestExpr(pTuple.Ref().FieldCompoundAssign(field2, "+", Expression.Constant(1)), pTuple);
+
+            check.CheckOutput(cx);
+        }
+
+        [Fact]
+        public void AccessingProperties()
+        {
+            PropertyReference prop = PropertyReference.FromLambda<UriBuilder>(s => s.Port);
+            Expression target = pUriBuilder;
+
+            Expression value = target.ReadProperty(prop);
+            Expression assignment = target.AssignProperty(prop, Expression.Constant(8080));
+
+            cx.AddTestExpr(value, pUriBuilder);
+            cx.AddTestExpr(assignment, pUriBuilder);
+
+            cx.AddTestExpr(target.PropertyCompoundAssign(prop, "+", Expression.Constant(10)), pUriBuilder);
 
             check.CheckOutput(cx);
         }
@@ -217,5 +238,6 @@ namespace Coberec.ExprCS.Tests.Docs
         ParameterExpression pObject = ParameterExpression.Create(TypeSignature.Object, "pObject");
         ParameterExpression pTime = ParameterExpression.Create(TypeSignature.TimeSpan, "pTime");
         ParameterExpression pTuple = ParameterExpression.Create(TypeReference.FromType(typeof(ValueTuple<string, int>)), "pTuple");
+        ParameterExpression pUriBuilder = ParameterExpression.Create(TypeReference.FromType(typeof(UriBuilder)), "pUriBuilder");
     }
 }

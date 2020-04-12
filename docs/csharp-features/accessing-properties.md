@@ -44,6 +44,14 @@ Expression assignment = myInstance2.AssignProperty(myProperty, Expression.Consta
 
 > Unlike when working with fields, you can't have a reference to a property so there is no PropertyAccess method.
 
+You can also use C# compound assignment (operators like `+=`, `&=`, ...) with properties
+
+```csharp
+
+// instance.Property += 100
+Expression assignment = myInstance.PropertyCompoundAssign(myProperty, "+", Expression.Constant(100));
+```
+
 ### Getting the `PropertyReference`
 
 See [metadata.md](../metadata.md) for more detailed information.

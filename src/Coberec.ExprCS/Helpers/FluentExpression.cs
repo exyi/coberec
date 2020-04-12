@@ -59,8 +59,12 @@ namespace Coberec.ExprCS
         public static Expression ReadField(this Expression target, FieldReference field) =>
             Expression.FieldAccess(field, target).Dereference();
         /// <summary> Writes <paramref name="value" /> into the <paramref name="field" /> on the <paramref name="target" />. </summary>
-        public static Expression AssignField(this Expression target, FieldReference field, Expression value) =>
-            Expression.FieldAccess(field, target).ReferenceAssign(value);
+        public static Expression AssignField(this Expression target, FieldReference field, Expression value)
+        {
+            if (target.Type().IsReferenceType == false)
+                throw new ArgumentException($"It does not make sense to assign to a field of a value type {target.Type()}. Did you intent to take a reference of the value? For example, `targetVariable.Ref().AssignField(...)`.", nameof(target));
+            return Expression.FieldAccess(field, target).ReferenceAssign(value);
+        }
 
         /// <summary> Calls getter of the static <paramref name="property" />. </summary>
         public static Expression ReadProperty(this Expression target, PropertyReference property)
@@ -76,6 +80,8 @@ namespace Coberec.ExprCS
         {
             if (property.Signature.IsStatic)
                 throw new ArgumentException($"Instance property was expected, got {property}", nameof(property));
+            if (target.Type().IsReferenceType == false)
+                throw new ArgumentException($"It does not make sense to assign to a property of a value type {target.Type()}. Did you intent to take a reference of the value? For example, `targetVariable.Ref().AssignProperty(...)`.", nameof(target));
             var setter = property.Setter();
             if (setter is null) throw new ArgumentException($"Can not write to property {property}", nameof(property));
             return Expression.MethodCall(setter, ImmutableArray.Create(value), target);
@@ -133,11 +139,40 @@ namespace Coberec.ExprCS
             };
         }
 
+        /// <summary> Represents expression `<paramref name="a" /> ?? <paramref name="b" />` - returns the first if not null, otherwise the second. </summary>
         public static Expression NullCoalesce(this Expression a, Expression b)
         {
             var aAlias = ParameterExpression.Create(a.Type(), "tmp");
             return Expression.Conditional(aAlias.Read().IsNull().Not(), aAlias, b)
                    .Where(aAlias, a);
+        }
+
+        /// <summary> Creates a C# compound assignment (`+=`, `|=`, ...) on the <paramref name="targetReference" />. `targetReference ?= rightSide` </summary>
+        public static Expression ReferenceCompoundAssign(this Expression targetReference, string @operator, Expression rightSide)
+        {
+            var tmp = ParameterExpression.Create(targetReference.Type(), "tmpAssignment");
+            return Expression.ReferenceAssign(
+                tmp,
+                Expression.Binary(@operator, tmp.Read().Dereference(), rightSide))
+                .Where(tmp, targetReference);
+        }
+
+        /// <summary> Creates a C# compound assignment (`+=`, `|=`, ...) on the <paramref name="property"/> on <paramref name="targetObject" />. `targetObject.property ?= rightSide` </summary>
+        public static Expression PropertyCompoundAssign(this Expression targetObject, PropertyReference property, string @operator, Expression rightSide)
+        {
+            var tmp = ParameterExpression.Create(targetObject.Type(), "tmpAssignment");
+            return tmp.Read().AssignProperty(property,
+                Expression.Binary(@operator, tmp.Read().ReadProperty(property), rightSide))
+                .Where(tmp, targetObject);
+        }
+
+        /// <summary> Creates a C# compound assignment (`+=`, `|=`, ...) on the <paramref name="field"/> on <paramref name="targetObject" />. `targetObject.field ?= rightSide` </summary>
+        public static Expression FieldCompoundAssign(this Expression targetObject, FieldReference field, string @operator, Expression rightSide)
+        {
+
+            if (targetObject.Type().IsReferenceType == false)
+                throw new ArgumentException($"It does not make sense to assign to a field of a value type {targetObject.Type()}. Did you intent to take a reference of the value? For example, `targetVariable.Ref().FieldCompoundAssign(...)`.", nameof(targetObject));
+            return targetObject.AccessField(field).ReferenceCompoundAssign(@operator, rightSide);
         }
     }
 }
