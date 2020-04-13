@@ -27,6 +27,7 @@ namespace Coberec.ExprCS
 
         public static NamespaceSignature Create(Span<string> nsParts) =>
             nsParts.IsEmpty ? Global :
+            nsParts.Length == 1 && nsParts[0] == "System" ? System :
             new NamespaceSignature(nsParts[nsParts.Length - 1], Create(nsParts.Slice(0, nsParts.Length - 1)));
     }
 }
