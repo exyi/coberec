@@ -13,6 +13,9 @@ namespace Coberec.ExprCS
     {
         static readonly ConcurrentDictionary<(string ownerName, string name), GenericParameter> typeParameterAssignment = new ConcurrentDictionary<(string, string), GenericParameter>();
 
+        /// <summary> Creates a new unique generic parameter. </summary>
+        public static GenericParameter Create(string name) => new GenericParameter(Guid.NewGuid(), name);
+
         static string OwnerToString(object owner) => owner switch {
             Type type => SymbolFormatter.TypeDefToString(type),
             TS.IType type => SymbolFormatter.TypeDefToString(type),
@@ -22,7 +25,7 @@ namespace Coberec.ExprCS
         };
 
         /// <summary> Gets a generic parameter creates for the specified member. The method creates a new parameter (with unique ID) only once, stores the answer and reuses it. </summary>
-        public static GenericParameter Get(object owner, string name) =>
+        internal static GenericParameter Get(object owner, string name) =>
             typeParameterAssignment.GetOrAdd((OwnerToString(owner), name), x => new GenericParameter(Guid.NewGuid(), x.name));
 
         /// <summary> Converts <see cref="Type" /> from standard reflection. The Type must have `IsGenericParameter == true` </summary>
