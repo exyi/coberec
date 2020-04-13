@@ -5,6 +5,7 @@ using System.Linq;
 using ICSharpCode.Decompiler.TypeSystem;
 using ICSharpCode.Decompiler.TypeSystem.Implementation;
 using Coberec.CSharpGen.TypeSystem;
+using System.Text.RegularExpressions;
 
 namespace Coberec.ExprCS
 {
@@ -147,16 +148,23 @@ namespace Coberec.ExprCS
                 }
             }
 
+            // Special Names:
+            // don't sanitize nor avoid collisions
+            // just replace <oldName> with <newName> for property names
+            var propertyTranslationTable =
+                type.Members
+                .OfType<PropertyDef>()
+                .Where(p => !IsSpecial(p.Signature))
+                .ToDictionary(p => $"<{p.Signature.Name}>", p => $"<{result[p.Signature]}>");
+            var propertyTranslationRegex =
+                string.Join("|",
+                    propertyTranslationTable.Keys
+                    .Select(k => "(" + Regex.Escape(k) + ")"));
             foreach (var m in type.Members.Where(m => IsSpecial(m.Signature)))
             {
-                // don't sanitize nor avoid collisions
-                // just replace <oldName> with <newName> for property names
                 var name = m.Signature.Name;
-                foreach (var m2 in type.Members.OfType<PropertyDef>())
-                {
-                    if (!IsSpecial(m2.Signature))
-                        name = name.Replace("<" + m2.Signature.Name + ">", "<" + result[m2.Signature] + ">");
-                }
+                if (propertyTranslationTable.Any())
+                    name = Regex.Replace(name, propertyTranslationRegex, m => propertyTranslationTable[m.Value]);
                 result.Add(m.Signature, name);
             }
 
