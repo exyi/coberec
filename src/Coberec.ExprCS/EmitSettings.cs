@@ -10,8 +10,8 @@ namespace Coberec.ExprCS
         public EmitSettings(bool emitPartialClasses = false, bool sanitizeSymbolNames = true, bool adjustCasing = false)
         {
             this.AdjustCasing = adjustCasing;
-            EmitPartialClasses = emitPartialClasses;
-            SanitizeSymbolNames = sanitizeSymbolNames;
+            this.EmitPartialClasses = emitPartialClasses;
+            this.SanitizeSymbolNames = sanitizeSymbolNames;
         }
 
         /// <summary> If symbol names should be renamed so that they conform to the .NET coding guidelines (i.e. method names will be capitalized, ...) </summary>
