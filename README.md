@@ -101,6 +101,8 @@ Maybe you now think that this does not make sense to handle, these are artificia
 
 Details are on a [separate page](src/metadata.gql), so just briefly. Metadata describes the types, methods, properties, fields, ...  - it's something like the System.Reflection, except that you can create your own symbols. The same classes are used for the types you create and for the types you use from referenced libraries, so there is not much distinction between.
 
+One of the major pain points of automatic code generation is naming the symbol so that the names never collide and they are valid to use in C#. Coberec has a generic solution for most of these issues, [see Symbol Name Sanitization](./docs/symbol-name-sanitization.md)
+
 ## 
 
 <!-- While in System.Reflection, you can create type out of nowhere using `typeof(X)` or `Type.GetType(...)`, this is not exactly possible here. The context is not implicit, we need to have a `MetadataContext` which contains the information about referenced libraries and also new types defined by you. -->
