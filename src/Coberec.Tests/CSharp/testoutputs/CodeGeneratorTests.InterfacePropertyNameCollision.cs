@@ -1,5 +1,6 @@
 using Coberec.CoreLib;
 using System;
+using System.Collections.Immutable;
 
 namespace GeneratedProject.ModelNamespace
 {
@@ -11,13 +12,17 @@ namespace GeneratedProject.ModelNamespace
 
 		ValidationResult<B> With(string a);
 	}
-	public sealed class A : B, IEquatable<A>
+	public sealed class A : B, ITokenFormatable, ITraversableObject, IEquatable<A>
 	{
 		public string A2 {
 			get;
 		}
 
 		string B.A => A2;
+
+		ImmutableArray<string> ITraversableObject.Properties => ImmutableArray.Create("a");
+
+		int ITraversableObject.PropertyCount => 1;
 
 		private A(NoNeedForValidationSentinel _, string a)
 		{
@@ -43,7 +48,22 @@ namespace GeneratedProject.ModelNamespace
 
 		public override string ToString()
 		{
-			return "a {a = " + A2 + "}";
+			return Format().ToString();
+		}
+
+		public FmtToken Format()
+		{
+			return FmtToken.Concat(ImmutableArray.Create((object)"a {a = ", (object)A2, (object)"}"), new string[3]
+			{
+				"",
+				"a",
+				""
+			});
+		}
+
+		object ITraversableObject.GetValue(int propIndex)
+		{
+			return (propIndex == 0) ? A2 : null;
 		}
 
 		public override int GetHashCode()

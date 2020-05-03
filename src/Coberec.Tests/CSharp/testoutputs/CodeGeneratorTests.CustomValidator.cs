@@ -1,13 +1,18 @@
 using Coberec.CoreLib;
 using System;
+using System.Collections.Immutable;
 
 namespace GeneratedProject.ModelNamespace
 {
-	public sealed class CustomValidatorTest : IEquatable<CustomValidatorTest>
+	public sealed class CustomValidatorTest : ITokenFormatable, ITraversableObject, IEquatable<CustomValidatorTest>
 	{
 		public string F1 {
 			get;
 		}
+
+		ImmutableArray<string> ITraversableObject.Properties => ImmutableArray.Create("f1");
+
+		int ITraversableObject.PropertyCount => 1;
 
 		private CustomValidatorTest(NoNeedForValidationSentinel _, string f1)
 		{
@@ -39,7 +44,22 @@ namespace GeneratedProject.ModelNamespace
 
 		public override string ToString()
 		{
-			return "CustomValidatorTest {f1 = " + F1 + "}";
+			return Format().ToString();
+		}
+
+		public FmtToken Format()
+		{
+			return FmtToken.Concat(ImmutableArray.Create((object)"CustomValidatorTest {f1 = ", (object)F1, (object)"}"), new string[3]
+			{
+				"",
+				"f1",
+				""
+			});
+		}
+
+		object ITraversableObject.GetValue(int propIndex)
+		{
+			return (propIndex == 0) ? F1 : null;
 		}
 
 		public override int GetHashCode()

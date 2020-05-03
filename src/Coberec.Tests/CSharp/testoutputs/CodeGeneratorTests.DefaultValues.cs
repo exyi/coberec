@@ -5,7 +5,7 @@ using System.Collections.Immutable;
 
 namespace GeneratedProject.ModelNamespace
 {
-	public sealed class Composite123 : IEquatable<Composite123>
+	public sealed class Composite123 : ITokenFormatable, ITraversableObject, IEquatable<Composite123>
 	{
 		public string StringF {
 			get;
@@ -34,6 +34,10 @@ namespace GeneratedProject.ModelNamespace
 		public Composite123 ThisF {
 			get;
 		}
+
+		ImmutableArray<string> ITraversableObject.Properties => ImmutableArray.Create<string>("StringF", "NullableStringF", "NullableIntF", "IntF", "FloatF", "NullListF", "ThisF");
+
+		int ITraversableObject.PropertyCount => 7;
 
 		private Composite123(NoNeedForValidationSentinel _, string stringF, string nullableStringF, int? nullableIntF, int? intF, double floatF, ImmutableArray<string>? nullListF, Composite123 thisF)
 		{
@@ -65,7 +69,51 @@ namespace GeneratedProject.ModelNamespace
 
 		public override string ToString()
 		{
-			return string.Concat("Composite123 {StringF = ", StringF, ", NullableStringF = ", NullableStringF, ", NullableIntF = ", NullableIntF, ", IntF = ", IntF, ", FloatF = ", (object)(object)FloatF, ", NullListF = [", string.Join<string>(", ", NullListF), "], ThisF = ", ThisF, "}");
+			return Format().ToString();
+		}
+
+		public FmtToken Format()
+		{
+			return FmtToken.Concat(ImmutableArray.Create(new object[15]
+			{
+				"Composite123 {StringF = ",
+				StringF,
+				", NullableStringF = ",
+				NullableStringF,
+				", NullableIntF = ",
+				NullableIntF,
+				", IntF = ",
+				IntF,
+				", FloatF = ",
+				(object)(object)FloatF,
+				", NullListF = ",
+				FmtToken.FormatArray(NullListF),
+				", ThisF = ",
+				ThisF,
+				"}"
+			}), new string[15]
+			{
+				"",
+				"StringF",
+				"",
+				"NullableStringF",
+				"",
+				"NullableIntF",
+				"",
+				"IntF",
+				"",
+				"FloatF",
+				"",
+				"NullListF",
+				"",
+				"ThisF",
+				""
+			});
+		}
+
+		object ITraversableObject.GetValue(int propIndex)
+		{
+			return (propIndex == 0) ? StringF : ((propIndex == 1) ? NullableStringF : ((propIndex == 2) ? NullableIntF : ((propIndex == 3) ? IntF : ((propIndex == 4) ? ((object)(object)FloatF) : ((propIndex == 5) ? ((object)NullListF) : ((object)((propIndex == 6) ? ThisF : null)))))));
 		}
 
 		public override int GetHashCode()

@@ -1,9 +1,10 @@
 using Coberec.CoreLib;
 using System;
+using System.Collections.Immutable;
 
 namespace GeneratedProject.ModelNamespace
 {
-	public sealed class A : IEquatable<A>
+	public sealed class A : ITokenFormatable, ITraversableObject, IEquatable<A>
 	{
 		public string H {
 			get;
@@ -12,6 +13,10 @@ namespace GeneratedProject.ModelNamespace
 		public int H2 {
 			get;
 		}
+
+		ImmutableArray<string> ITraversableObject.Properties => ImmutableArray.Create("h", "H");
+
+		int ITraversableObject.PropertyCount => 2;
 
 		private A(NoNeedForValidationSentinel _, string h, int h2)
 		{
@@ -38,7 +43,31 @@ namespace GeneratedProject.ModelNamespace
 
 		public override string ToString()
 		{
-			return string.Concat("a {h = ", H, ", H = ", (object)(object)H2, "}");
+			return Format().ToString();
+		}
+
+		public FmtToken Format()
+		{
+			return FmtToken.Concat(ImmutableArray.Create(new object[5]
+			{
+				"a {h = ",
+				H,
+				", H = ",
+				(object)(object)H2,
+				"}"
+			}), new string[5]
+			{
+				"",
+				"h",
+				"",
+				"H",
+				""
+			});
+		}
+
+		object ITraversableObject.GetValue(int propIndex)
+		{
+			return (propIndex == 0) ? H : ((propIndex == 1) ? ((object)(object)H2) : null);
 		}
 
 		public override int GetHashCode()

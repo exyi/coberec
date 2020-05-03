@@ -15,7 +15,21 @@ namespace Coberec.CSharpGen.Emit
 {
     public static class ToStringImplementation
     {
-        public static MethodDef ImplementToString(TypeSignature declaringType, EmitContext cx, M.TypeDef typeDef, (TypeField schema, FieldReference field)[] fields)
+        static MethodSignature FormatMethodSignature(TypeSignature declaringType) =>
+            MethodSignature.Override(declaringType, MethodReference.FromLambda<ITokenFormatable>(t => t.Format()).Signature);
+
+        public static MethodDef ImplementToString(TypeSignature declaringType)
+        {
+            var method = MethodSignature.Override(declaringType, MethodSignature.Object_ToString);
+            return MethodDef.Create(method, @this => {
+                return
+                    @this.Ref()
+                    .CallMethod(FormatMethodSignature(declaringType))
+                    .CallMethod(MethodReference.FromLambda<FmtToken>(x => x.ToString("\t", null)));
+            });
+        }
+
+        public static MethodDef ImplementFormat(TypeSignature declaringType, M.TypeDef typeDef, (TypeField schema, FieldReference field)[] fields)
         {
             if (typeDef.Directives.Any(d => d.Name == "customFormat")) return null;
 
@@ -27,14 +41,19 @@ namespace Coberec.CSharpGen.Emit
                 format = typeDef.Name + " {{" + string.Join(", ", fields.Select(f => f.schema.Name + " = {" + f.schema.Name + "}")) + "}}";
             }
 
-            var fmt = ParseFormat(format).ToImmutableArray();
+            var fmt = ParseFormat(format).Apply(MergeLiterals).ToImmutableArray();
+            var tokenNames =
+                fmt.Select(fr => fr.kind switch {
+                    FragmentKind.Field => fr.val,
+                    FragmentKind.Literal => ""
+                })
+                .Select(Expression.Constant)
+                .Apply(ExpressionFactory.MakeArray);
 
-            var method = MethodSignature.Override(declaringType, MethodSignature.Object_ToString);
-
+            var method = FormatMethodSignature(declaringType);
             return MethodDef.Create(method, @this => {
-
-                var expressions = fmt.SelectMany(fr => fr.kind switch {
-                    FragmentKind.Literal => new [] { Expression.Constant(fr.val) },
+                var expressions = fmt.Select(fr => fr.kind switch {
+                    FragmentKind.Literal => Expression.Constant(fr.val),
                     FragmentKind.Field =>
                         fields.FirstOrDefault(f => f.schema.Name == fr.val).field is FieldReference field ?
                         FormatField(@this, field) :
@@ -43,31 +62,58 @@ namespace Coberec.CSharpGen.Emit
                         ),
                     _ => throw null
                 }).ToImmutableArray();
-                return ExpressionFactory.String_Concat(expressions);
+
+                return Expression.StaticMethodCall(
+                    ConcatMethod,
+                    ExpressionFactory
+                        .MakeImmutableArray(TypeSignature.Object, expressions.Select(FluentExpression.Box)),
+                    tokenNames
+                );
             });
         }
 
-        static Expression[] FormatField(ParameterExpression @this, FieldReference field)
+        static readonly MethodSignature ConcatMethod = MethodReference.FromLambda(() => FmtToken.Concat(ImmutableArray<object>.Empty, new string[0])).Signature;
+        static readonly MethodSignature FormatArrayMethod = MethodReference.FromLambda(() => FmtToken.FormatArray(ImmutableArray<int>.Empty)).Signature;
+        static readonly MethodSignature FormatNullableArrayMethod = MethodReference.FromLambda(() => FmtToken.FormatArray(default(Nullable<ImmutableArray<int>>))).Signature;
+
+        static Expression FormatField(ParameterExpression @this, FieldReference field)
         {
             var access = @this.Ref().ReadField(field);
+            var isNullable = access.Type().IsNullableValueType();
             var nunwrap = access.Type().UnwrapNullableValueType() ?? field.ResultType();
             if (nunwrap.IsGenericInstanceOf(TypeSignature.ImmutableArrayOfT))
             {
                 var elemType = nunwrap.MatchST(st => st.GenericParameters.Single(), otherwise: null);
-                return new[] {
-                    Expression.Constant("["),
-                    Expression.StaticMethodCall(
-                        MethodReference.FromLambda(() => string.Join<int>(", ", Enumerable.Empty<int>())).Signature.SpecializeFromDeclaringType(elemType),
-                        Expression.Constant(", "),
-                        access.ReferenceConvert(TypeSignature.IEnumerableOfT.Specialize(elemType))
-                    ),
-                    Expression.Constant("]")
-                };
+                return Expression.StaticMethodCall(
+                    (isNullable ? FormatNullableArrayMethod : FormatArrayMethod).Specialize(elemType),
+                    access
+                );
             }
             else
             {
-                return new [] { access };
+                return access;
             }
+        }
+
+        static IEnumerable<(FragmentKind kind, string val)> MergeLiterals(IEnumerable<(FragmentKind kind, string val)> fragments)
+        {
+            var constant = "";
+            foreach (var (kind, val) in fragments)
+            {
+                if (kind == FragmentKind.Field)
+                {
+                    if (constant.Length > 0)
+                        yield return (FragmentKind.Literal, constant);
+                    constant = "";
+                    yield return (kind, val);
+                }
+                else
+                {
+                    constant += val;
+                }
+            }
+            if (constant.Length > 0)
+                yield return (FragmentKind.Literal, constant);
         }
 
         static IEnumerable<(FragmentKind kind, string val)> ParseFormat(string format)

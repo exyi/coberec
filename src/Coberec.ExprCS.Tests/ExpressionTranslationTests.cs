@@ -448,5 +448,14 @@ namespace Coberec.ExprCS.Tests
 
             check.CheckOutput(cx);
         }
+
+        [Fact]
+        public void NullableConstant()
+        {
+            cx.AddTestExpr(Expression.Constant(null, TypeSignature.NullableOfT.Specialize(TypeSignature.Boolean)));
+            cx.AddTestExpr(Expression.Constant(true, TypeSignature.NullableOfT.Specialize(TypeSignature.Boolean)));
+
+            check.CheckOutput(cx);
+        }
     }
 }

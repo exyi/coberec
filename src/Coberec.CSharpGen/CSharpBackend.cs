@@ -292,8 +292,15 @@ namespace Coberec.CSharpGen
 
             result = result.AddMember(noValCtor, (object)publicCtor == noValCtor ? null : publicCtor, benevolentCtor, validateMethod, createFn, benevolentCreate, valExtension);
 
-            var toStringFn = ToStringImplementation.ImplementToString(type, cx, typeDef, fields);
-            result = result.AddMember(toStringFn);
+            var formatFn = ToStringImplementation.ImplementFormat(type, typeDef, fields);
+            var toStringFn = ToStringImplementation.ImplementToString(type);
+            result = result.AddMember(toStringFn, formatFn)
+                .AddImplements(E.TypeSignature.FromType(typeof(ITokenFormatable)).Specialize());
+
+            result =
+                TraversableObjectImplementation
+                .ImplementTraversable(type, fields)
+                .Invoke(result);
 
             cx.Metadata.RegisterTypeMod(type, _ => { }, vtype => {
 

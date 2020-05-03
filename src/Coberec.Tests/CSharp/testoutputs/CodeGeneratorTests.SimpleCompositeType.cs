@@ -6,7 +6,7 @@ using System.Collections.Immutable;
 
 namespace GeneratedProject.ModelNamespace
 {
-	public sealed class Test123 : IEquatable<Test123>
+	public sealed class Test123 : ITokenFormatable, ITraversableObject, IEquatable<Test123>
 	{
 		public ImmutableArray<string> Field543 {
 			get;
@@ -15,6 +15,10 @@ namespace GeneratedProject.ModelNamespace
 		public int AbcSS {
 			get;
 		}
+
+		ImmutableArray<string> ITraversableObject.Properties => ImmutableArray.Create("Field543", "abcSS");
+
+		int ITraversableObject.PropertyCount => 2;
 
 		public Test123(ImmutableArray<string> field543, int abcSS)
 		{
@@ -40,7 +44,31 @@ namespace GeneratedProject.ModelNamespace
 
 		public override string ToString()
 		{
-			return string.Concat("Test123 {Field543 = [", string.Join<string>(", ", (IEnumerable<string>)Field543), "], abcSS = ", (object)(object)AbcSS, "}");
+			return Format().ToString();
+		}
+
+		public FmtToken Format()
+		{
+			return FmtToken.Concat(ImmutableArray.Create(new object[5]
+			{
+				"Test123 {Field543 = ",
+				FmtToken.FormatArray(Field543),
+				", abcSS = ",
+				(object)(object)AbcSS,
+				"}"
+			}), new string[5]
+			{
+				"",
+				"Field543",
+				"",
+				"abcSS",
+				""
+			});
+		}
+
+		object ITraversableObject.GetValue(int propIndex)
+		{
+			return (propIndex == 0) ? Field543 : ((propIndex == 1) ? ((object)(object)AbcSS) : null);
 		}
 
 		public override int GetHashCode()

@@ -18,7 +18,7 @@ namespace GeneratedProject.ModelNamespace
 
 		ValidationResult<Interface1> With(OptParam<ImmutableArray<string>> field543 = default(OptParam<ImmutableArray<string>>), OptParam<ImmutableArray<int>> someName = default(OptParam<ImmutableArray<int>>));
 	}
-	public sealed class Test123 : Interface1, IEquatable<Test123>
+	public sealed class Test123 : Interface1, ITokenFormatable, ITraversableObject, IEquatable<Test123>
 	{
 		public ImmutableArray<string> Field543 {
 			get;
@@ -31,6 +31,10 @@ namespace GeneratedProject.ModelNamespace
 		public int? AbcSS {
 			get;
 		}
+
+		ImmutableArray<string> ITraversableObject.Properties => ImmutableArray.Create("Field543", "someName", "abcSS");
+
+		int ITraversableObject.PropertyCount => 3;
 
 		private Test123(NoNeedForValidationSentinel _, ImmutableArray<string> field543, ImmutableArray<int> someName, int? abcSS)
 		{
@@ -74,7 +78,35 @@ namespace GeneratedProject.ModelNamespace
 
 		public override string ToString()
 		{
-			return "Test123 {Field543 = [" + string.Join<string>(", ", (IEnumerable<string>)Field543) + "], someName = [" + string.Join(", ", SomeName) + "], abcSS = " + AbcSS + "}";
+			return Format().ToString();
+		}
+
+		public FmtToken Format()
+		{
+			return FmtToken.Concat(ImmutableArray.Create(new object[7]
+			{
+				"Test123 {Field543 = ",
+				FmtToken.FormatArray(Field543),
+				", someName = ",
+				FmtToken.FormatArray(SomeName),
+				", abcSS = ",
+				AbcSS,
+				"}"
+			}), new string[7]
+			{
+				"",
+				"Field543",
+				"",
+				"someName",
+				"",
+				"abcSS",
+				""
+			});
+		}
+
+		object ITraversableObject.GetValue(int propIndex)
+		{
+			return (propIndex == 0) ? Field543 : ((propIndex == 1) ? ((ValueType)SomeName) : ((ValueType)((propIndex == 2) ? AbcSS : null)));
 		}
 
 		public override int GetHashCode()

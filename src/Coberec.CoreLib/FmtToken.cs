@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
-namespace Coberec.MetaSchema
+namespace Coberec.CoreLib
 {
     public sealed class FmtToken
     {
@@ -145,10 +145,75 @@ namespace Coberec.MetaSchema
                     i++;
                 }
             }
-            return new FmtToken(0, false, b.ToImmutableArray(), tokenMap);
+            return new FmtToken(0, false, b.ToImmutable(), tokenMap);
         }
 
         public static IEnumerable<string> IntegerTokenMap() => Enumerable.Range(0, int.MaxValue).Select(i => i.ToString());
+
+        public static readonly FmtToken EmptyArray = new FmtToken(0, false, ImmutableArray.Create<object>("[]"), "\\sep");
+        public static FmtToken FormatArray<T>(IEnumerable<T> array)
+        {
+            if (array == null) return "null";
+
+            var b = ImmutableArray.CreateBuilder<object>();
+            b.Add("[ ");
+            var first = true;
+            foreach (var x in array)
+            {
+                if (!first)
+                    b.Add(", ");
+                first = false;
+                b.Add(x);
+            }
+            if (first)
+                return EmptyArray;
+            b.Add(" ]");
+            var tokenMap = new string[b.Count];
+            first = true;
+            tokenMap[0] = "\\sep";
+            tokenMap[tokenMap.Length - 1] = "\\sep";
+            for (int i = 1; i < tokenMap.Length - 1; i++)
+            {
+                if (i % 2 == 0)
+                    tokenMap[i] = "\\sep";
+                else
+                    tokenMap[i] = i.ToString();
+            }
+            return new FmtToken(0, false, b.MoveToImmutable(), tokenMap);
+        }
+
+        public static FmtToken FormatArray<T>(ImmutableArray<T>? array) =>
+            array == null ? "null" :
+            FormatArray(array.Value);
+        public static FmtToken FormatArray<T>(ImmutableArray<T> array)
+        {
+            if (array.IsEmpty)
+                return EmptyArray;
+
+            var b = ImmutableArray.CreateBuilder<object>(array.Length * 2 + 1);
+            b.Add("[ ");
+            var first = true;
+            foreach (var x in array)
+            {
+                if (!first)
+                    b.Add(", ");
+                first = false;
+                b.Add(x);
+            }
+            b.Add(" ]");
+            var tokenMap = new string[b.Count];
+            first = true;
+            tokenMap[0] = "\\sep";
+            tokenMap[tokenMap.Length - 1] = "\\sep";
+            for (int i = 1; i < tokenMap.Length - 1; i++)
+            {
+                if (i % 2 == 0)
+                    tokenMap[i] = "\\sep";
+                else
+                    tokenMap[i] = i.ToString();
+            }
+            return new FmtToken(0, false, b.MoveToImmutable(), tokenMap);
+        }
 
         public FmtToken WithTokenNames(params string[] tokenNames) =>
             new FmtToken(this.indent, this.isBlock, this.items, tokenNames);

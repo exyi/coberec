@@ -1,5 +1,6 @@
 using Coberec.CoreLib;
 using System;
+using System.Collections.Immutable;
 
 namespace GeneratedProject.ModelNamespace
 {
@@ -7,8 +8,12 @@ namespace GeneratedProject.ModelNamespace
 	{
 		ValidationResult<B> With();
 	}
-	public sealed class A : B, IEquatable<A>
+	public sealed class A : B, ITokenFormatable, ITraversableObject, IEquatable<A>
 	{
+		ImmutableArray<string> ITraversableObject.Properties => ImmutableArray<string>.Empty;
+
+		int ITraversableObject.PropertyCount => 0;
+
 		public static ValidationResult<A> Create()
 		{
 			A result = new A();
@@ -17,7 +22,20 @@ namespace GeneratedProject.ModelNamespace
 
 		public override string ToString()
 		{
-			return "a {}";
+			return Format().ToString();
+		}
+
+		public FmtToken Format()
+		{
+			return FmtToken.Concat(ImmutableArray.Create((object)"a {}"), new string[1]
+			{
+				""
+			});
+		}
+
+		object ITraversableObject.GetValue(int propIndex)
+		{
+			return null;
 		}
 
 		public override int GetHashCode()

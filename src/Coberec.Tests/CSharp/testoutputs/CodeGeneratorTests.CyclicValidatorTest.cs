@@ -1,9 +1,10 @@
 using Coberec.CoreLib;
 using System;
+using System.Collections.Immutable;
 
 namespace GeneratedProject.ModelNamespace
 {
-	public sealed class MyType : IEquatable<MyType>
+	public sealed class MyType : ITokenFormatable, ITraversableObject, IEquatable<MyType>
 	{
 		public MyType F1 {
 			get;
@@ -20,6 +21,10 @@ namespace GeneratedProject.ModelNamespace
 		public MyType F4 {
 			get;
 		}
+
+		ImmutableArray<string> ITraversableObject.Properties => ImmutableArray.Create("f1", "f2", "f3", "f4");
+
+		int ITraversableObject.PropertyCount => 4;
 
 		private MyType(NoNeedForValidationSentinel _, MyType f1, string f2, string f3, MyType f4)
 		{
@@ -68,7 +73,39 @@ namespace GeneratedProject.ModelNamespace
 
 		public override string ToString()
 		{
-			return string.Concat("MyType {f1 = ", F1, ", f2 = ", F2, ", f3 = ", F3, ", f4 = ", F4, "}");
+			return Format().ToString();
+		}
+
+		public FmtToken Format()
+		{
+			return FmtToken.Concat(ImmutableArray.Create(new object[9]
+			{
+				"MyType {f1 = ",
+				F1,
+				", f2 = ",
+				F2,
+				", f3 = ",
+				F3,
+				", f4 = ",
+				F4,
+				"}"
+			}), new string[9]
+			{
+				"",
+				"f1",
+				"",
+				"f2",
+				"",
+				"f3",
+				"",
+				"f4",
+				""
+			});
+		}
+
+		object ITraversableObject.GetValue(int propIndex)
+		{
+			return (propIndex == 0) ? F1 : ((propIndex == 1) ? F2 : ((propIndex == 2) ? ((object)F3) : ((object)((propIndex == 3) ? F4 : null))));
 		}
 
 		public override int GetHashCode()

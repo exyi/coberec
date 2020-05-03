@@ -213,6 +213,34 @@ namespace Coberec.ExprCS
                 defaultValue: p.HasDefaultValue ? p.DefaultValue : null
             );
 
+        static (string name, IMethod implementedMethod)? GetExplicitImplements(MetadataContext cx, MethodDef m)
+        {
+            var matchingImpl = m.Implements.FirstOrDefault(impl =>
+                m.Signature.Name == impl.Signature.DeclaringType.GetFullTypeName() + "." + impl.Name()
+            );
+            if (matchingImpl is object)
+                return (
+                     name: cx.GetTypeReference(matchingImpl.DeclaringType()).FullName + "." + cx.GetMethod(matchingImpl).Name,
+                     cx.GetMethod(matchingImpl)
+                );
+            else
+                return null;
+        }
+
+        static (string name, IProperty implementedProperty)? GetExplicitImplements(MetadataContext cx, PropertyDef m)
+        {
+            var matchingImpl = m.Implements.FirstOrDefault(impl =>
+                m.Signature.Name == impl.Signature.DeclaringType.GetFullTypeName() + "." + impl.Name()
+            );
+            if (matchingImpl is object)
+                return (
+                     name: cx.GetTypeReference(matchingImpl.DeclaringType()).FullName + "." + cx.GetProperty(matchingImpl).Name,
+                     cx.GetProperty(matchingImpl)
+                );
+            else
+                return null;
+        }
+
         internal static VirtualMethod CreateMethodDefinition(MetadataContext cx, MethodDef m, string name, bool isHidden = false, bool sneaky = false)
         {
             var sgn = m.Signature;
@@ -225,10 +253,12 @@ namespace Coberec.ExprCS
                 else
                     Assert.Contains(i.Signature.DeclaringType, cx.GetBaseTypes(sgn.DeclaringType.SpecializeByItself()).Select(t => t.Type));
 
+            var explicitImpl = GetExplicitImplements(cx, m);
+
             return new VirtualMethod(
                 declType,
                 GetAccessibility(sgn.Accessibility),
-                name,
+                name: explicitImpl?.name ?? name,
                 _ => parameters(),
                 _ => GetTypeReference(cx, sgn.ResultType),
                 sgn.IsOverride,
@@ -237,18 +267,23 @@ namespace Coberec.ExprCS
                 sgn.IsAbstract,
                 sgn.IsStatic,
                 isHidden,
-                typeParameters: sgn.TypeParameters.Select<GenericParameter, Func<IEntity, int, ITypeParameter>>(p => (owner, index) => cx.GenericParameterStore.Register(p, owner, index)).ToArray()
+                typeParameters: sgn.TypeParameters.Select<GenericParameter, Func<IEntity, int, ITypeParameter>>(p => (owner, index) => cx.GenericParameterStore.Register(p, owner, index)).ToArray(),
+                explicitImplementations: explicitImpl != null ? new IMember[] { explicitImpl.Value.implementedMethod } : null
             )
             .ApplyAction(mm => { if (!sneaky) cx.RegisterEntity(m, mm); });
         }
 
         internal static void AddExplicitImplementations(VirtualType type, MetadataContext cx, MethodDef method, string name)
         {
-            var implements = method.Implements
-                .Where(i => i.Signature.DeclaringType.Kind == "interface")
-                .Select(cx.GetMethod)
-                .Where(m => m.Name != name || method.Signature.Accessibility != Accessibility.APublic || SymbolLoader.TypeRef(m.ReturnType) != method.Signature.ResultType)
-                .ToArray();
+            var primaryImplements = GetExplicitImplements(cx, method);
+            var implements =
+               (from impl in method.Implements
+                where impl.Signature.DeclaringType.Kind == "interface"
+                let m = cx.GetMethod(impl)
+                where primaryImplements?.implementedMethod != m
+                where m.Name != name || method.Signature.Accessibility != Accessibility.APublic || SymbolLoader.TypeRef(m.ReturnType) != method.Signature.ResultType
+                select m
+               ).ToArray();
             foreach (var i in implements)
             {
                 var newReturnType = SymbolLoader.TypeRef(i.ReturnType);
@@ -264,11 +299,15 @@ namespace Coberec.ExprCS
 
         internal static void AddExplicitImplementations(VirtualType type, MetadataContext cx, PropertyDef property, string name)
         {
-            var implements = property.Implements
-                .Where(i => i.Signature.DeclaringType.Kind == "interface")
-                .Select(cx.GetProperty)
-                .Where(p => p.Name != name || property.Signature.Accessibility != Accessibility.APublic || SymbolLoader.TypeRef(p.ReturnType) != property.Signature.Type)
-                .ToArray();
+            var primaryImplements = GetExplicitImplements(cx, property);
+            var implements =
+               (from impl in property.Implements
+                where impl.Signature.DeclaringType.Kind == "interface"
+                let p = cx.GetProperty(impl)
+                where primaryImplements?.implementedProperty != p
+                where p.Name != name || property.Signature.Accessibility != Accessibility.APublic || SymbolLoader.TypeRef(p.ReturnType) != property.Signature.Type
+                select p
+               ).ToArray();
             foreach (var i in implements)
             {
                 var newReturnType = SymbolLoader.TypeRef(i.ReturnType);
@@ -301,8 +340,12 @@ namespace Coberec.ExprCS
 
             var getter = property.Getter?.Apply(m => CreateMethodDefinition(cx, m, "get_" + name, isHidden: true));
             var setter = property.Setter?.Apply(m => CreateMethodDefinition(cx, m, "set_" + name, isHidden: true));
-            if (property.Getter?.Body != null) getter.Attributes.Add(cx.Compilation.CompilerGeneratedAttribute()); // TODO: this is not very nice :/
-            if (property.Setter?.Body != null) setter.Attributes.Add(cx.Compilation.CompilerGeneratedAttribute());
+            var isAutoProp = property.Getter is MethodDef getterDef &&
+                             getterDef.Body is Expression.DereferenceCase deref &&
+                             deref.Item.Expr is Expression.FieldAccessCase fieldAccess &&
+                             SymbolNamer.IsSpecial(fieldAccess.Item.Field.Signature);
+            if (isAutoProp && property.Getter?.Body != null) getter.Attributes.Add(cx.Compilation.CompilerGeneratedAttribute()); // TODO: this is not very nice :/
+            if (isAutoProp && property.Setter?.Body != null) setter.Attributes.Add(cx.Compilation.CompilerGeneratedAttribute());
 
             var sgn = property.Signature;
             var declType = cx.GetTypeDef(sgn.DeclaringType);
@@ -313,12 +356,13 @@ namespace Coberec.ExprCS
                 else
                     Assert.Contains(i.Signature.DeclaringType, cx.GetBaseTypes(sgn.DeclaringType.SpecializeByItself()).Select(t => t.Type));
 
+            var explicitImpl = GetExplicitImplements(cx, property);
             var mSgn = sgn.Getter ?? sgn.Setter;
 
             var prop = new VirtualProperty(
                 declType,
                 GetAccessibility(sgn.Accessibility),
-                name,
+                explicitImpl?.name ?? name,
                 getter,
                 setter,
                 isIndexer: false, // TODO: indexers?
@@ -326,7 +370,8 @@ namespace Coberec.ExprCS
                 mSgn.IsOverride,
                 sgn.IsStatic,
                 mSgn.IsAbstract,
-                !mSgn.IsVirtual && mSgn.IsOverride
+                !mSgn.IsVirtual && mSgn.IsOverride,
+                explicitImplementations: explicitImpl != null ? new IMember[] { explicitImpl.Value.implementedProperty } : null
             );
             cx.RegisterEntity(property, prop);
             return (prop, getter, setter);

@@ -20,31 +20,81 @@ namespace Coberec.ExprCS
         }
 
         /// <summary> Creates new array from the specified items. It is roughly equivalent to C# array initializers. This overload can create empty arrays. </summary>
-        public static Expression MakeArray(TypeReference type, IEnumerable<Expression> items)
+        public static Expression MakeArray(TypeReference elementType, IEnumerable<Expression> items) =>
+            MakeArray(elementType, items.ToImmutableArray());
+        /// <summary> Creates new array from the specified items. It is roughly equivalent to C# array initializers. This overload can create empty arrays. </summary>
+        public static Expression MakeArray(TypeReference elementType, ImmutableArray<Expression> items)
         {
-            var itemsA = items.ToImmutableArray();
+            foreach (var i in items)
+                if (i.Type() != elementType)
+                    throw new ArgumentException($"Items of type {elementType} were expected, but item {i} has type {i.Type()}", nameof(items));
 
-            foreach (var i in itemsA)
-                if (i.Type() != type)
-                    throw new ArgumentException($"Items of type {type} were expected, but item {i} has type {i.Type()}", nameof(items));
-
-            var arrayType = new ArrayType(type, dimensions: 1);
+            var arrayType = new ArrayType(elementType, dimensions: 1);
             var tmp = ParameterExpression.Create(arrayType, "tmpArray");
             return
-                itemsA.EagerSelect((item, index) =>
+                items.EagerSelect((item, index) =>
                     Expression.ArrayIndex(tmp, Expression.Constant(index))
                     .ReferenceAssign(item)
                 )
                 .ToBlock(result: tmp)
-                .Where(tmp, Expression.NewArray(arrayType, Expression.Constant(itemsA.Length)));
+                .Where(tmp, Expression.NewArray(arrayType, Expression.Constant(items.Length)));
         }
 
         /// <summary> Creates new array from the specified items. It is roughly equivalent to C# array initializers. </summary>
-        public static Expression MakeArray(params Expression[] items) => MakeArray(items.AsEnumerable());
+        public static Expression MakeArray(params Expression[] items) => MakeArray(items.ToImmutableArray());
 
         /// <summary> Creates new array from the specified items. It is roughly equivalent to C# array initializers. This overload can create empty arrays. </summary>
-        public static Expression MakeArray(TypeReference type, params Expression[] items) => MakeArray(type, items.AsEnumerable());
+        public static Expression MakeArray(TypeReference elementType, params Expression[] items) => MakeArray(elementType, items.ToImmutableArray());
 
+        /// <summary> Creates new array from the specified items. It is roughly equivalent to C# array initializers. </summary>
+        public static Expression MakeImmutableArray(IEnumerable<Expression> items)
+        {
+            var itemsA = items.ToImmutableArray();
+            if (itemsA.Length == 0)
+                throw new ArgumentException("Items must not be empty list. To create an empty array use `ImmutableArray<T>.Empty` field or ExpressionFactory.MakeImmutableArray(TypeReference, items)", nameof(items));
+            var type = itemsA[0].Type();
+            return MakeImmutableArray(type, itemsA);
+        }
+        /// <summary> Creates new <see cref="ImmutableArray{T}" /> from the specified items. This overload can create empty arrays. </summary>
+        public static Expression MakeImmutableArray(TypeReference elementType, IEnumerable<Expression> items) =>
+            MakeImmutableArray(elementType, items.ToImmutableArray());
+        /// <summary> Creates new <see cref="ImmutableArray{T}" /> from the specified items. This overload can create empty arrays. </summary>
+        public static Expression MakeImmutableArray(TypeReference elementType, ImmutableArray<Expression> items)
+        {
+            if (items.Length == 0)
+                return Expression.StaticFieldRead(
+                    FieldReference.FromLambda<object>(_ => ImmutableArray<int>.Empty).Signature
+                    .Specialize(elementType)
+                );
+
+            if (items.Length <= 4)
+            {
+                var method = items.Length switch {
+                    1 => ImmutableArray_Create1,
+                    2 => ImmutableArray_Create2,
+                    3 => ImmutableArray_Create3,
+                    4 => ImmutableArray_Create4
+                };
+                return Expression.StaticMethodCall(
+                    method.Specialize(elementType),
+                    items
+                );
+            }
+
+            return Expression.StaticMethodCall(
+                ImmutableArray_CreateN.Specialize(elementType),
+                MakeArray(items)
+            );
+        }
+
+        private static MethodSignature ImmutableArray_Create1 = MethodReference.FromLambda(() => ImmutableArray.Create<int>(0)).Signature;
+        private static MethodSignature ImmutableArray_Create2 = MethodReference.FromLambda(() => ImmutableArray.Create<int>(0, 1)).Signature;
+        private static MethodSignature ImmutableArray_Create3 = MethodReference.FromLambda(() => ImmutableArray.Create<int>(0, 1, 2)).Signature;
+        private static MethodSignature ImmutableArray_Create4 = MethodReference.FromLambda(() => ImmutableArray.Create<int>(0, 1, 2, 3)).Signature;
+        private static MethodSignature ImmutableArray_CreateN = MethodReference.FromLambda(() => ImmutableArray.Create<int>(new int[100])).Signature;
+
+
+        /// <summary> Access to <see cref="Nullable{T}.HasValue" /> on the target. </summary>
         public static Expression Nullable_HasValue(Expression target)
         {
             if (target.Type().UnwrapNullableValueType() is TypeReference elementType)
@@ -57,6 +107,8 @@ namespace Coberec.ExprCS
                 throw new ArgumentException($"Target `{target}` must be of type Nullable<...>, not {target.Type()}.", nameof(target));
         }
 
+
+        /// <summary> Access to <see cref="Nullable{T}.Value" /> on the target. </summary>
         public static Expression Nullable_Value(Expression target)
         {
             if (target.Type().UnwrapNullableValueType() is TypeReference elementType)
@@ -69,6 +121,7 @@ namespace Coberec.ExprCS
                 throw new ArgumentException($"Target `{target}` must be of type Nullable<...>, not {target.Type()}.", nameof(target));
         }
 
+        /// <summary> Create a <see cref="Nullable{T}" /> instance from the <paramref name="value" />. Eq. to `new T?(value)`, T is the result type of value. </summary>
         public static Expression Nullable_Create(Expression value)
         {
             return Expression.NewObject(
@@ -77,14 +130,8 @@ namespace Coberec.ExprCS
             );
         }
 
-        /// <summary> Concatenates the specified <paramref name="expressions" /> as strings. The expressions don't have to be of type string. </summary>
-        public static Expression String_Concat(IEnumerable<Expression> expressions) => String_Concat(expressions.ToImmutableArray());
-        /// <summary> Concatenates the specified <paramref name="expressions" /> as strings. The expressions don't have to be of type string. </summary>
-        public static Expression String_Concat(params Expression[] expressions) => String_Concat(expressions.ToImmutableArray());
-        /// <summary> Concatenates the specified <paramref name="expressions" /> as strings. The expressions don't have to be of type string. </summary>
-        public static Expression String_Concat(ImmutableArray<Expression> expressions)
+        public static ImmutableArray<Expression> Concat_MergeFollowingConstants(ImmutableArray<Expression> expressions)
         {
-            // Check if there are follow-up constants
             for (int i = 1; i < expressions.Length; i++)
             {
                 if (expressions[i - 1] is Expression.ConstantCase && expressions[i] is Expression.ConstantCase)
@@ -103,10 +150,20 @@ namespace Coberec.ExprCS
                         }
                     }
                     if (c.Length > 0) newExpr.Add(Expression.Constant(c));
-                    expressions = newExpr.ToImmutable();
-                    break;
+                    return newExpr.ToImmutable();
                 }
             }
+            return expressions;
+        }
+
+        /// <summary> Concatenates the specified <paramref name="expressions" /> as strings. The expressions don't have to be of type string. </summary>
+        public static Expression String_Concat(IEnumerable<Expression> expressions) => String_Concat(expressions.ToImmutableArray());
+        /// <summary> Concatenates the specified <paramref name="expressions" /> as strings. The expressions don't have to be of type string. </summary>
+        public static Expression String_Concat(params Expression[] expressions) => String_Concat(expressions.ToImmutableArray());
+        /// <summary> Concatenates the specified <paramref name="expressions" /> as strings. The expressions don't have to be of type string. </summary>
+        public static Expression String_Concat(ImmutableArray<Expression> expressions)
+        {
+            expressions = Concat_MergeFollowingConstants(expressions);
 
             var allString = expressions.All(e => e.Type() == TypeSignature.String);
 

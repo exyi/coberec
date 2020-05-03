@@ -1,13 +1,18 @@
 using Coberec.CoreLib;
 using System;
+using System.Collections.Immutable;
 
 namespace GeneratedProject.ModelNamespace
 {
 	public interface B
 	{
 	}
-	public sealed class A : B, IEquatable<A>
+	public sealed class A : B, ITokenFormatable, ITraversableObject, IEquatable<A>
 	{
+		ImmutableArray<string> ITraversableObject.Properties => ImmutableArray<string>.Empty;
+
+		int ITraversableObject.PropertyCount => 0;
+
 		public static ValidationResult<A> Create()
 		{
 			A result = new A();
@@ -16,7 +21,20 @@ namespace GeneratedProject.ModelNamespace
 
 		public override string ToString()
 		{
-			return "a {}";
+			return Format().ToString();
+		}
+
+		public FmtToken Format()
+		{
+			return FmtToken.Concat(ImmutableArray.Create((object)"a {}"), new string[1]
+			{
+				""
+			});
+		}
+
+		object ITraversableObject.GetValue(int propIndex)
+		{
+			return null;
 		}
 
 		public override int GetHashCode()
@@ -55,13 +73,17 @@ namespace GeneratedProject.ModelNamespace
 			get;
 		}
 	}
-	public sealed class Y : X, IEquatable<Y>
+	public sealed class Y : X, ITokenFormatable, ITraversableObject, IEquatable<Y>
 	{
 		public A P {
 			get;
 		}
 
 		B X.P => P;
+
+		ImmutableArray<string> ITraversableObject.Properties => ImmutableArray.Create("p");
+
+		int ITraversableObject.PropertyCount => 1;
 
 		private Y(NoNeedForValidationSentinel _, A p)
 		{
@@ -87,7 +109,22 @@ namespace GeneratedProject.ModelNamespace
 
 		public override string ToString()
 		{
-			return string.Concat("y {p = ", P, "}");
+			return Format().ToString();
+		}
+
+		public FmtToken Format()
+		{
+			return FmtToken.Concat(ImmutableArray.Create((object)"y {p = ", (object)P, (object)"}"), new string[3]
+			{
+				"",
+				"p",
+				""
+			});
+		}
+
+		object ITraversableObject.GetValue(int propIndex)
+		{
+			return (propIndex == 0) ? P : null;
 		}
 
 		public override int GetHashCode()

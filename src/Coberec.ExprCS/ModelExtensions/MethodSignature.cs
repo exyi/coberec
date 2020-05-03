@@ -93,18 +93,29 @@ namespace Coberec.ExprCS
             return this.With(@params: @params, resultType: resultType, typeParameters: newTypeParams);
         }
 
-        public static MethodSignature Override(TypeSignature declaringType, MethodSignature overridenMethod, bool isVirtual = true, bool isAbstract = false)
+        /// <summary> Declares a method that overrides the <paramref name="overridenMethod" /> in the specified declaring type. The method must be virtual or from an interface. </summary>
+        public static MethodSignature Override(TypeSignature declaringType, MethodSignature overridenMethod, OptParam<bool> isVirtual = default, bool isAbstract = false)
         {
+            var isInterface = overridenMethod.DeclaringType.Kind == "interface";
+            if (!isInterface && !overridenMethod.IsVirtual)
+                throw new ArgumentException($"Can't override non-virtual method {overridenMethod}");
+
             overridenMethod = overridenMethod.Clone();
-            return overridenMethod.With(declaringType, name: overridenMethod.Name, isVirtual: isVirtual && declaringType.CanOverride, isOverride: true, isAbstract: isAbstract);
+            var isVirtualP = isVirtual.ValueOrDefault(!isInterface);
+            return overridenMethod.With(declaringType, name: overridenMethod.Name, isVirtual: isVirtualP && declaringType.CanOverride, isOverride: !isInterface, isAbstract: isAbstract);
         }
 
         /// <summary> Fills in the generic parameters. </summary>
         /// <param name="typeArgs">Generic arguments of the declaring type. May be null instead of empty.</param>
         /// <param name="methodArgs">Generic arguments of the method. May be null instead of empty.</param>
         public MethodReference Specialize(IEnumerable<TypeReference> typeArgs, IEnumerable<TypeReference> methodArgs) =>
-            new MethodReference(this, typeArgs?.ToImmutableArray() ?? ImmutableArray<TypeReference>.Empty, methodArgs?.ToImmutableArray() ?? ImmutableArray<TypeReference>.Empty);
+            this.Specialize(typeArgs?.ToImmutableArray() ?? ImmutableArray<TypeReference>.Empty, methodArgs?.ToImmutableArray() ?? ImmutableArray<TypeReference>.Empty);
 
+        /// <summary> Fills in the generic parameters. </summary>
+        /// <param name="typeArgs">Generic arguments of the declaring type. May be null instead of empty.</param>
+        /// <param name="methodArgs">Generic arguments of the method. May be null instead of empty.</param>
+        public MethodReference Specialize(ImmutableArray<TypeReference> typeArgs, ImmutableArray<TypeReference> methodArgs) =>
+            new MethodReference(this, typeArgs, methodArgs);
 
         /// <summary> Fills in the generic parameters. Both arguments for the declaring type and for the method should be specified. </summary>
         public MethodReference Specialize(params TypeReference[] allGenericArgs)

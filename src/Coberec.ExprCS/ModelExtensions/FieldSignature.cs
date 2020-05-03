@@ -17,8 +17,14 @@ namespace Coberec.ExprCS
         }
 
         /// <summary> Fills in the generic parameters. </summary>
+        public FieldReference Specialize(params TypeReference[] typeArgs) =>
+            new FieldReference(this, typeArgs.ToImmutableArray());
+        /// <summary> Fills in the generic parameters. </summary>
         public FieldReference Specialize(IEnumerable<TypeReference> typeArgs) =>
             new FieldReference(this, typeArgs.ToImmutableArray());
+        /// <summary> Fills in the generic parameters. </summary>
+        public FieldReference Specialize(ImmutableArray<TypeReference> typeArgs) =>
+            new FieldReference(this, typeArgs);
 
         /// <summary> Fills in the generic parameters from the declaring type. Useful when using the field inside it's declaring type. </summary>
         public FieldReference SpecializeFromDeclaringType() =>

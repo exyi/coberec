@@ -17,7 +17,7 @@ namespace Coberec.ExprCS
             var baseTypes = cx.GetBaseTypes(thisType).ToArray();
             var interfaces = cx.GetDirectImplements(thisType).ToArray();
 
-            // exclude method and properties that are already implemented
+            // exclude methods and properties that are already implemented
             var explicitImplMethods = new HashSet<MethodSignature>(type.Members.OfType<MethodDef>().SelectMany(m => m.Implements).Select(m => m.Signature));
             var explicitImplProps = new HashSet<PropertySignature>(type.Members.OfType<PropertyDef>().SelectMany(m => m.Implements).Select(m => m.Signature));
 

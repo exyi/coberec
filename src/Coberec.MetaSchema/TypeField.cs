@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using Coberec.CoreLib;
 
 namespace Coberec.MetaSchema
 {
@@ -22,9 +23,10 @@ namespace Coberec.MetaSchema
         public string Description { get; }
         public ImmutableArray<Directive> Directives { get; }
 
-        private FmtToken FormatDirectives() => FmtToken.Concat(Directives.Select(d => FmtToken.Concat(" ", d))).WithIntegerTokenMap();
+        private FmtToken FormatDirectives() => FmtToken.Concat(Directives.Select(d => FmtToken.Concat(" ", d)))
+                                                       .WithIntegerTokenMap();
         public FmtToken Format() => FmtToken.Concat(Name, ": ", Type, FormatDirectives())
-                                    .WithTokenNames("name", "", "type", "directives");
+                                            .WithTokenNames("name", "", "type", "directives");
 
         public override string ToString() => Format().ToString();
     }

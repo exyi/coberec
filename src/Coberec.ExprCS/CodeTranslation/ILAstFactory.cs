@@ -14,10 +14,26 @@ namespace Coberec.ExprCS.CodeTranslation
         {
             if (constant == null)
             {
-                Assert.True(type.IsReferenceType);
+                Assert.True(type.IsReferenceType == true || type.GetDefinition().KnownTypeCode == KnownTypeCode.NullableOfT);
                 return new LdNull();
             }
-            else if (constant is bool boolC)
+
+            var isNullable = type.GetDefinition().KnownTypeCode == KnownTypeCode.NullableOfT;
+            if (isNullable)
+            {
+                var innerValue = PrimitiveConstant(constant, type.TypeArguments.Single());
+                var ctor = type.GetConstructors(c => c.Parameters.Count == 1).Single();
+                return new NewObj(ctor) {
+                    Arguments = { innerValue }
+                };
+            }
+
+            return PrimitiveConstant(constant, type);
+        }
+
+        private static ILInstruction PrimitiveConstant(object constant, IType type)
+        {
+            if (constant is bool boolC)
             {
                 Assert.Equal(typeof(bool).FullName, type.FullName);
                 return new LdcI4(boolC ? 1 : 0);

@@ -1,9 +1,10 @@
 using Coberec.CoreLib;
 using System;
+using System.Collections.Immutable;
 
 namespace GeneratedProject.ModelNamespace
 {
-	public sealed partial class Composite123 : IEquatable<Composite123>
+	public sealed partial class Composite123 : ITokenFormatable, ITraversableObject, IEquatable<Composite123>
 	{
 		public string Field543 {
 			get;
@@ -12,6 +13,10 @@ namespace GeneratedProject.ModelNamespace
 		public int AbcSS {
 			get;
 		}
+
+		ImmutableArray<string> ITraversableObject.Properties => ImmutableArray.Create("Field543", "abcSS");
+
+		int ITraversableObject.PropertyCount => 2;
 
 		private Composite123(NoNeedForValidationSentinel _, string field543, int abcSS)
 		{
@@ -48,7 +53,31 @@ namespace GeneratedProject.ModelNamespace
 
 		public override string ToString()
 		{
-			return string.Concat("Composite123 {Field543 = ", Field543, ", abcSS = ", (object)(object)AbcSS, "}");
+			return Format().ToString();
+		}
+
+		public FmtToken Format()
+		{
+			return FmtToken.Concat(ImmutableArray.Create(new object[5]
+			{
+				"Composite123 {Field543 = ",
+				Field543,
+				", abcSS = ",
+				(object)(object)AbcSS,
+				"}"
+			}), new string[5]
+			{
+				"",
+				"Field543",
+				"",
+				"abcSS",
+				""
+			});
+		}
+
+		object ITraversableObject.GetValue(int propIndex)
+		{
+			return (propIndex == 0) ? Field543 : ((propIndex == 1) ? ((object)(object)AbcSS) : null);
 		}
 
 		public override int GetHashCode()
