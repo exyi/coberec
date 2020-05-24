@@ -21,7 +21,7 @@ using Xunit;
 namespace Coberec.ExprCS
 {
     /// <summary> Holds all the information needed to generate the C# code </summary>
-    public class MetadataContext
+    public sealed class MetadataContext
     {
         private readonly HackedSimpleCompilation hackedCompilation;
         /// <summary> ILSpy expose: ILSpy's ICompilation object </summary>

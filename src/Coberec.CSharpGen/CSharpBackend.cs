@@ -394,12 +394,17 @@ namespace Coberec.CSharpGen
                 var (field, prop) = E.PropertyBuilders.CreateAutoProperty(caseType, "Item", valueType);
                 var caseCtor = caseType.AddCreateConstructor(cx, new[] { ("item", field.Signature.SpecializeFromDeclaringType()) });
 
+                def = def.AddMember(caseCtor, field, prop);
+
                 def = def.AddMember(E.MethodDef.Create(
                     E.MethodSignature.Override(caseType, E.MethodSignature.Object_ToString),
                     @this => E.FluentExpression.CallMethod(E.FluentExpression.Box(E.FluentExpression.ReadProperty(@this, prop.Signature)), E.MethodSignature.Object_ToString)
                 ));
 
-                return (index, schema, caseName, caseType: def.AddMember(caseCtor, field, prop), caseCtor);
+                def = TraversableObjectImplementation.ImplementTraversableUnionCase(type, caseType, field.Signature, caseName)
+                      .Invoke(def);
+
+                return (index, schema, caseName, caseType: def, caseCtor);
             }).ToArray();
 
             var baseMatch = MatchFunctionImplementation.ImplementMatchBase(
@@ -416,6 +421,8 @@ namespace Coberec.CSharpGen
             }
 
             result = result.AddMember(cases.Select(c => c.caseType).ToArray());
+            result = TraversableObjectImplementation.ImplementTraversableUnion(result.Signature)
+                     .Invoke(result);
 
             cx.Metadata.RegisterTypeMod(type, _ => { }, vtype => {
                 var (abstractEqCore, _) = vtype.ImplementEqualityForBase();

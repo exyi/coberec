@@ -9,12 +9,13 @@ namespace Coberec.ExprCS.Tests
 {
     public class MetadataDefinitionTests
     {
-        OutputChecker check = new OutputChecker("testoutput");
-        MetadataContext cx = MetadataContext.Create("MyModule");
+        readonly OutputChecker check = new OutputChecker("testoutput");
+        readonly MetadataContext cx = MetadataContext.Create("MyModule");
+        static readonly NamespaceSignature ns = NamespaceSignature.Parse("MyNamespace");
+
         [Fact]
         public void OneEmptyType()
         {
-            var ns = NamespaceSignature.Parse("MyNamespace");
             var type = TypeSignature.Class("MyType", ns, Accessibility.APublic);
             var typeDef = TypeDef.Empty(type);
 
@@ -25,7 +26,6 @@ namespace Coberec.ExprCS.Tests
         [Fact]
         public void NestedTypesWithInheritance()
         {
-            var ns = NamespaceSignature.Parse("MyNamespace");
             var rootType = TypeSignature.Class("MyType", ns, Accessibility.APublic);
             var type1 = TypeSignature.Class("A", rootType, Accessibility.APublic);
             var type2 = type1.With(name: "B");
@@ -54,7 +54,6 @@ namespace Coberec.ExprCS.Tests
         [InlineData(false, true)]
         public void IEquatableImplementation(bool isStruct, bool isExplicit)
         {
-            var ns = NamespaceSignature.Parse("MyNamespace");
             var type = isStruct ? TypeSignature.Struct("MyType", ns, Accessibility.APublic)
                                 : TypeSignature.Class("MyType", ns, Accessibility.APublic);
             var iequatableT = TypeSignature.FromType(typeof(IEquatable<>)).Specialize(type);
@@ -95,7 +94,6 @@ namespace Coberec.ExprCS.Tests
         [Fact]
         public void Interface()
         {
-            var ns = NamespaceSignature.Parse("MyNamespace");
             var type = TypeSignature.Interface("MyInterface", ns, Accessibility.APublic);
 
             var method = MethodSignature.Instance("MyMethod", type, Accessibility.APublic, TypeSignature.Int32, new MethodParameter(TypeSignature.String, "myParameter"));
@@ -112,7 +110,6 @@ namespace Coberec.ExprCS.Tests
         [Fact]
         public void ParameterDefaultValues()
         {
-            var ns = NamespaceSignature.Parse("MyNamespace");
             var type = TypeSignature.Interface("MyInterface2", ns, Accessibility.APublic);
 
             var method1 = MethodSignature.Instance("StringMethod", type, Accessibility.APublic, TypeSignature.Int32, new MethodParameter(TypeSignature.String, "myParameter").WithDefault("default value"));
@@ -130,7 +127,6 @@ namespace Coberec.ExprCS.Tests
         public void StandardProperties()
         {
             // TODO: remove those CompilerGenerated attributes
-            var ns = NamespaceSignature.Parse("MyNamespace");
             var type = TypeSignature.Class("MyType", ns, Accessibility.APublic);
             var prop = PropertySignature.Create("A", type, TypeSignature.String, Accessibility.APublic, Accessibility.AProtected);
             var td = TypeDef.Empty(type).AddMember(
@@ -147,7 +143,6 @@ namespace Coberec.ExprCS.Tests
         [Fact]
         public void AutoProperties()
         {
-            var ns = NamespaceSignature.Parse("MyNamespace");
             var type = TypeSignature.Class("MyType", ns, Accessibility.APublic);
             var td = TypeDef.Empty(type)
                      .AddAutoProperty("A", TypeSignature.String, Accessibility.APublic)
@@ -161,17 +156,54 @@ namespace Coberec.ExprCS.Tests
             check.CheckOutput(cx);
         }
 
+        [Theory]
+        [InlineData(false, false, false)]
+        [InlineData(false, true, false)]
+        [InlineData(false, false, true)]
+        [InlineData(true, false, true)]
+        public void Overrides(bool isInterface, bool isSealed, bool isAbstract)
+        {
+            var mGenerics = Enumerable.Range(0, 2).Select(i => GenericParameter.Create("U" + i)).ToArray();
+            var baseType = isInterface ? TypeSignature.Interface("Base", ns, Accessibility.APublic)
+                                       : TypeSignature.Class("BaseC", ns, Accessibility.APublic, isAbstract: true);
+            
+            var baseMethod1 = MethodSignature.Abstract("M1", baseType, isInterface ? Accessibility.APublic : Accessibility.AProtected, TypeSignature.Object).With(isAbstract: isInterface);
+            var baseMethod2 = MethodSignature.Abstract("M2", baseType, Accessibility.APublic, mGenerics[0], new MethodParameter(mGenerics[1], "a")).With(typeParameters: mGenerics.ToImmutableArray());
+            var baseProperty = PropertySignature.Abstract("P1", baseType, TypeSignature.Boolean, Accessibility.APublic, null);
+
+            cx.AddType(TypeDef.Empty(baseType).AddMember(
+                isInterface ? MethodDef.InterfaceDef(baseMethod1) : MethodDef.Create(baseMethod1, _ => Expression.Constant<object>(null)),
+                MethodDef.InterfaceDef(baseMethod2),
+                PropertyDef.InterfaceDef(baseProperty)
+            ));
+
+            var type = TypeSignature.Class("C", ns, Accessibility.APublic, canOverride: !isSealed, isAbstract: isAbstract);
+            var method1 = MethodSignature.Override(type, baseMethod1, isAbstract: isAbstract);
+            var method2 = MethodSignature.Override(type, baseMethod2);
+            var property = PropertySignature.Override(type, baseProperty);
+
+            cx.AddType(TypeDef.Empty(type, isInterface ? null : baseType.Specialize())
+                .AddImplements(isInterface ? new [] { baseType.Specialize() } : new SpecializedType[0])
+                .AddMember(
+                    isAbstract ? MethodDef.InterfaceDef(method1) : MethodDef.Create(method1, _ => Expression.Constant(1).Box()),
+                    MethodDef.Create(method2, (_, __) => Expression.Default(method2.TypeParameters[0])),
+                    PropertyDef.Create(property, @this => Expression.Default(property.Type))
+                ));
+
+            check.CheckOutput(cx, $"ifc({isInterface})-sealed({isSealed})-abstract({isAbstract})");
+        }
+
         [Fact]
         public void NameSanitization()
         {
             var stringT = TypeReference.FromType(typeof(string));
 
-            var type = TypeSignature.Class("MyType", NamespaceSignature.Parse("MyNamespace"), Accessibility.APublic);
+            var type = TypeSignature.Class("MyType", ns, Accessibility.APublic);
             cx.AddType(TypeDef.Empty(type).AddMember(
                 // Should be renamed, there is collision with virtual object.Equals
                 new FieldDef(new FieldSignature(type, "Equals", Accessibility.APublic, stringT, false, true))
             ));
-            var type2 = TypeSignature.Class("MyType2", NamespaceSignature.Parse("MyNamespace"), Accessibility.APublic);
+            var type2 = TypeSignature.Class("MyType2", ns, Accessibility.APublic);
             cx.AddType(TypeDef.Empty(type2).AddMember(
                 // OK, no collision here
                 new MethodDef(
@@ -180,7 +212,7 @@ namespace Coberec.ExprCS.Tests
                     Expression.Constant(true)
                 )
             ));
-            var type3 = TypeSignature.Class("MyType3", NamespaceSignature.Parse("MyNamespace"), Accessibility.APublic);
+            var type3 = TypeSignature.Class("MyType3", ns, Accessibility.APublic);
             cx.AddType(TypeDef.Empty(type3).AddMember(
                 // Should be renamed
                 new MethodDef(
@@ -189,7 +221,7 @@ namespace Coberec.ExprCS.Tests
                     Expression.Constant(true)
                 )
             ));
-            var type4 = TypeSignature.Class("MyType4", NamespaceSignature.Parse("MyNamespace"), Accessibility.APublic);
+            var type4 = TypeSignature.Class("MyType4", ns, Accessibility.APublic);
             cx.AddType(TypeDef.Empty(type4).AddMember(
                 // Should be renamed
                 new MethodDef(
@@ -198,7 +230,7 @@ namespace Coberec.ExprCS.Tests
                     Expression.Constant(true)
                 )
             ));
-            var type5 = TypeSignature.Class("MyType5", NamespaceSignature.Parse("MyNamespace"), Accessibility.APublic);
+            var type5 = TypeSignature.Class("MyType5", ns, Accessibility.APublic);
             cx.AddType(TypeDef.Empty(type5).AddMember(
                 // OK, this is override
                 new MethodDef(

@@ -22,17 +22,82 @@ namespace Coberec.CSharpGen.Emit
             // int PropertyCount { get; }
             // object GetValue(int propIndex);
 
-            var propertiesProperty = CreateProperties(declaringType, fields);
-            var propertyCountProperty = CreatePropertyCount(declaringType, fields);
-            var getValueMethod = CreateGetValue(declaringType, fields);
+            var properties = fields.Select(f => f.schema.Name).ToImmutableArray();
+
+            var propertiesProperty = CreateProperties(declaringType, _ => properties.EagerSelect(Expression.Constant));
+            var propertyCountProperty = CreatePropertyCount(declaringType, fields.Length);
+            var getValueMethod = CreateCompositeGetValue(declaringType, fields);
 
             return x => x.AddMember(propertiesProperty, propertyCountProperty, getValueMethod)
                          .AddImplements(ITraversableObjectType.Specialize());
         }
 
-        static PropertyDef CreateProperties(TypeSignature declaringType, (TypeField schema, FieldReference field)[] fields)
+        public static PropertySignature UnionRawItem(TypeSignature declaringType, bool isPublic) =>
+            PropertySignature.Abstract(
+                "RawItem",
+                declaringType,
+                TypeSignature.Object,
+                getter: isPublic ? Accessibility.APublic : Accessibility.AProtected,
+                setter: null
+            );
+
+        public static PropertySignature UnionCaseName(TypeSignature declaringType, bool isPublic) =>
+            PropertySignature.Abstract(
+                "CaseName",
+                declaringType,
+                TypeSignature.String,
+                getter: isPublic ? Accessibility.APublic : Accessibility.AProtected,
+                setter: null
+            );
+
+        public static Func<E.TypeDef, E.TypeDef> ImplementTraversableUnion(TypeSignature declaringType)
         {
-            var properties = fields.Select(f => f.schema.Name).ToImmutableArray();
+            var caseName = UnionCaseName(declaringType, isPublic: true);
+            var rawItem = UnionCaseName(declaringType, isPublic: true);
+
+            var propertyCountProperty = CreatePropertyCount(declaringType, 1);
+            var propertiesProperty = CreateProperties(declaringType, @this => ImmutableArray.Create(
+                @this.Ref().ReadProperty(caseName)
+            ));
+            var getValueMethod = CreateGetValue(declaringType, (@this, _) =>
+                @this.Ref().ReadProperty(rawItem).Box()
+            );
+
+            return r => r.AddMember(
+                PropertyDef.InterfaceDef(caseName),
+                PropertyDef.InterfaceDef(rawItem),
+                propertyCountProperty,
+                propertiesProperty,
+                getValueMethod
+            );
+        }
+
+        public static Func<E.TypeDef, E.TypeDef> ImplementTraversableUnionCase(TypeSignature baseType, TypeSignature declaringType, FieldSignature itemField, string name)
+        {
+            var caseNameBase = UnionCaseName(baseType, isPublic: true);
+            var rawItemBase = UnionCaseName(baseType, isPublic: true);
+
+            var caseName = PropertyDef.Create(
+                PropertySignature.Override(declaringType, caseNameBase),
+                @this => Expression.Constant(name)
+            );
+
+            var rawItem = PropertyDef.Create(
+                PropertySignature.Override(declaringType, rawItemBase),
+                @this => @this.Ref().ReadField(itemField)
+            );
+            
+
+            return r => r.AddMember(
+                caseName,
+                rawItem
+            );
+        }
+
+
+
+        static PropertyDef CreateProperties(TypeSignature declaringType, Func<ParameterExpression, ImmutableArray<Expression>> fields)
+        {
             var sgn = PropertySignature.Create(
                 "Coberec.CoreLib.ITraversableObject.Properties",
                 declaringType,
@@ -43,13 +108,13 @@ namespace Coberec.CSharpGen.Emit
             return new PropertyDef(sgn,
                 getter: MethodDef.Create(sgn.Getter, @this =>
                 {
-                    return ExpressionFactory.MakeImmutableArray(TypeSignature.String, properties.EagerSelect(Expression.Constant));
+                    return ExpressionFactory.MakeImmutableArray(TypeSignature.String, fields(@this));
                 }),
                 setter: null)
                 .AddImplements(PropertyReference.FromLambda<ITraversableObject>(o => o.Properties));
         }
 
-        static PropertyDef CreatePropertyCount(TypeSignature declaringType, (TypeField schema, FieldReference field)[] fields)
+        static PropertyDef CreatePropertyCount(TypeSignature declaringType, int count)
         {
             var sgn = PropertySignature.Create(
                 "Coberec.CoreLib.ITraversableObject.PropertyCount",
@@ -61,21 +126,15 @@ namespace Coberec.CSharpGen.Emit
             return new PropertyDef(sgn,
                 getter: MethodDef.Create(sgn.Getter, @this =>
                 {
-                    return Expression.Constant(fields.Length);
+                    return Expression.Constant(count);
                 }),
                 setter: null)
                 .AddImplements(PropertyReference.FromLambda<ITraversableObject>(o => o.PropertyCount));
         }
 
-        static MemberDef CreateGetValue(TypeSignature declaringType, (TypeField schema, FieldReference field)[] fields)
+        static MemberDef CreateCompositeGetValue(TypeSignature declaringType, (TypeField schema, FieldReference field)[] fields)
         {
-            var baseSgn = MethodReference.FromLambda<ITraversableObject>(o => o.GetValue(0));
-            var sgn = MethodSignature.Override(declaringType, baseSgn.Signature).With(
-                accessibility: Accessibility.APrivate,
-                name: "Coberec.CoreLib.ITraversableObject.GetValue"
-            );
-
-            return MethodDef.Create(sgn, (@this, index) => {
+            return CreateGetValue(declaringType, (@this, index) => {
                 var propExpr = fields.Select((f, i) => (i, e: @this.Ref().ReadField(f.field).Box()));
                 var expr = propExpr.Reverse().Aggregate(
                     Expression.Constant<object>(null),
@@ -86,7 +145,17 @@ namespace Coberec.CSharpGen.Emit
                     )
                 );
                 return expr;
-            }).AddImplements(MethodReference.FromLambda<ITraversableObject>(t => t.GetValue(0)));
+            });
+        }
+        static MemberDef CreateGetValue(TypeSignature declaringType, Func<ParameterExpression, ParameterExpression, Expression> body)
+        {
+            var baseSgn = MethodReference.FromLambda<ITraversableObject>(o => o.GetValue(0));
+            var sgn = MethodSignature.Override(declaringType, baseSgn.Signature).With(
+                accessibility: Accessibility.APrivate,
+                name: "Coberec.CoreLib.ITraversableObject.GetValue"
+            );
+
+            return MethodDef.Create(sgn, body).AddImplements(MethodReference.FromLambda<ITraversableObject>(t => t.GetValue(0)));
         }
     }
 }

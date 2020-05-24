@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using Coberec.CoreLib;
 using Coberec.CSharpGen;
 using Xunit;
 using R = System.Reflection;
@@ -11,8 +12,10 @@ namespace Coberec.ExprCS
     /// <summary> Basic metadata about a property - <see cref="Name" />, <see cref="Accessibility" />, <see cref="DeclaringType" />, ... </summary>
     public partial class PropertySignature
     {
+        /// <summary> Signature of <see cref="Nullable{T}.HasValue" /> </summary>
         public static readonly PropertySignature Nullable_HasValue =
             PropertyReference.FromLambda<int?>(a => a.HasValue).Signature;
+        /// <summary> Signature of <see cref="Nullable{T}.Value" /> </summary>
         public static readonly PropertySignature Nullable_Value =
             PropertyReference.FromLambda<int?>(a => a.Value).Signature;
 
@@ -25,8 +28,39 @@ namespace Coberec.ExprCS
 
             return new PropertySignature(declaringType, type, name, Accessibility.Max(getter, setter), isStatic, getMethod, setMethod);
         }
+        
+        /// <summary> Creates a new property signature of an abstract property. </summary>
+        public static PropertySignature Abstract(string name, TypeSignature declaringType, TypeReference type, Accessibility getter, Accessibility setter, bool isOverride = false) =>
+            Create(name, declaringType, type, getter, setter, isOverride: isOverride, isVirtual: true, isAbstract: true);
+
+        /// <summary> Creates a new property signature of a static property. </summary>
+        public static PropertySignature Static(string name, TypeSignature declaringType, TypeReference type, Accessibility getter, Accessibility setter) =>
+            Create(name, declaringType, type, getter, setter, isStatic: true);
+
+        /// <summary> Creates a new property signature of an instance property. </summary>
+        public static PropertySignature Instance(string name, TypeSignature declaringType, TypeReference type, Accessibility getter, Accessibility setter, bool isVirtual = false, bool isOverride = false) =>
+            Create(name, declaringType, type, getter, setter, isOverride: isOverride, isVirtual: isVirtual, isAbstract: false);
+
+        /// <summary> Declares a property that overrides the <paramref name="overriddenProperty" /> in the specified declaring type. The property must be virtual or from an interface. </summary>
+        public static PropertySignature Override(TypeSignature declaringType, PropertySignature overriddenProperty, OptParam<bool> isVirtual = default, bool isAbstract = false)
+        {
+            var isInterface = overriddenProperty.DeclaringType.Kind == "interface";
+            if (!isInterface && !overriddenProperty.IsVirtual)
+                throw new ArgumentException($"Can't override non-virtual property {overriddenProperty}");
+
+            return Create(overriddenProperty.Name,
+                          declaringType,
+                          overriddenProperty.Type,
+                          overriddenProperty.Getter?.Accessibility,
+                          overriddenProperty.Setter?.Accessibility,
+                          isVirtual: isVirtual.ValueOrDefault(!isInterface && declaringType.CanOverride),
+                          isOverride: !isInterface,
+                          isAbstract: isAbstract);
+
+        }
 
         public bool IsOverride => (Getter ?? Setter).IsOverride;
+        public bool IsVirtual => (Getter ?? Setter).IsVirtual;
 
 
         /// <summary> Fills in the generic parameters. </summary>
@@ -78,6 +112,7 @@ namespace Coberec.ExprCS
             return sb.ToString();
         }
 
+        /// <summary> Creates a PropertySignature of a property represented by System.Reflection type </summary>
         public static PropertySignature FromReflection(R.PropertyInfo prop)
         {
             prop = MethodSignature.SanitizeDeclaringTypeGenerics(prop);

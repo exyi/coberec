@@ -25,7 +25,7 @@ namespace Coberec.ExprCS.CodeTranslation
             return call;
         }
 
-        Result TranslateInvoke(InvokeExpression e)
+        StatementBlock TranslateInvoke(InvokeExpression e)
         {
             var function = Assert.IsType<TypeReference.FunctionTypeCase>(e.Function.Type()).Item;
 
@@ -34,8 +34,8 @@ namespace Coberec.ExprCS.CodeTranslation
             if (e.Function is Expression.ParameterCase variable && this.ActiveLocalFunctions.TryGetValue(variable.Item.Id, out var localFunction))
             {
                 var call = CallLocalFunction(localFunction, args.Select(a => a.Instr()));
-                return Result.Concat(
-                    args.Append(Result.Expression(localFunction.Method.ReturnType, call))
+                return StatementBlock.Concat(
+                    args.Append(StatementBlock.Expression(localFunction.Method.ReturnType, call))
                 );
             }
             else
@@ -49,14 +49,14 @@ namespace Coberec.ExprCS.CodeTranslation
                 var call = new Call(invokeMethod);
                 call.Arguments.Add(target.Instr());
                 call.Arguments.AddRange(args.Select(a => a.Instr()));
-                return Result.Concat(
-                    args.Append(Result.Expression(invokeMethod.ReturnType, call))
+                return StatementBlock.Concat(
+                    args.Append(StatementBlock.Expression(invokeMethod.ReturnType, call))
                         .Prepend(target)
                 );
             }
         }
 
-        Result TranslateLocalFunction(FunctionExpression function, ParameterExpression variable, Expression validIn)
+        StatementBlock TranslateLocalFunction(FunctionExpression function, ParameterExpression variable, Expression validIn)
         {
             var parameters = function.Params.Select(p => MetadataDefiner.CreateParameter(this.Metadata, p)).ToImmutableArray();
             var fakeName = $"<{this.GeneratedMethod.Name}>g__{variable.Name}|x_y";
@@ -96,8 +96,8 @@ namespace Coberec.ExprCS.CodeTranslation
             return result;
         }
 
-        Result TranslateFunction(FunctionExpression e) => TranslateFunction(e, TypeReference.FunctionType(e.Params, e.Body.Type()));
-        Result TranslateFunction(FunctionExpression e, TypeReference expectedType)
+        StatementBlock TranslateFunction(FunctionExpression e) => TranslateFunction(e, TypeReference.FunctionType(e.Params, e.Body.Type()));
+        StatementBlock TranslateFunction(FunctionExpression e, TypeReference expectedType)
         {
             var delegateType =
                 expectedType is TypeReference.FunctionTypeCase fnType ? this.FindAppropriateDelegate(fnType.Item) :
@@ -134,10 +134,10 @@ namespace Coberec.ExprCS.CodeTranslation
 
             Assert.Equal(e.Params.Length, fn.Variables.Count(v => v.Kind == VariableKind.Parameter));
 
-            return Result.Expression(delegateType, fn);
+            return StatementBlock.Expression(delegateType, fn);
         }
 
-        Result TranslateFunctionConversion(FunctionConversionExpression e)
+        StatementBlock TranslateFunctionConversion(FunctionConversionExpression e)
         {
             if (e.Value is Expression.FunctionCase fn)
                 return this.TranslateFunction(fn.Item, e.Type);
@@ -161,9 +161,9 @@ namespace Coberec.ExprCS.CodeTranslation
             if (conversion.IsIdentityConversion)
                 return target;
             if (conversion.IsReferenceConversion)
-                return Result.Concat(
+                return StatementBlock.Concat(
                     target,
-                    Result.Expression(to, target.Instr())
+                    StatementBlock.Expression(to, target.Instr())
                 );
 
             // reference conversion did not work? lets just create a lambda that will invoke the old function
@@ -179,9 +179,9 @@ namespace Coberec.ExprCS.CodeTranslation
             this.Parameters.Remove(targetVar.Id);
             // here, we remove the temporary hack function from ilVar
             ilVar.Function.Variables.Remove(ilVar);
-            return Result.Concat(
+            return StatementBlock.Concat(
                 target,
-                new Result(new ExpressionStatement(new StLoc(ilVar, target.Instr()))),
+                new StatementBlock(new ExpressionStatement(new StLoc(ilVar, target.Instr()))),
                 newFunction
             );
         }

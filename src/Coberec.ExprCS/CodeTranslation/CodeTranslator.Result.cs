@@ -10,13 +10,15 @@ using Xunit;
 
 namespace Coberec.ExprCS.CodeTranslation
 {
-    partial class CodeTranslator
+    sealed partial class CodeTranslator
     {
-        class Statement
+        /// <summary> <see cref="BasicBlockStatement" /> or <see cref="ExpressionStatement" /> </summary>
+        abstract class Statement
         {
         }
 
-        class BasicBlockStatement : Statement
+        /// <summary> Performs a single Block.  </summary>
+        sealed class BasicBlockStatement : Statement
         {
             public Block Block;
             public BasicBlockStatement(Block b)
@@ -25,8 +27,10 @@ namespace Coberec.ExprCS.CodeTranslation
             }
         }
 
-        class ExpressionStatement : Statement
+        /// <summary> Performs a single IL instruction (a expression, basically). The result is stored in the <see cref="Output" /> variable, if it's not void. </summary>
+        sealed class ExpressionStatement : Statement
         {
+            /// <summary> The output variable. If no output is specified, the instruction is assumed to return void and the result is discarded. </summary>
             public readonly ILVariable Output;
             public readonly ILInstruction Instruction;
 
@@ -36,17 +40,23 @@ namespace Coberec.ExprCS.CodeTranslation
                 Instruction = instruction ?? throw new ArgumentNullException(nameof(instruction));
             }
         }
-        class Result
+
+        /// <summary> Block of statements and a result expression (in <see cref="Instr" />). </summary>
+        sealed class StatementBlock
         {
+            /// <summary> List of statements executed in the block. Also see <see cref="Instruction" />, the result expression that should be also executed </summary>
             public readonly ImmutableList<Statement> Statements;
             private readonly ILInstruction Instruction;
-            private bool InstructionWasGivenOut = false;
 
+            /// <summary> Result type of the block, if it is not void. </summary>
             public IType Type { get; }
             public bool IsVoid => Type is null;
 
+            private bool InstructionWasGivenOut = false;
             public ILInstruction Instr()
             {
+                if (Instruction is null)
+                    return null;
                 if (InstructionWasGivenOut)
                     return Instruction.Clone();
                 else
@@ -56,18 +66,20 @@ namespace Coberec.ExprCS.CodeTranslation
                 }
             }
 
-            public static Result Nop = new Result();
+            /// <summary> Block that does nothing and returns void. </summary>
+            public static StatementBlock Nop = new StatementBlock();
+            /// <summary> When returns true, the block does nothing and returns void. </summary>
             public bool IsNop => this.Statements.Count == 0 && Instruction is null;
 
-            public static Result Expression(IType type, ILInstruction i)
+            public static StatementBlock Expression(IType type, ILInstruction i)
             {
-                return new Result(type, i);
+                return new StatementBlock(type, i);
             }
 
-            public Result(params Statement[] statements) : this(null, null, statements) { }
-            public Result(IEnumerable<Statement> statements) : this(null, null, statements) { }
-            public Result(IType type, ILInstruction output, params Statement[] statements) : this(type, output, statements.AsEnumerable()) { }
-            public Result(IType type, ILInstruction output, IEnumerable<Statement> statements)
+            public StatementBlock(params Statement[] statements) : this(null, null, statements) { }
+            public StatementBlock(IEnumerable<Statement> statements) : this(null, null, statements) { }
+            public StatementBlock(IType type, ILInstruction output, params Statement[] statements) : this(type, output, statements.AsEnumerable()) { }
+            public StatementBlock(IType type, ILInstruction output, IEnumerable<Statement> statements)
             {
                 this.Statements = statements.ToImmutableList();
                 this.Statements.ForEach(Assert.NotNull);
@@ -77,15 +89,17 @@ namespace Coberec.ExprCS.CodeTranslation
                 this.Instruction = output;
             }
 
-            public Result AsVoid()
+            /// <summary> Drops the result value. The result expression is still executed, though. </summary>
+            public StatementBlock AsVoid()
             {
                 if (IsVoid) return this;
                 else if (SemanticHelper.IsPure(Instruction.Flags))
-                    return new Result(Statements);
-                else return new Result(Statements.Add(new ExpressionStatement(Instr())));
+                    return new StatementBlock(Statements);
+                else return new StatementBlock(Statements.Add(new ExpressionStatement(Instr())));
             }
 
-            public Result WithOutputInto(ILVariable resultVar)
+            /// <summary> As a last step of the computation, assign result into the <paramref name="resultVar" />. Result of this StatementBlock is void. </summary>
+            public StatementBlock WithOutputInto(ILVariable resultVar)
             {
                 if (IsVoid)
                 {
@@ -95,42 +109,46 @@ namespace Coberec.ExprCS.CodeTranslation
                 else
                 {
                     Assert.NotNull(resultVar);
-                    return new Result(Statements.Add(new ExpressionStatement(new StLoc(resultVar, Instr()))));
+                    return new StatementBlock(Statements.Add(new ExpressionStatement(new StLoc(resultVar, Instr()))));
                 }
             }
 
-            public static Result Concat(params Result[] rs) => Concat((IEnumerable<Result>)rs);
-            public static Result Concat(IEnumerable<Result> rs)
+            /// <summary> Concatenates statement blocks. The last one's result is the result of entire computation. </summary>
+            public static StatementBlock Concat(params StatementBlock[] bs) => Concat((IEnumerable<StatementBlock>)bs);
+            /// <summary> Concatenates statement blocks. The last one's result is the result of entire computation. </summary>
+            public static StatementBlock Concat(IEnumerable<StatementBlock> bs)
             {
                 var s = ImmutableList<Statement>.Empty;
-                Result last = null;
-                foreach (var r in rs)
+                StatementBlock last = StatementBlock.Nop;
+                foreach (var b in bs)
                 {
-                    if (r.Statements != null && !r.Statements.IsEmpty)
-                        s = s.AddRange(r.Statements);
-                    last = r;
+                    if (b.Statements != null && !b.Statements.IsEmpty)
+                        s = s.AddRange(b.Statements);
+                    last = b;
                 }
                 if (s.IsEmpty)
                     return last;
                 else
-                    return new Result(last.Type, last.Instr(), s);
+                    return new StatementBlock(last.Type, last.Instr(), s);
             }
 
-            public static (Result, ImmutableArray<ILInstruction>) CombineInstr(IEnumerable<Result> results) => CombineInstr(results.ToArray());
-            public static (Result, ImmutableArray<ILInstruction>) CombineInstr(params Result[] results)
+            /// <summary> Concatenates the effects of the specified <paramref name="blocks" />. The result values are returned separate. </summary>
+            public static (StatementBlock effect, ImmutableArray<ILInstruction> results) CombineInstr(IEnumerable<StatementBlock> blocks) => CombineInstr(blocks.ToArray());
+            /// <summary> Concatenates the effects of the specified <paramref name="blocks" />. The result values are returned separate. </summary>
+            public static (StatementBlock effect, ImmutableArray<ILInstruction> results) CombineInstr(params StatementBlock[] blocks)
             {
-                bool ok = true;
-                foreach (var r in results)
+                bool hasEmptyBody = true;
+                foreach (var b in blocks)
                 {
-                    Assert.False(r.IsVoid);
-                    ok &= r.Statements.IsEmpty;
+                    Assert.False(b.IsVoid);
+                    hasEmptyBody &= b.Statements.IsEmpty;
                 }
-                if (ok)
-                    return (Result.Nop, results.EagerSelect(r => r.Instr()));
+                if (hasEmptyBody)
+                    return (StatementBlock.Nop, blocks.EagerSelect(r => r.Instr()));
                 else
                 {
-                    var vars = results.EagerSelect(r => new ILVariable(VariableKind.StackSlot, r.Type));
-                    var result = Result.Concat(results.Zip(vars, (r, v) => r.WithOutputInto(v)));
+                    var vars = blocks.EagerSelect(b => new ILVariable(VariableKind.StackSlot, b.Type));
+                    var result = StatementBlock.Concat(blocks.Zip(vars, (r, v) => r.WithOutputInto(v)));
                     return (result, vars.EagerSelect(v => (ILInstruction)new LdLoc(v)));
                 }
             }

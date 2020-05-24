@@ -93,16 +93,16 @@ namespace Coberec.ExprCS
             return this.With(@params: @params, resultType: resultType, typeParameters: newTypeParams);
         }
 
-        /// <summary> Declares a method that overrides the <paramref name="overridenMethod" /> in the specified declaring type. The method must be virtual or from an interface. </summary>
-        public static MethodSignature Override(TypeSignature declaringType, MethodSignature overridenMethod, OptParam<bool> isVirtual = default, bool isAbstract = false)
+        /// <summary> Declares a method that overrides the <paramref name="overriddenMethod" /> in the specified declaring type. The method must be virtual or from an interface. </summary>
+        public static MethodSignature Override(TypeSignature declaringType, MethodSignature overriddenMethod, OptParam<bool> isVirtual = default, bool isAbstract = false)
         {
-            var isInterface = overridenMethod.DeclaringType.Kind == "interface";
-            if (!isInterface && !overridenMethod.IsVirtual)
-                throw new ArgumentException($"Can't override non-virtual method {overridenMethod}");
+            var isInterface = overriddenMethod.DeclaringType.Kind == "interface";
+            if (!isInterface && !overriddenMethod.IsVirtual)
+                throw new ArgumentException($"Can't override non-virtual method {overriddenMethod}");
 
-            overridenMethod = overridenMethod.Clone();
-            var isVirtualP = isVirtual.ValueOrDefault(!isInterface);
-            return overridenMethod.With(declaringType, name: overridenMethod.Name, isVirtual: isVirtualP && declaringType.CanOverride, isOverride: !isInterface, isAbstract: isAbstract);
+            overriddenMethod = overriddenMethod.Clone();
+            var isVirtualP = isVirtual.ValueOrDefault(!isInterface && declaringType.CanOverride || isAbstract);
+            return overriddenMethod.With(declaringType, isVirtual: isVirtualP && declaringType.CanOverride, isOverride: !isInterface, isAbstract: isAbstract);
         }
 
         /// <summary> Fills in the generic parameters. </summary>
