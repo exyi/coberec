@@ -10,7 +10,7 @@ namespace Coberec.ExprCS.Tests
     public class ValueTypeTests
     {
         OutputChecker check = new OutputChecker("testoutput");
-        MetadataContext cx = MetadataContext.Create("MyModule");
+        MetadataContext cx = MetadataContext.Create();
 
         static TypeSignature GuidType = TypeSignature.Struct("Guid", NamespaceSignature.System, Accessibility.APublic);
         static TypeSignature MyStruct = TypeSignature.Struct("MyStruct", NamespaceSignature.Parse("NS"), Accessibility.APublic);

@@ -523,7 +523,7 @@ namespace Coberec.CSharpGen
 
         private static E.MetadataContext BuildCore(DataSchema schema, EmitSettings settings)
         {
-            var cx2 = E.MetadataContext.Create("NewEpicModule", settings.AdditionalReferences.Concat(E.MetadataContext.GetReferencedPaths()), GetEmitSettings(settings));
+            var cx2 = E.MetadataContext.Create(settings.AdditionalReferences.Concat(E.MetadataContext.GetReferencedPaths()), GetEmitSettings(settings));
             var cx = new EmitContext(cx2, settings, schema);
 
             var @this = new CSharpBackend(cx);

@@ -10,7 +10,7 @@ namespace Coberec.ExprCS.Tests
     public class MetadataDefinitionTests
     {
         readonly OutputChecker check = new OutputChecker("testoutput");
-        readonly MetadataContext cx = MetadataContext.Create("MyModule");
+        readonly MetadataContext cx = MetadataContext.Create();
         static readonly NamespaceSignature ns = NamespaceSignature.Parse("MyNamespace");
 
         [Fact]

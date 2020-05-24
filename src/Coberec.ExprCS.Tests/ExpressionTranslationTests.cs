@@ -29,7 +29,7 @@ namespace Coberec.ExprCS.Tests
     public class ExpressionTranslationTests
     {
         OutputChecker check = new OutputChecker("testoutput");
-        MetadataContext cx = MetadataContext.Create("MyModule");
+        MetadataContext cx = MetadataContext.Create();
         ParameterExpression p1 = ParameterExpression.Create(TypeSignature.Int32, "p1");
         ParameterExpression p2 = ParameterExpression.Create(TypeSignature.Int32, "p2");
         ParameterExpression pBool1 = ParameterExpression.Create(TypeSignature.Boolean, "pBool1");

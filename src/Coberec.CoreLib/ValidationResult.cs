@@ -24,10 +24,30 @@ namespace Coberec.CoreLib
 
         public ValidationResult<U> Select<U>(Func<T, U> mapping, Func<ValidationErrors, ValidationErrors> errorMapping = null)
         {
+            if (Errors == null) throw new InvalidOperationException("Invalid object created.");
             if (!Errors.IsValid())
                 return new ValidationResult<U>(errorMapping == null ? Errors : errorMapping(Errors), default);
             else
                 return new ValidationResult<U>(Errors, mapping(ValueOrDefault));
+        }
+
+        public ValidationResult<U> SelectMany<U>(Func<T, ValidationResult<U>> mapping, Func<ValidationErrors, ValidationErrors> errorMapping = null)
+        {
+            if (Errors == null) throw new InvalidOperationException("Invalid object created.");
+            if (!Errors.IsValid())
+                return new ValidationResult<U>(errorMapping == null ? Errors : errorMapping(Errors), default);
+            else
+                return mapping(ValueOrDefault);
+
+        }
+
+        public ValidationResult<T> NestErr(string field)
+        {
+            if (Errors == null) throw new InvalidOperationException("Invalid object created.");
+            if (Errors.IsValid())
+                return this;
+            else
+                return new ValidationResult<T>(Errors.Nest(field), default);
         }
 
         internal ValidationResult(ValidationErrors errors, T value)
@@ -38,10 +58,11 @@ namespace Coberec.CoreLib
 
         public ValidationResult<T2> Cast<T2>() where T2 : class
         {
+            if (Errors == null) throw new InvalidOperationException("Invalid object created.");
             if (Errors.IsValid())
-                return new ValidationResult<T2>(this.Errors, null);
+                return new ValidationResult<T2>(Errors, null);
             else
-                return new ValidationResult<T2>(this.Errors, (T2)(object)this.ValueOrDefault);
+                return new ValidationResult<T2>(Errors, (T2)(object)this.ValueOrDefault);
         }
     }
 

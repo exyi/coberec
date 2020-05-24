@@ -11,7 +11,7 @@ namespace Coberec.ExprCS.Tests
 {
     public class SymbolReadingTests
     {
-        readonly MetadataContext cx = MetadataContext.Create("MyMainModule");
+        readonly MetadataContext cx = MetadataContext.Create();
         readonly OutputChecker check = new OutputChecker("testoutput", sanitizeGuids: true);
 
 

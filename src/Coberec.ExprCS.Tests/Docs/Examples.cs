@@ -68,6 +68,6 @@ namespace Coberec.ExprCS.Tests.Docs
         }
 
         OutputChecker check = new OutputChecker("testoutput");
-        MetadataContext cx = MetadataContext.Create("MyModule");
+        MetadataContext cx = MetadataContext.Create();
     }
 }

@@ -11,7 +11,7 @@ namespace Coberec.ExprCS.Tests
 
     public class SymbolReadingConsistencyTests
     {
-        readonly MetadataContext cx = MetadataContext.Create("MyMainModule");
+        readonly MetadataContext cx = MetadataContext.Create();
         public static readonly Assembly[] AllAssemblies = new [] {
             typeof(string).Assembly,
             typeof(System.Collections.StructuralComparisons).Assembly,

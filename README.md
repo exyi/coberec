@@ -5,9 +5,15 @@ Coberec is a C# code generator project. Actually, two projects in one:
 * **Coberec.GraphQL** generates C# data classes from a model written in GraphQL Schema language.
 * **Coberec.ExprCS** is a generic abstraction for generating C# code. It is an API built on ILSpy decompiler that makes it easy to generate C# code safely. More on that below.
 
+**TL;DR**: It is like `System.Linq.Expressions` for producing code in the text form, instead of a runtime delegate. See the [example below](#example)
+
 The tool is aiming at generating **COrrect REadable and BEautiful Code**, with priority on the correctness. We have not fiddled with formatting and nice syntax. The goal is to produce code that is precise and which behaviour is easy to predict.
 
 The C# code generator is based on the awesome [ILSpy decompiler](https://github.com/icsharpcode/ilspy), which makes sure that it produces quite nice looking code that always represents what was intended. C# is a very complex language, and it would be tough to accomplish the goals without using ILSpy's backend.
+
+## Table of contents
+
+
 
 ## GraphQL Schema -> C# classes
 
@@ -96,14 +102,80 @@ type GetHashCode {
 ```
 
 All of these edge cases are handled by ExprCS (the abstraction), not `Coberec.GraphQL`. The user of ExprCS gets these for free (when symbol renaming is enabled).
+See more details at [Symbol Name Sanitization](docs/symbol-name-sanitization.md) page.
 
 <!--Maybe you now think that this does not make sense to handle, these are artificial counterexamples... The reality, unfortunately, is that some of these are pretty easy to hit in larger. This is not in the GraphQL version, but github has "+1" and "-1" properties [in their v3 API](https://developer.github.com/v3/emojis/), which may break a lot of automated code generators (if they had that in a machine-readable form...). Glitches just add up quickly and fixing them manually in automated pipelines would be annoying.-->
 
-### Metadata
+### Example
+
+Let us show the very basics of the provided API. In this example, we will show how to create the simplest of programs - the Hello World.
+
+```csharp
+// First, we declare the symbol signatures:
+
+// namespace MyApp.HelloWorld {
+var ns = NamespaceSignature.Parse("MyApp.HelloWorld");
+// public class Program {
+var programType = TypeSignature.Class("Program", ns, Accessibility.APublic);
+// public static int Main() {
+var mainMethod = MethodSignature.Static("Main", programType, Accessibility.APublic, returnType: TypeSignature.Int32);
+
+// get the Console.WriteLine reference
+var writeLineRef = MethodReference.FromLambda(() => Console.WriteLine(""));
+
+// then we build the actual expression tree
+var body = new [] {
+    // we invoke the WriteLine method
+    Expression.StaticMethodCall(writeLineRef, Expression.Constant("Hello world!"))
+}.ToBlock(
+    // and return 0
+    result: Expression.Constant(0)
+);
+
+// after all, we just add the method with the body into the type
+var type = TypeDef.Empty(programType).AddMember(
+    MethodDef.Create(mainMethod, body)
+);
+
+// create a default context
+var cx = MetadataContext.Create();
+cx.AddType(type);
+// and produce a string with the output.
+var csharp = cx.EmitToString();
+```
+
+More examples are on separate pages:
+* [Automatic ToString implementation](docs/examples/auto-toString.md)
+<!-- TODO -->
+
+### Complete ExprCS documentation
+
+* [C# -> ExprCS API cheatsheet](docs/csharp-features/cheatsheet.md)
+    - [Accessing Fields](docs/csharp-features/accessing-fields.md)
+    - [Accessing Properties](docs/csharp-features/accessing-properties.md)
+    - [Calling Methods](docs/csharp-features/calling-methods.md)
+    - [Creating objects](docs/csharp-features/creating-objects.md)
+    - [Blocks](docs/csharp-features/blocks.md)
+    - [Variables](docs/csharp-features/variables.md)
+    - [Conditions](docs/csharp-features/conditions.md)
+    - [Boolean Expressions](docs/csharp-features/boolean-expressions.md)
+    - [Boolean Expressions](docs/csharp-features/boolean-expressions.md)
+    - [Arrays](docs/csharp-features/arrays.md)
+    - [Functions as Values](docs/csharp-features/functions-as-values.md)
+    - [References - `ref` returns, ...](docs/csharp-features/ref-returns.md)
+    - [Nullable value types](docs/csharp-features/nullable-value-types.md)
+* [Metadata definitions](docs/metadata.md)
+* [Symbol Name Sanitization](docs/symbol-name-sanitization.md)
+* [Working with external symbols](docs/external-symbols.md)
+* [Internals](docs/internals.md)
+
+Most of API is also covered by C# documentation comments. We recommend using an IDE to explore it. Alternatively, you can also browse the [Doxygen generated documentation](https://exyi.cz/coberec_doxygen/d7/d5f/namespaceCoberec_1_1ExprCS.html).
+
+<!-- ### Metadata
 
 Details are on a [separate page](docs/metadata.md), so just briefly. Metadata describes the types, methods, properties, fields, ...  - it's something like the System.Reflection, except that you can create your own symbols. The same classes are used for the types you create and for the types you use from referenced libraries, so there is not much distinction between.
 
-One of the major pain points of automatic code generation is naming the symbol so that the names never collide and they are valid to use in C#. Coberec has a generic solution for most of these issues, [see Symbol Name Sanitization](./docs/symbol-name-sanitization.md)
+One of the major pain points of automatic code generation is naming the symbol so that the names never collide and they are valid to use in C#. Coberec has a generic solution for most of these issues, [see Symbol Name Sanitization](./docs/symbol-name-sanitization.md) -->
 
 ## 
 

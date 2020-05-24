@@ -7,7 +7,7 @@ namespace Coberec.ExprCS.Tests
     public class ExpressionFactoryTests
     {
         OutputChecker check = new OutputChecker("testoutput");
-        MetadataContext cx = MetadataContext.Create("MyModule");
+        MetadataContext cx = MetadataContext.Create();
         [Fact]
         public void ArrayInitializer()
         {

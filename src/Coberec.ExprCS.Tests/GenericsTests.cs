@@ -9,7 +9,7 @@ namespace Coberec.ExprCS.Tests
     public class GenericsTests
     {
         OutputChecker check = new OutputChecker("testoutput");
-        MetadataContext cx = MetadataContext.Create("MyModule");
+        MetadataContext cx = MetadataContext.Create();
 
         [Fact]
         public void AutoProperties()

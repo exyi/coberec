@@ -51,7 +51,6 @@ namespace Coberec.ExprCS
         /// <summary> Creates new empty context. </summary>
         /// <param name="references"> A list of assembly paths that will be included in the compilation. When null a default list is used (that contains some standard libraries) </param>
         public static MetadataContext Create(
-            string mainModuleName,
             IEnumerable<string> references = null,
             EmitSettings settings = null)
         {
@@ -64,7 +63,7 @@ namespace Coberec.ExprCS
             // TODO   ^ add a way to override this implicit reference
 
             var compilation = new HackedSimpleCompilation(
-                new VirtualModuleReference(true, mainModuleName),
+                new VirtualModuleReference(true, "ExprCS.MainModule"),
                 referencedModules
             );
 
