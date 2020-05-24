@@ -2,6 +2,7 @@ using System;
 
 namespace Coberec.ExprCS
 {
+    /// <summary> Extension methods for <see cref="MemberReference" /> interface. </summary>
     public static class MemberReferenceExtensions
     {
         public static string Name(this MemberReference reference) => reference.Signature.Name;

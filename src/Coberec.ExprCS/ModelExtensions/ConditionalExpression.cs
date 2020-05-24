@@ -2,6 +2,7 @@ using Coberec.CoreLib;
 
 namespace Coberec.ExprCS
 {
+    /// <summary> Expressions equivalent to C#'s `if` or the `a ? b : c` ternary operator. If `Condition` is true, then `IfTrue`, else `IfFalse`. </summary>
     partial class ConditionalExpression
     {
         static partial void ValidateObjectExtension(ref CoreLib.ValidationErrorsBuilder e, ConditionalExpression obj)

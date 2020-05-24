@@ -2,6 +2,7 @@ using Coberec.CoreLib;
 
 namespace Coberec.ExprCS
 {
+    /// <summary> Expression represents access to `Field` on object `Target`. If `Field` is static, `Target` is null. </summary>
     partial class FieldAccessExpression
     {
         static partial void ValidateObjectExtension(ref CoreLib.ValidationErrorsBuilder e, FieldAccessExpression obj)

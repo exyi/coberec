@@ -5,6 +5,7 @@ using System.Linq;
 
 namespace Coberec.ExprCS
 {
+    /// <summary> Namespace name separated by dots. Use <see cref="Parse(string)" /> to create an instance </summary>
     public partial class NamespaceSignature
     {
         static partial void ValidateObjectExtension(ref ValidationErrorsBuilder e, NamespaceSignature obj)

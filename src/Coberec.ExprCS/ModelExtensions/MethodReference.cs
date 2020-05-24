@@ -23,8 +23,14 @@ namespace Coberec.ExprCS
                 e.Add(ValidationErrors.Create($"Method {m.Signature} expected {expectedCount} type parameters, got [{string.Join(", ", m.MethodParameters)}]"));
         }
 
+        /// <summary> Method declaring type. Generic type parameters are substituted according to the type arguments. </summary>
+        /// <seealso cref="MethodSignature.DeclaringType" />
         public SpecializedType DeclaringType() => new SpecializedType(this.Signature.DeclaringType, this.TypeParameters);
+        /// <summary> Method result type. Generic type parameters are substituted according to the type arguments. </summary>
+        /// <seealso cref="MethodSignature.ResultType" />
         public TypeReference ResultType() => Signature.ResultType.SubstituteGenerics(Signature.TypeParameters, this.MethodParameters).SubstituteGenerics(Signature.DeclaringType.AllTypeParameters(), this.TypeParameters);
+        /// <summary> Method parameters. Generic type parameters are substituted according to the type arguments. </summary>
+        /// <seealso cref="MethodSignature.Params" />
         public ImmutableArray<MethodParameter> Params() =>
             Signature.Params.EagerSelect(p => p.SubstituteGenerics(Signature.TypeParameters, this.MethodParameters)
                                                .SubstituteGenerics(Signature.DeclaringType.AllTypeParameters(), this.TypeParameters));
@@ -33,6 +39,7 @@ namespace Coberec.ExprCS
         public override string ToString() =>
             MethodSignature.ToString(Signature, this.MethodParameters, this.Params(), this.ResultType());
 
+        /// <summary> Creates a MethodReference from System.Reflections MethodInfo or ConstructorInfo. Also works for property getters, setters, static constructors, ... </summary>
         public static MethodReference FromReflection(R.MethodBase method)
         {
             Assert.False(method.IsGenericMethodDefinition);

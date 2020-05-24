@@ -2,6 +2,7 @@ using Coberec.CoreLib;
 
 namespace Coberec.ExprCS
 {
+    /// <summary> Expression evaluates a binary operator. Equivalent of `Left {Operator} Right` code. </summary>
     public partial class BinaryExpression
     {
         public bool IsComparison() => this.Operator switch {

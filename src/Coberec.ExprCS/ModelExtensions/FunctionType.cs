@@ -6,6 +6,8 @@ using System.Linq;
 namespace Coberec.ExprCS
 {
     /// <summary> Represents a type of a function not bound to any delegate. </summary>
+    /// <seealso cref="FunctionConversionExpression" />
+    /// <seealso cref="FunctionExpression" />
     public partial class FunctionType
     {
         /// <summary> Converts the function to a matching delegate, if possible (returns null otherwise). </summary>

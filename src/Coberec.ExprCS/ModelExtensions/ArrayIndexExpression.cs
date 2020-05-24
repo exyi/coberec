@@ -2,6 +2,7 @@ using Coberec.CoreLib;
 
 namespace Coberec.ExprCS
 {
+    /// <summary> Expression gets array element given by an index. Equivalent of `array[...indices]` </summary>
     partial class ArrayIndexExpression
     {
         static partial void ValidateObjectExtension(ref CoreLib.ValidationErrorsBuilder e, ArrayIndexExpression obj)

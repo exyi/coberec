@@ -2,6 +2,7 @@ using Coberec.CoreLib;
 
 namespace Coberec.ExprCS
 {
+    /// <summary> Expression representing a by-reference object cast. Also does boxing and unboxing. </summary>
     partial class ReferenceConversionExpression
     {
         static partial void ValidateObjectExtension(ref CoreLib.ValidationErrorsBuilder e, ReferenceConversionExpression obj)

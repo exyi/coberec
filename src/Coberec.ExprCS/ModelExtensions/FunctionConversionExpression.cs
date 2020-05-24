@@ -2,6 +2,8 @@ using Coberec.CoreLib;
 
 namespace Coberec.ExprCS
 {
+    /// <summary> Converts function types and delegate types between each other. </summary>
+    /// <seealso cref="FunctionType" />
     partial class FunctionConversionExpression
     {
         static partial void ValidateObjectExtension(ref CoreLib.ValidationErrorsBuilder e, FunctionConversionExpression obj)

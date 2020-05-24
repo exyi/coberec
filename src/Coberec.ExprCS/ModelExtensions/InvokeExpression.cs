@@ -2,6 +2,7 @@ using Coberec.CoreLib;
 
 namespace Coberec.ExprCS
 {
+    /// <summary> Invokes `Function` (of type <see cref="FunctionType" />) with the given `Args` </summary>
     partial class InvokeExpression
     {
         static partial void ValidateObjectExtension(ref CoreLib.ValidationErrorsBuilder e, InvokeExpression ie)
