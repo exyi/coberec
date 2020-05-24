@@ -21,7 +21,7 @@ ExpressionFactory.Nullable_Value(a);
 
 To construct an instance of `Nullable<T>` of value null, it's enough to create a default value (since it's a struct) - `Expression.Default(TypeSignature.NullableOfT.Specialize(myType))`
 
-To construct an instance with some value, you just [call the constructor](constructor.md). To save you some work, there is a helper prepared - `Coberec.ExprCS.ExpressionFactory.Nullable_Create` that just wraps the value in a `Nullable<T>`.
+To construct an instance with some value, you just [call the constructor](creating-objects.md). To save you some work, there is a helper prepared - `Coberec.ExprCS.ExpressionFactory.Nullable_Create` that just wraps the value in a `Nullable<T>`.
 
 ### Null Helpers
 

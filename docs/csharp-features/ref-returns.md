@@ -1,8 +1,8 @@
 # References - `ref` returns, ...
 
-In .NET both ref returns and `ref` parameters (and `out`, `in`) are represented by "by ref" types. The type name ends with ampersand (`&`). In reflection, you can recognize the type by (`IsByRef` property)[https://docs.microsoft.com/en-us/dotnet/api/system.type.isbyref?view=netframework-4.8] and you can obtain the type by calling `Type.GetType("System.Int32&")`.
+In .NET both ref returns and `ref` parameters (and `out`, `in`) are represented by "by ref" types. The type name ends with ampersand (`&`). In reflection, you can recognize the type by [`IsByRef` property](https://docs.microsoft.com/en-us/dotnet/api/system.type.isbyref?view=netframework-4.8) and you can obtain the type by calling `Type.GetType("System.Int32&")`.
 
-In Coberec.ExprCS this is quite similar, you will not have to care where to put the C# `ref` keyword, just which expression or variable is of reference type and when are these references dereferenced. The reference type is represented by `Coberec.ExprCS.ByReferenceType` (which is member of `TypeReference` union) and you can use it in parameters and returns types. It's usage in fields is limited to `ref struct`, otherwise it's invalid (see the (C# docs)[https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/ref#ref-struct-types] for more info) <!-- TODO: tests&validation for this -->
+In Coberec.ExprCS this is quite similar, you will not have to care where to put the C# `ref` keyword, just which expression or variable is of reference type and when are these references dereferenced. The reference type is represented by `Coberec.ExprCS.ByReferenceType` (which is member of `TypeReference` union) and you can use it in parameters and returns types. It's usage in fields is limited to `ref struct`, otherwise it's invalid (see the (C# docs](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/ref#ref-struct-types) for more info) <!-- TODO: tests&validation for this -->
 
 ### Creating reference
 
@@ -59,7 +59,7 @@ Expression assignment =
     aRef.ReferenceCompoundAssign("+", Expression.Constant(100));
 ```
 
-> Note that this does not work for properties, since you can't take a reference to a property. There [another helper for properties](accessing-properties.md#accessing-properties), however.
+> Note that this does not work for properties, since you can't take a reference to a property. There are [other helpers for properties](accessing-properties.md#accessing-properties), however.
 
 ### Reference passing
 

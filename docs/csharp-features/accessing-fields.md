@@ -4,7 +4,7 @@ Fields store the data in classes and may read and written to from C# code. When 
 
 ### Accessing fields
 
-There is one universal expression that performs field access, the `Coberec.ExprCS.Expression.FieldAccess`. It returns a [reference](TODO), which may be read or written to.
+There is one universal expression that performs field access, the `Coberec.ExprCS.Expression.FieldAccess`. It returns a [reference](ref-returns.md), which may be read or written to.
 
 ```csharp
 FieldReference myProperty = ...;

@@ -159,15 +159,14 @@ More examples are on separate pages:
     - [Variables](docs/csharp-features/variables.md)
     - [Conditions](docs/csharp-features/conditions.md)
     - [Boolean Expressions](docs/csharp-features/boolean-expressions.md)
-    - [Boolean Expressions](docs/csharp-features/boolean-expressions.md)
     - [Arrays](docs/csharp-features/arrays.md)
     - [Functions as Values](docs/csharp-features/functions-as-values.md)
     - [References - `ref` returns, ...](docs/csharp-features/ref-returns.md)
     - [Nullable value types](docs/csharp-features/nullable-value-types.md)
-* [Metadata definitions](docs/metadata.md)
-* [Symbol Name Sanitization](docs/symbol-name-sanitization.md)
-* [Working with external symbols](docs/external-symbols.md)
-* [Internals](docs/internals.md)
+* [Metadata representation](docs/metadata.md) - the signatures, references and definitions
+* [Symbol Name Sanitization](docs/symbol-name-sanitization.md) - how ExprCS handles invalid or colliding names
+* [Working with external symbols](docs/external-symbols.md) - how to reference symbol which are not part of the generated code
+* [Internals](docs/internals.md) - the programmer's documentation, might be useful to know for extending the ExprCS functionality or for debugging problems
 
 Most of API is also covered by C# documentation comments. We recommend using an IDE to explore it. Alternatively, you can also browse the [Doxygen generated documentation](https://exyi.cz/coberec_doxygen/d7/d5f/namespaceCoberec_1_1ExprCS.html).
 

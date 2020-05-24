@@ -1,6 +1,6 @@
 # Boolean Expressions
 
-Boolean expression are mostly used as conditions for [if ... else expression](conditionals.md).
+Boolean expression are mostly used as conditions for [if ... else expression](conditions.md).
 
 ## Comparisons
 
