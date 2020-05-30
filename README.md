@@ -11,9 +11,17 @@ The tool is aiming at generating **COrrect REadable and BEautiful Code**, with p
 
 The C# code generator is based on the awesome [ILSpy decompiler](https://github.com/icsharpcode/ilspy), which makes sure that it produces quite nice looking code that always represents what was intended. C# is a very complex language, and it would be tough to accomplish the goals without using ILSpy's backend.
 
-## Table of contents
-
-
+* [GraphQL Schema -> C# compiler](#graphql-schema---c-classes)
+    - [Schema](#schema)
+    - [Installation](#installation)
+* [ExprCS - API for code generation](#exprcs)
+    - [Semantic model of the code](#semantic-model-of-the-code)
+    - [Expressions](#expressions)
+    - [Why?](#why)
+    - [Symbol naming in ExprCS](#names)
+    - [Example usage of the API](#example)
+    - [Using it - installation of ExprCS](#using-it)
+    - [Further reading - the documentation](#complete-exprcs-documentation)
 
 ## GraphQL Schema -> C# classes
 
@@ -54,6 +62,16 @@ interface WithId {
 ```
 
 More on this subproject is on [a separate page](docs/graphql-gen.md)
+
+### Installation
+
+Install [latest .NET Core](https://dotnet.microsoft.com/download/dotnet-core) and then install [`Coberec.CLI`](https://www.nuget.org/packages/Coberec.CLI/) package:
+
+```
+dotnet tool install -g Coberec.CLI
+```
+
+Then, you can run it as `coberec`
 
 ## ExprCS
 
@@ -147,6 +165,26 @@ var csharp = cx.EmitToString();
 More examples are on separate pages:
 * [Automatic ToString implementation](docs/examples/auto-toString.md)
 <!-- TODO -->
+
+### Using it
+
+Since ExprCS is still a project in experimental stage and because it depends on patched ILSpy, we do not have a NuGet package. However, installing libraries directly from git is quite easy with .NET Core.
+
+Note that you'll need .NET and Coberec installed, [see above](#installation).
+
+Clone the repository (incl. submodules):
+
+```bash
+git clone git@github.com:exyi/coberec.git --recursive
+```
+
+Or add it as a submodule:
+```bash
+git submodule add git@github.com:exyi/coberec.git
+git submodule update --init --recursive
+```
+
+You can run `dotnet test` the the coberec directory, to see if the downloaded version works. To reference ExprCS library, just add `<ProjectReference Include="../coberec/src/Coberec.ExprCS/Coberec.ExprCS.csproj" />` to your MsBuild file (`csproj`, `fsproj`, ...)
 
 ### Complete ExprCS documentation
 

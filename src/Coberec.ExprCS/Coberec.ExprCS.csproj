@@ -10,7 +10,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- <ProjectReference Include="../Coberec.CLI/Coberec.CLI.csproj" ReferenceOutputAssembly="false" PrivateAssets="All" /> -->
     <PackageReference Include="System.Memory" Version="4.5.3" />
     <PackageReference Include="XUnit.Assert" Version="2.4.1" />
     <ProjectReference Include="../Coberec.CoreLib/Coberec.CoreLib.csproj" />
@@ -19,31 +18,19 @@
     <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
   </ItemGroup>
 
-  <ItemGroup><!-- <Compile Include="../Coberec.CSharpGen/TypeSystem/**.cs" />
-    <Compile Include="../Coberec.CSharpGen/TupleComparer.cs" /> -->
-  
+  <ItemGroup>
+    <Compile Remove="Generated/*.cs" />
+
     <ProjectReference Include="..\Coberec.CSharpGenHelpers\Coberec.CSharpGenHelpers.csproj" />
   </ItemGroup>
-
-  <!-- <Target Name="BuildCoberec" BeforeTargets="BeforeCompile" Inputs="schema/**" Outputs="Generated/**.cs">
-    <ItemGroup>
-      <Compile Remove="Generated/**.cs" />
-    </ItemGroup>
-    <ItemGroup>
-      <Compile Include="Generated/**.cs" />
-    </ItemGroup>
-  </Target> -->
 
   <Target Name="ILSpyUpdateAssemblyInfo" BeforeTargets="BeforeBuild" Inputs="Schema/**" Outputs="Generated/**.cs">
     <PropertyGroup>
       <UpdateAssemblyInfo>coberec --config Schema/config.json --invertNonNullable Schema/**.gql --outDir Generated --verbose</UpdateAssemblyInfo>
     </PropertyGroup>
     <Exec WorkingDirectory="." Command="$(UpdateAssemblyInfo)" Timeout="60000" />
+    <ItemGroup>
+      <Compile Include="Generated/*.cs" />
+    </ItemGroup>
   </Target>
-    <ItemGroup>
-      <Compile Remove="Generated/**.cs" />
-    </ItemGroup>
-    <ItemGroup>
-      <Compile Include="Generated/**.cs" />
-    </ItemGroup>
 </Project>
