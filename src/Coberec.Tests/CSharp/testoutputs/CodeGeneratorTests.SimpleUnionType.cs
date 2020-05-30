@@ -120,7 +120,7 @@ namespace GeneratedProject.ModelNamespace
 			return With(field543.ValueOrDefault(Field543), abcSS.ValueOrDefault(AbcSS));
 		}
 	}
-	public abstract class Union123 : IEquatable<Union123>
+	public abstract class Union123 : ITraversableObject, IEquatable<Union123>
 	{
 		public sealed class Test123Case : Union123
 		{
@@ -128,14 +128,18 @@ namespace GeneratedProject.ModelNamespace
 				get;
 			}
 
-			public override string ToString()
-			{
-				return Item.ToString();
-			}
+			public sealed override string CaseName => "Test123";
+
+			public sealed override object RawItem => Item;
 
 			public Test123Case(Test123 item)
 			{
 				Item = item;
+			}
+
+			public override string ToString()
+			{
+				return Item.ToString();
 			}
 
 			public override T Match<T>(Func<Test123, T> test123, Func<string, T> @string)
@@ -161,14 +165,18 @@ namespace GeneratedProject.ModelNamespace
 				get;
 			}
 
-			public override string ToString()
-			{
-				return Item.ToString();
-			}
+			public sealed override string CaseName => "String";
+
+			public sealed override object RawItem => Item;
 
 			public StringCase(string item)
 			{
 				Item = item;
+			}
+
+			public override string ToString()
+			{
+				return Item.ToString();
 			}
 
 			public override T Match<T>(Func<Test123, T> test123, Func<string, T> @string)
@@ -188,9 +196,26 @@ namespace GeneratedProject.ModelNamespace
 			}
 		}
 
+		public abstract string CaseName {
+			get;
+		}
+
+		public abstract object RawItem {
+			get;
+		}
+
+		int ITraversableObject.PropertyCount => 1;
+
+		ImmutableArray<string> ITraversableObject.Properties => ImmutableArray.Create(CaseName);
+
 		public abstract T Match<T>(Func<Test123, T> test123, Func<string, T> @string);
 
 		public abstract override int GetHashCode();
+
+		object ITraversableObject.GetValue(int propIndex)
+		{
+			return RawItem;
+		}
 
 		private protected abstract bool EqualsCore(Union123 b);
 

@@ -53,7 +53,7 @@ namespace Coberec.CSharpGen.Emit
         public static Func<E.TypeDef, E.TypeDef> ImplementTraversableUnion(TypeSignature declaringType)
         {
             var caseName = UnionCaseName(declaringType, isPublic: true);
-            var rawItem = UnionCaseName(declaringType, isPublic: true);
+            var rawItem = UnionRawItem(declaringType, isPublic: true);
 
             var propertyCountProperty = CreatePropertyCount(declaringType, 1);
             var propertiesProperty = CreateProperties(declaringType, @this => ImmutableArray.Create(
@@ -69,13 +69,14 @@ namespace Coberec.CSharpGen.Emit
                 propertyCountProperty,
                 propertiesProperty,
                 getValueMethod
-            );
+            )
+            .AddImplements(ITraversableObjectType.Specialize());
         }
 
         public static Func<E.TypeDef, E.TypeDef> ImplementTraversableUnionCase(TypeSignature baseType, TypeSignature declaringType, FieldSignature itemField, string name)
         {
             var caseNameBase = UnionCaseName(baseType, isPublic: true);
-            var rawItemBase = UnionCaseName(baseType, isPublic: true);
+            var rawItemBase = UnionRawItem(baseType, isPublic: true);
 
             var caseName = PropertyDef.Create(
                 PropertySignature.Override(declaringType, caseNameBase),
@@ -84,9 +85,8 @@ namespace Coberec.CSharpGen.Emit
 
             var rawItem = PropertyDef.Create(
                 PropertySignature.Override(declaringType, rawItemBase),
-                @this => @this.Ref().ReadField(itemField)
+                @this => @this.Ref().ReadField(itemField).Box()
             );
-            
 
             return r => r.AddMember(
                 caseName,

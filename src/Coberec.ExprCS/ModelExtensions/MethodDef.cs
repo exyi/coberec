@@ -14,30 +14,33 @@ namespace Coberec.ExprCS
         {
             var sgn = obj.Signature;
             if (obj.Body is object && obj.Body.Type() != sgn.ResultType)
-                e.Add(ValidationErrors.Create($"Method body was expected {sgn.ResultType}, not {obj.Body.Type()}").Nest("body")); // TODO: expression type validation
-            if (obj.Body is null && !obj.Signature.IsAbstract && obj.Signature.DeclaringType.Kind != "interface")
+                e.Add(ValidationErrors.Create($"Method body was expected to return {sgn.ResultType}, not {obj.Body.Type()}").Nest("body")); // TODO: expression type validation
+            var isWithoutBody = obj.Signature.IsAbstract || obj.Signature.DeclaringType.Kind == "interface";
+            if (obj.Body is null && !isWithoutBody)
                 e.Add(ValidationErrors.Create($"Method is not abstract, so it must contain a body."));
-            if (obj.Body is object && (obj.Signature.IsAbstract || obj.Signature.DeclaringType.Kind == "interface"))
+            if (obj.Body is object && isWithoutBody)
                 e.Add(ValidationErrors.Create($"Method is abstract, so it must not contain a body."));
 
-            var expectedArgs = obj.Signature.Params.Select(p => p.Type).ToImmutableArray();
-            if (!sgn.IsStatic)
-                expectedArgs = expectedArgs.Insert(0, sgn.DeclaringType.SpecializeByItself());
-            if (obj.ArgumentParams.Length != expectedArgs.Length)
-                e.Add(ValidationErrors.Create($"Expected {expectedArgs.Length} arguments, got {obj.ArgumentParams.Length}: {FmtToken.FormatArray(obj.ArgumentParams)}").Nest("length").Nest("argumentParams"));
-            
-            for (int i = 0; i < Math.Min(obj.ArgumentParams.Length, expectedArgs.Length); i++)
+            if (!isWithoutBody)
             {
-                if (obj.ArgumentParams[i].Type.UnwrapReference() != expectedArgs[i].UnwrapReference())
-                    e.Add(ValidationErrors.Create($"Argument type {expectedArgs[i]} was expected instead of {obj.ArgumentParams[i].Type}.")
-                        .Nest("type").Nest(i.ToString()).Nest("argumentParams")
-                    );
+                var expectedArgs = obj.Signature.Params.Select(p => p.Type).ToImmutableArray();
+                if (!sgn.IsStatic)
+                    expectedArgs = expectedArgs.Insert(0, sgn.DeclaringType.SpecializeByItself());
+                if (obj.ArgumentParams.Length != expectedArgs.Length)
+                    e.Add(ValidationErrors.Create($"Expected {expectedArgs.Length} arguments, got {obj.ArgumentParams.Length}: {FmtToken.FormatArray(obj.ArgumentParams)}").Nest("length").Nest("argumentParams"));
+
+                for (int i = 0; i < Math.Min(obj.ArgumentParams.Length, expectedArgs.Length); i++)
+                {
+                    if (obj.ArgumentParams[i].Type.UnwrapReference() != expectedArgs[i].UnwrapReference())
+                        e.Add(ValidationErrors.Create($"Argument type {expectedArgs[i]} was expected instead of {obj.ArgumentParams[i].Type}.")
+                            .Nest("type").Nest(i.ToString()).Nest("argumentParams")
+                        );
+                }
             }
 
             // TODO: deep validate expression in the context
         }
 
-    
         public MethodDef(MethodSignature signature, IEnumerable<ParameterExpression> args, Expression body)
             : this(signature, args?.ToImmutableArray() ?? ImmutableArray<ParameterExpression>.Empty, body, ImmutableArray<MethodReference>.Empty) { }
 

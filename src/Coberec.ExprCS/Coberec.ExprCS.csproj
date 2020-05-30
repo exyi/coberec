@@ -24,11 +24,11 @@
     <ProjectReference Include="..\Coberec.CSharpGenHelpers\Coberec.CSharpGenHelpers.csproj" />
   </ItemGroup>
 
-  <Target Name="ILSpyUpdateAssemblyInfo" BeforeTargets="BeforeBuild" Inputs="Schema/**" Outputs="Generated/**.cs">
+  <Target Name="ILSpyUpdateAssemblyInfo" BeforeTargets="BeforeBuild" Inputs="Schema/*.gql" Outputs="Generated/*.cs">
     <PropertyGroup>
       <UpdateAssemblyInfo>coberec --config Schema/config.json --invertNonNullable Schema/**.gql --outDir Generated --verbose</UpdateAssemblyInfo>
     </PropertyGroup>
-    <Exec WorkingDirectory="." Command="$(UpdateAssemblyInfo)" Timeout="60000" />
+    <!-- <Exec WorkingDirectory="." Command="$(UpdateAssemblyInfo)" Timeout="60000" /> -->
     <ItemGroup>
       <Compile Include="Generated/*.cs" />
     </ItemGroup>

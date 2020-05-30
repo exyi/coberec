@@ -312,7 +312,7 @@ namespace Coberec.ExprCS
             {
                 var newReturnType = SymbolLoader.TypeRef(i.ReturnType);
                 var getter_s = property.Getter?.Signature.With(accessibility: Accessibility.APrivate, resultType: newReturnType);
-                var getter = property.Getter?.Apply(m => CreateMethodDefinition(cx, m.With(signature: getter_s), i.DeclaringType.FullName + "." + "get_" + name, isHidden: true, sneaky: true));
+                var getter = property.Getter?.Apply(m => CreateMethodDefinition(cx, m.With(signature: getter_s, body: m.Body.ReferenceConvert(getter_s.ResultType)), i.DeclaringType.FullName + "." + "get_" + name, isHidden: true, sneaky: true));
                 var setter_s = property.Setter?.Signature.With(accessibility: Accessibility.APrivate);
                 var setter = property.Setter?.Apply(m => CreateMethodDefinition(cx, m.With(signature: setter_s), i.DeclaringType.FullName + "." + "set_" + name, isHidden: true, sneaky: true));
                 var p2 = new VirtualProperty(type, TS.Accessibility.Private, i.DeclaringType.FullName + "." + i.Name, getter, setter, explicitImplementations: new IMember[] { i });

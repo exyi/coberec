@@ -1,8 +1,10 @@
+using Coberec.CoreLib;
 using System;
+using System.Collections.Immutable;
 
 namespace GeneratedProject.ModelNamespace
 {
-	public abstract class Expression : IEquatable<Expression>
+	public abstract class Expression : ITraversableObject, IEquatable<Expression>
 	{
 		public sealed class ConstantCase : Expression
 		{
@@ -10,14 +12,18 @@ namespace GeneratedProject.ModelNamespace
 				get;
 			}
 
-			public override string ToString()
-			{
-				return Item.ToString();
-			}
+			public sealed override string CaseName => "Constant";
+
+			public sealed override object RawItem => Item;
 
 			public ConstantCase(string item)
 			{
 				Item = item;
+			}
+
+			public override string ToString()
+			{
+				return Item.ToString();
 			}
 
 			public override T Match<T>(Func<string, T> constant, Func<string, T> constantExpression)
@@ -43,14 +49,18 @@ namespace GeneratedProject.ModelNamespace
 				get;
 			}
 
-			public override string ToString()
-			{
-				return Item.ToString();
-			}
+			public sealed override string CaseName => "ConstantExpression";
+
+			public sealed override object RawItem => Item;
 
 			public ConstantExpressionCase(string item)
 			{
 				Item = item;
+			}
+
+			public override string ToString()
+			{
+				return Item.ToString();
 			}
 
 			public override T Match<T>(Func<string, T> constant, Func<string, T> constantExpression)
@@ -70,9 +80,26 @@ namespace GeneratedProject.ModelNamespace
 			}
 		}
 
+		public abstract string CaseName {
+			get;
+		}
+
+		public abstract object RawItem {
+			get;
+		}
+
+		int ITraversableObject.PropertyCount => 1;
+
+		ImmutableArray<string> ITraversableObject.Properties => ImmutableArray.Create(CaseName);
+
 		public abstract T Match<T>(Func<string, T> constant, Func<string, T> constantExpression);
 
 		public abstract override int GetHashCode();
+
+		object ITraversableObject.GetValue(int propIndex)
+		{
+			return RawItem;
+		}
 
 		private protected abstract bool EqualsCore(Expression b);
 

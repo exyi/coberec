@@ -434,7 +434,7 @@ namespace Coberec.CSharpGen
                     var caseType_ = (VirtualType)E.MetadataDefiner.GetTypeReference(cx.Metadata, caseType.Signature);
                     var caseCtor_ = E.MetadataDefiner.GetMethod(cx.Metadata, caseCtor.Signature);
 
-                    var valueProperty = caseType_.Properties.Single();
+                    var valueProperty = caseType_.Properties.Single(p => !p.IsOverride);
                     caseCtors.Add(caseCtor_);
 
                     caseType_.ImplementEqualityForCase(abstractEqCore, valueProperty);
