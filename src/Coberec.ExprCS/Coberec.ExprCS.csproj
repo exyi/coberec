@@ -33,4 +33,17 @@
       <Compile Include="Generated/**.cs" />
     </ItemGroup>
   </Target> -->
+
+  <Target Name="ILSpyUpdateAssemblyInfo" BeforeTargets="BeforeBuild" Inputs="Schema/**" Outputs="Generated/**.cs">
+    <PropertyGroup>
+      <UpdateAssemblyInfo>coberec --config Schema/config.json --invertNonNullable Schema/**.gql --outDir Generated --verbose</UpdateAssemblyInfo>
+    </PropertyGroup>
+    <Exec WorkingDirectory="." Command="$(UpdateAssemblyInfo)" Timeout="60000" />
+  </Target>
+    <ItemGroup>
+      <Compile Remove="Generated/**.cs" />
+    </ItemGroup>
+    <ItemGroup>
+      <Compile Include="Generated/**.cs" />
+    </ItemGroup>
 </Project>
