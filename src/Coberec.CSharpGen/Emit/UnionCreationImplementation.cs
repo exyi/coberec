@@ -15,11 +15,13 @@ namespace Coberec.CSharpGen.Emit
         public static IMethod ImplementBasicCaseFactory(this VirtualType type, string caseName, IMethod caseCtor)
         {
             var valueType = caseCtor.Parameters.Single().Type;
+            var doccomment = (valueType.GetDefinition() as IWithDoccomment)?.Doccomment;
             var caseFactory = new VirtualMethod(type, Accessibility.Public,
                 E.SymbolNamer.NameMethod(type, caseName, 0, new [] { valueType }, isOverride: false),
                 new[] { new VirtualParameter(valueType, "item") },
                 returnType: type,
-                isStatic: true
+                isStatic: true,
+                doccomment: doccomment
             );
             caseFactory.BodyFactory = () =>
                 EmitExtensions.CreateExpressionFunction(caseFactory,
@@ -100,7 +102,8 @@ namespace Coberec.CSharpGen.Emit
                 E.SymbolNamer.NameMethod(type, caseName, 0, valueTypeCtor.Parameters, isOverride: false),
                 valueTypeCtor.Parameters,
                 returnType: type,
-                isStatic: true
+                isStatic: true,
+                doccomment: (valueTypeCtor as IWithDoccomment)?.Doccomment
             );
             caseFactory.BodyFactory = () => {
                 var call = new IL.NewObj(valueTypeCtor);

@@ -9,12 +9,13 @@ using Coberec.CoreLib;
 using Coberec.CSharpGen.TypeSystem;
 using IL=ICSharpCode.Decompiler.IL;
 using E=Coberec.ExprCS;
+using M=Coberec.MetaSchema;
 
 namespace Coberec.CSharpGen.Emit
 {
     public static class WithMethodImplementation
     {
-        static VirtualMethod CreateSignatureCore(VirtualType type, IEnumerable<(IType type, string desiredName)> properties, bool isOptional, bool returnValidationResult)
+        static VirtualMethod CreateSignatureCore(VirtualType type, IEnumerable<(IType type, string desiredName)> properties, bool isOptional, bool returnValidationResult, string doccomment)
         {
             IType optParamType(IType t) => isOptional ? new ParameterizedType(type.Compilation.FindType(typeof(OptParam<>)), new [] { t }) : t;
 
@@ -24,10 +25,10 @@ namespace Coberec.CSharpGen.Emit
                              new ParameterizedType(type.Compilation.FindType(typeof(ValidationResult<>)), new [] { type }) :
                              (IType)type;
 
-            return new VirtualMethod(type, Accessibility.Public, withName, parameters, returnType);
+            return new VirtualMethod(type, Accessibility.Public, withName, parameters, returnType, doccomment: doccomment);
         }
 
-        public static E.MethodDef InterfaceWithMethod(E.TypeSignature type, (E.TypeReference type, string desiredName)[] properties, bool isOptional, bool returnValidationResult = true)
+        public static E.MethodDef InterfaceWithMethod(E.TypeSignature type, (E.TypeReference type, string desiredName)[] properties, M.TypeDef typeDef, bool isOptional, bool returnValidationResult = true)
         {
             Debug.Assert(type.Kind == "interface");
 
@@ -37,7 +38,10 @@ namespace Coberec.CSharpGen.Emit
                              new E.SpecializedType(type);
 
             var method = E.MethodSignature.Instance("With", type, E.Accessibility.APublic, returnType, properties.Select((p) => new E.MethodParameter(optParamType(p.type), p.desiredName, isOptional, null, isParams: false)).ToArray());
-            return new E.MethodDef(method, null, null);
+
+            var comment = ObjectConstructionImplementation.CreateCtorDocumentation(typeDef, text: "Sets the specified properties while cloning the implementation of");
+
+            return new E.MethodDef(method, null, null).With(doccomment: comment);
         }
 
         static IType UnwrapOptParam(IType t) =>
@@ -101,12 +105,14 @@ namespace Coberec.CSharpGen.Emit
             return method;
         }
 
-        public static IMethod ImplementWithMethod(this VirtualType type, IMethod factory, IMember[] properties, bool returnValidationResult = true)
+        public static IMethod ImplementWithMethod(this VirtualType type, IMethod factory, IMember[] properties, M.TypeDef typeDef, bool returnValidationResult = true)
         {
             var ctorParameters = factory.Parameters;
             Debug.Assert(properties.Zip(ctorParameters, (prop, param) => prop.ReturnType.Equals(param.Type)).All(a=>a));
 
-            var method = CreateSignatureCore(type, properties.Zip(ctorParameters, (prop, param) => (prop.ReturnType, param.Name)), isOptional: false, returnValidationResult: returnValidationResult);
+            var comment = ObjectConstructionImplementation.CreateCtorDocumentation(typeDef, text: "Sets the specified properties while cloning the");
+
+            var method = CreateSignatureCore(type, properties.Zip(ctorParameters, (prop, param) => (prop.ReturnType, param.Name)), isOptional: false, returnValidationResult: returnValidationResult, doccomment: comment?.Value);
 
             Debug.Assert(factory.IsConstructor || factory.ReturnType.Equals(method.ReturnType));
 
@@ -136,10 +142,12 @@ namespace Coberec.CSharpGen.Emit
             return method;
         }
 
-        public static IMethod ImplementOptionalWithMethod(this VirtualType type, IMethod withMethod, IMember[] properties)
+        public static IMethod ImplementOptionalWithMethod(this VirtualType type, IMethod withMethod, IMember[] properties, M.TypeDef typeDef)
         {
             var returnValidationResult = withMethod.ReturnType.FullName == typeof(ValidationResult).FullName;
-            var method = CreateSignatureCore(type, withMethod.Parameters.Select(p => (p.Type, p.Name)), isOptional: true, returnValidationResult);
+            var comment = ObjectConstructionImplementation.CreateCtorDocumentation(typeDef, text: "Sets the specified properties while cloning the");
+
+            var method = CreateSignatureCore(type, withMethod.Parameters.Select(p => (p.Type, p.Name)), isOptional: true, returnValidationResult, doccomment: comment?.Value);
 
             method.BodyFactory = () => {
                 var thisParam = new IL.ILVariable(IL.VariableKind.Parameter, type, -1);

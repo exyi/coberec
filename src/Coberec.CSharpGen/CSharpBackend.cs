@@ -125,6 +125,8 @@ namespace Coberec.CSharpGen
                     primitive: primitive => GenerateScalar(type, primitive, def),
                     union: union => GenerateUnion(type, union, def),
                     @interface: ifc => GenerateInterface(type, ifc, def));
+                if (def.Description is object)
+                    result.type = result.type.With(doccomment: SummaryComment(def.Description));
             }
             catch (ValidationErrorException ex)
             {
@@ -147,6 +149,11 @@ namespace Coberec.CSharpGen
             return result;
         }
 
+        static E.XmlComment SummaryComment(string description) =>
+            description is object ?
+            new E.XmlComment($"<summary> {description} </summary>") :
+            null;
+
         private (E.TypeDef, TypeSymbolNameMapping) GenerateInterface(E.TypeSignature type, TypeDefCore.InterfaceCase ifc, TypeDef typeDef)
         {
             var specialSymbols = new Dictionary<string, string>();
@@ -162,13 +169,14 @@ namespace Coberec.CSharpGen
             }
 
             var result = E.TypeDef.Empty(type)
-                         .AddMember(props.Select(p => E.PropertyDef.InterfaceDef(p.prop)).ToArray());
+                         .AddMember(props.Select(p => E.PropertyDef.InterfaceDef(p.prop, SummaryComment(p.schema.Description))).ToArray());
 
             if (cx.Settings.EmitInterfaceWithMethods)
             {
                 var withMethod = WithMethodImplementation.InterfaceWithMethod(
                     type,
                     props.Select(p => (p.prop.Type, p.schema.Name)).ToArray(),
+                    typeDef,
                     isOptional: cx.Settings.EmitOptionalWithMethods && props.Count > 1,
                     returnValidationResult: cx.Settings.WithMethodReturnValidationResult
                 );
@@ -206,7 +214,7 @@ namespace Coberec.CSharpGen
                 needsNoValidationConstructor: true,
                 validateMethodExtension: valExtension?.Signature);
 
-            var (createFn, _) = type.AddCreateFunction(cx, validateMethod?.Signature, noValCtor.Signature, null);
+            var (createFn, _) = type.AddCreateFunction(cx, validateMethod?.Signature, noValCtor.Signature, null, typeDef);
 
             cx.Metadata.RegisterTypeMod(type, _ => { }, vtype => {
 
@@ -241,7 +249,7 @@ namespace Coberec.CSharpGen
             foreach (var f in composite.Fields)
             {
                 var propType = FindType(f.Type);
-                var (field, prop) = E.PropertyBuilders.CreateAutoProperty(type, f.Name, propType);
+                var (field, prop) = E.PropertyBuilders.CreateAutoProperty(type, f.Name, propType, doccomment: SummaryComment(f.Description));
 
                 // explicitly implement the interface
                 foreach (var i in composite.Implements)
@@ -288,7 +296,7 @@ namespace Coberec.CSharpGen
                 needsNoValidationConstructor: true,
                 validateMethodExtension: valExtension?.Signature);
 
-            var (createFn, benevolentCreate) = type.AddCreateFunction(cx, validateMethod?.Signature, noValCtor.Signature, default);
+            var (createFn, benevolentCreate) = type.AddCreateFunction(cx, validateMethod?.Signature, noValCtor.Signature, default, typeDef);
 
             result = result.AddMember(noValCtor, (object)publicCtor == noValCtor ? null : publicCtor, benevolentCtor, validateMethod, createFn, benevolentCreate, valExtension);
 
@@ -318,9 +326,9 @@ namespace Coberec.CSharpGen
                 IMethod withMethod = null;
                 if (cx.Settings.EmitWithMethods)
                 {
-                    withMethod = vtype.ImplementWithMethod(E.MetadataDefiner.GetMethod(cx.Metadata, cx.Settings.WithMethodReturnValidationResult ? createFn.Signature : publicCtor.Signature), properties, cx.Settings.WithMethodReturnValidationResult);
+                    withMethod = vtype.ImplementWithMethod(E.MetadataDefiner.GetMethod(cx.Metadata, cx.Settings.WithMethodReturnValidationResult ? createFn.Signature : publicCtor.Signature), properties, typeDef, cx.Settings.WithMethodReturnValidationResult);
                     if (cx.Settings.EmitOptionalWithMethods && properties.Length > 1)
-                        vtype.ImplementOptionalWithMethod(withMethod, properties);
+                        vtype.ImplementOptionalWithMethod(withMethod, properties, typeDef);
                 }
 
                 foreach (var i in interfaces)
@@ -372,6 +380,12 @@ namespace Coberec.CSharpGen
                     nullable: x => name(x.Type),
                     list: x => name(x.Type) + "List"
                 );
+            TypeDef findLocalType(TypeRef t) =>
+                t.Match(
+                    actual: x => this.typeSchemas.TryGetValue(x.TypeName, out var t) ? t : null,
+                    list: x => findLocalType(x),
+                    nullable: x => findLocalType(x)
+                );
             var names = union.Options.Select(name).ToArray();
 
             var cases = union.Options.Select((schema, index) => {
@@ -389,14 +403,17 @@ namespace Coberec.CSharpGen
                     type,
                     E.Accessibility.APublic
                 );
-                var def = E.TypeDef.Empty(caseType).With(extends: type.SpecializeByItself());
                 var valueType = FindType(schema);
                 var (field, prop) = E.PropertyBuilders.CreateAutoProperty(caseType, "Item", valueType);
                 var caseCtor = caseType.AddCreateConstructor(cx, new[] { ("item", field.Signature.SpecializeFromDeclaringType()) });
 
-                def = def.AddMember(caseCtor, field, prop);
-
-                def = def.AddMember(E.MethodDef.Create(
+                var caseDescription = findLocalType(schema)?.Description;
+                var def = E.TypeDef.Empty(caseType).With(
+                    extends: type.SpecializeByItself(),
+                    doccomment: SummaryComment(caseDescription)
+                );
+                def = def.AddMember(caseCtor, field, prop)
+                         .AddMember(E.MethodDef.Create(
                     E.MethodSignature.Override(caseType, E.MethodSignature.Object_ToString),
                     @this => E.FluentExpression.CallMethod(E.FluentExpression.Box(E.FluentExpression.ReadProperty(@this, prop.Signature)), E.MethodSignature.Object_ToString)
                 ));

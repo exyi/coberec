@@ -372,6 +372,38 @@ type a {
             check.CheckString(result, fileExtension: "cs");
         }
 
+        [Fact]
+        public void DocumentationComments()
+        {
+            var schema = GraphqlLoader.Helpers.ParseSchema(@"
+# comment for type A
+type A implements Ifc {
+        # comment for propA
+		propA: String
+        # comment for propAX
+		propAX: String
+}
+
+# comment for type B
+type B {
+        # comment for propB
+		propB: Boolean
+}
+
+# comment for interface Ifc
+interface Ifc {
+    propA: String
+}
+
+# comment for union U
+union U = A | B
+"
+                , invertNonNull: true);
+            var result = CSharpBackend.Build(schema, DefaultSettings);
+            CheckItCompiles(result);
+            check.CheckString(result, fileExtension: "cs");
+        }
+
         // [Property(MaxTest = 2000, EndSize = 10_000)]
         // [Property(MaxTest = 600, EndSize = 3_000)]
         [Property]

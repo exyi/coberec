@@ -24,8 +24,8 @@ namespace Coberec.ExprCS
             );
 
         /// <summary> Creates an empty property definition. Useful when declaring an interface. </summary>
-        public static PropertyDef InterfaceDef(PropertySignature signature) =>
-            new PropertyDef(signature, signature.Getter?.Apply(MethodDef.InterfaceDef), signature.Setter?.Apply(MethodDef.InterfaceDef));
+        public static PropertyDef InterfaceDef(PropertySignature signature, XmlComment doccomment = null) =>
+            new PropertyDef(signature, signature.Getter?.Apply(MethodDef.InterfaceDef), signature.Setter?.Apply(MethodDef.InterfaceDef), ImmutableArray<PropertyReference>.Empty, doccomment);
 
         /// <summary> Marks the property definition as implementation of the specified interface properties. </summary>
         public PropertyDef AddImplements(params PropertyReference[] interfaceMethods) =>

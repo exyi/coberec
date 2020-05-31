@@ -16,8 +16,6 @@ namespace Coberec.MetaSchema
             Directives = directives.ToImmutableArray();
         }
 
-        
-
         public string Name { get; }
         public TypeRef Type { get; }
         public string Description { get; }

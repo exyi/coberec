@@ -102,21 +102,21 @@ namespace Coberec.CSharpGen.Emit
         }
 
         /// Either adds default values to the parameters or add entire new overload that is more benevolent
-        static (MethodDef main, MethodDef benevolentOverload) CreateBenevolentMethod(MethodSignature method, ImmutableArray<Expression> defaults, Func<ImmutableArray<Expression>, Expression> createBody)
+        static (MethodDef main, MethodDef benevolentOverload) CreateBenevolentMethod(MethodSignature method, ImmutableArray<Expression> defaults, Func<ImmutableArray<Expression>, Expression> createBody, XmlComment doccomment = null)
         {
             var (method2, transforms, isDifferent) = CreateBenevolentSignature(method, defaults);
             if (isDifferent)
             {
                 var main = MethodDef.CreateWithArray(method, args => createBody(args.EagerSelect(Expression.Parameter)));
                 var benevolent = CreateBenevolentDef(main.Signature, method2, transforms);
-                return (main, benevolent);
+                return (main.With(doccomment: doccomment), benevolent.With(doccomment: doccomment));
             }
             else
             {
                 if (!method2.IsStatic)
                     transforms = transforms.Insert(0, e => e);
                 var main = MethodDef.CreateWithArray(method2, args => createBody(args.EagerZip(transforms, (a, t) => t(a))));
-                return (main, null);
+                return (main.With(doccomment: doccomment), null);
             }
         }
 
@@ -154,6 +154,29 @@ namespace Coberec.CSharpGen.Emit
 
         }
 
+        /// <param name="typeSchema"></param>
+        public static XmlComment CreateCtorDocumentation(M.TypeDef typeSchema, int unionCase = -1, string text = "Creates new instance of")
+        {
+            var summary =
+                typeSchema.Description is string description ?
+                $"<summary> {text} {typeSchema.Name}: {description} </summary>\n" :
+                null;
+            var props =
+                typeSchema.Core.Match(
+                    primitive: p => new [] { ("value", (string)null) },
+                    union: p => new (string, string)[] { },
+                    @interface: i => i.Fields.Select(f => (f.Name,f.Description)),
+                    composite: c => c.Fields.Select(f => (f.Name, f.Description))
+                );
+            var paramComments =
+                props.Where(p => p.Description != null)
+                     .Select(p => $"<param name=\"{p.Name}\">{p.Description}</param>")
+                     .ToArray();
+            if (!paramComments.Any() && summary is object)
+                return null;
+            return new XmlComment(summary + string.Join("\n", paramComments));
+        }
+
         public static (MethodDef noValidationConstructor, MethodDef validatingConstructor, MethodDef benevolentConstructor, MethodDef validationMethod, ImmutableArray<Expression> defaultValues) AddObjectCreationStuff(
             this TypeSignature type,
             EmitContext cx,
@@ -166,6 +189,7 @@ namespace Coberec.CSharpGen.Emit
         {
             var defaultValues = GetDefaultParameterValues(fields);
 
+            var ctorComment = CreateCtorDocumentation(typeSchema);
             var fieldNames = fields.Select(f => (f.schema.Name, f.field)).ToArray();
             var validator = ValidationImplementation.ImplementValidateIfNeeded(type, cx, typeSchema, validators, fieldNames, validateMethodExtension);
             var privateNoValidationVersion = needsNoValidationConstructor && validator is object;
@@ -174,6 +198,8 @@ namespace Coberec.CSharpGen.Emit
                 privateNoValidationVersion ?
                 AddValidatingConstructor(type, cx, ctor1core.sgn, validator.Signature, defaultValues) :
                 CreateBenevolentMethod(ctor1core.sgn, defaultValues, ctor1core.body);
+            validatedCtor = validatedCtor?.With(doccomment: ctorComment);
+            benevolentCtor = benevolentCtor?.With(doccomment: ctorComment);
 
             var noValCtor = privateNoValidationVersion ? MethodDef.CreateWithArray(ctor1core.sgn, args => ctor1core.body(args.EagerSelect(Expression.Parameter))) :
                             validator is null          ? validatedCtor :
@@ -232,7 +258,8 @@ namespace Coberec.CSharpGen.Emit
             EmitContext cx,
             MethodReference validationMethod,
             MethodReference constructor,
-            ImmutableArray<Expression>? defaultValues)
+            ImmutableArray<Expression>? defaultValues,
+            M.TypeDef typeSchema)
         {
 
             var returnType = TypeSignature.FromType(typeof(ValidationResult<>)).Specialize(type);
@@ -244,6 +271,8 @@ namespace Coberec.CSharpGen.Emit
             var method = MethodSignature.Static("Create", type, Accessibility.APublic, returnType, parameters);
 
             defaultValues ??= ImmutableArray.Create(new Expression[method.Params.Length]);
+
+            var ctorComment = CreateCtorDocumentation(typeSchema);
 
             return CreateBenevolentMethod(method, defaultValues.Value, p => {
                 var resultLocal = ParameterExpression.Create(type, "result");
@@ -267,7 +296,7 @@ namespace Coberec.CSharpGen.Emit
 
                 return returnExpr
                        .Where(resultLocal, createCall);
-            });
+            }, doccomment: ctorComment);
         }
     }
 }

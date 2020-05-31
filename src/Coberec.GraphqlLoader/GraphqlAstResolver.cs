@@ -49,7 +49,7 @@ namespace Coberec.GraphqlLoader
             new TypeField(
                 f.Name.Value,
                 ProcessTypeName(f.Type),
-                description: null,
+                description: f.Comment?.Text?.Trim(),
                 f.Directives.Select(ProcessDirective)
             );
 
@@ -89,7 +89,8 @@ namespace Coberec.GraphqlLoader
                 TypeDefCore.Composite(
                     obj.Fields.Select(ProcessTypeField),
                     obj.Interfaces.Select(i => ProcessTypeName(i, true))
-                )
+                ),
+                obj.Comment?.Text?.Trim()
             );
         public TypeDef ProcessInterface(G.AST.GraphQLInterfaceTypeDefinition ifc) =>
             new TypeDef(
@@ -97,7 +98,8 @@ namespace Coberec.GraphqlLoader
                 ifc.Directives.Select(ProcessDirective),
                 TypeDefCore.Interface(
                     ifc.Fields.Select(ProcessTypeField)
-                )
+                ),
+                ifc.Comment?.Text?.Trim()
             );
         public TypeDef ProcessUnion(G.AST.GraphQLUnionTypeDefinition ifc) =>
             new TypeDef(
@@ -105,14 +107,16 @@ namespace Coberec.GraphqlLoader
                 ifc.Directives.Select(ProcessDirective),
                 TypeDefCore.Union(
                     ifc.Types.Select(t => ProcessTypeName(t, true))
-                )
+                ),
+                ifc.Comment?.Text?.Trim()
             );
 
         public TypeDef ProcessScalarDef(G.AST.GraphQLScalarTypeDefinition scalar) =>
             new TypeDef(
                 scalar.Name.Value,
                 scalar.Directives.Select(ProcessDirective),
-                TypeDefCore.Primitive()
+                TypeDefCore.Primitive(),
+                scalar.Comment?.Text?.Trim()
             );
 
         internal GraphQLSyntaxErrorException Error(string message, ASTNode contextNode) =>

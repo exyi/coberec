@@ -8,16 +8,18 @@ namespace Coberec.MetaSchema
 {
     public class TypeDef: ITokenFormatable
     {
-        public TypeDef(string name, IEnumerable<Directive> directives, TypeDefCore core)
+        public TypeDef(string name, IEnumerable<Directive> directives, TypeDefCore core, string description = null)
         {
             Name = name;
             Directives = directives.ToImmutableArray();
             Core = core;
+            Description = description;
         }
 
         public string Name { get; }
         public ImmutableArray<Directive> Directives { get; }
         public TypeDefCore Core { get; }
+        public string Description { get; }
 
         FmtToken FormatDirectives() =>
             FmtToken.Concat(Directives.Select(d => FmtToken.Concat(d, " ")))
