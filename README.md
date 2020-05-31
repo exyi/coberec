@@ -170,7 +170,11 @@ More examples are on separate pages:
 
 Since ExprCS is still a project in experimental stage and because it depends on patched ILSpy, we do not have a NuGet package. However, installing libraries directly from git is quite easy with .NET Core.
 
-Note that you'll need .NET and Coberec installed, [see above](#installation).
+Note that you'll need .NET and Coberec installed, [see above](#installation):
+
+```bash
+dotnet tool install -g Coberec.CLI --version 0.3.0
+```
 
 Clone the repository (incl. submodules):
 
