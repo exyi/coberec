@@ -7,9 +7,9 @@ using ICSharpCode.Decompiler.TypeSystem.Implementation;
 
 namespace Coberec.CSharpGen.TypeSystem
 {
-    public sealed class VirtualField : IField, IHideableMember
+    public sealed class VirtualField : IField, IHideableMember, IWithDoccomment
     {
-        public VirtualField(ITypeDefinition declaringTypeDefinition, Accessibility accessibility, string name, IType returnType, bool isReadOnly = true, bool isVolatile = false, bool isStatic = false, bool isHidden = false)
+        public VirtualField(ITypeDefinition declaringTypeDefinition, Accessibility accessibility, string name, IType returnType, bool isReadOnly = true, bool isVolatile = false, bool isStatic = false, bool isHidden = false, string doccomment = null)
         {
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
             this.IsReadOnly = isReadOnly;
@@ -21,9 +21,10 @@ namespace Coberec.CSharpGen.TypeSystem
             this.IsConst = false;
             this.ConstantValue = null;
             this.IsHidden = isHidden;
+            this.Doccomment = doccomment;
         }
 
-        public VirtualField(ITypeDefinition declaringTypeDefinition, Accessibility accessibility, string name, IType returnType, bool isConst, object defaltValue)
+        public VirtualField(ITypeDefinition declaringTypeDefinition, Accessibility accessibility, string name, IType returnType, bool isConst, object defaltValue, string doccomment = null)
         {
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
             this.IsReadOnly = true;
@@ -34,6 +35,7 @@ namespace Coberec.CSharpGen.TypeSystem
             this.IsStatic = true;
             this.IsConst = isConst;
             this.ConstantValue = defaltValue;
+            this.Doccomment = doccomment;
         }
 
         public string Name { get; }
@@ -91,6 +93,8 @@ namespace Coberec.CSharpGen.TypeSystem
         public SymbolKind SymbolKind => SymbolKind.Field;
 
         public bool IsHidden { get; }
+
+        public string Doccomment { get; }
 
         public bool Equals(IMember obj, TypeVisitor typeNormalization) =>
             this.DeclaringTypeDefinition.AcceptVisitor(typeNormalization).Equals(

@@ -30,7 +30,7 @@ namespace Coberec.JsonSerialization
                 var serMap = cases.Zip(names, (c, n) => new {
                     c,
                     n,
-                    extractObject = Expression.Lambda<Func<object, object>>(Expression.Property(Expression.Convert(objParam, c), c.GetProperties(BindingFlags.Public | BindingFlags.Instance).Single()), new [] { objParam }).Compile()
+                    extractObject = Expression.Lambda<Func<object, object>>(Expression.Property(Expression.Convert(objParam, c), c.GetProperties(BindingFlags.Public | BindingFlags.Instance).Single(p => !p.GetMethod.IsVirtual)), new [] { objParam }).Compile()
                 }).ToDictionary(x => x.c, x => (x.n, x.extractObject));
 
                 var desMap = cases.Zip(names, (c, n) => {

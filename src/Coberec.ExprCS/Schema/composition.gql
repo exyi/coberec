@@ -1,5 +1,6 @@
 interface MemberDef {
     signature: MemberSignature
+    doccomment: XmlComment!
 }
 
 type MethodDef implements MemberDef {
@@ -7,10 +8,12 @@ type MethodDef implements MemberDef {
     argumentParams: [ParameterExpression]
     body: Expression!
     implements: [MethodReference]
+    doccomment: XmlComment! @default(value: null)
 }
 
 type FieldDef implements MemberDef {
     signature: FieldSignature
+    doccomment: XmlComment! @default(value: null)
 }
 
 type PropertyDef implements MemberDef {
@@ -18,6 +21,7 @@ type PropertyDef implements MemberDef {
     getter: MethodDef!
     setter: MethodDef!
     implements: [PropertyReference]
+    doccomment: XmlComment! @default(value: null)
 }
 
 type TypeDef implements MemberDef {
@@ -25,8 +29,11 @@ type TypeDef implements MemberDef {
     extends: SpecializedType!
     implements: [SpecializedType]
     members: [MemberDef]
+    doccomment: XmlComment! @default(value: null)
 }
 
 type ModuleDef {
     topLevelTypes: [TypeDef]
 }
+
+scalar XmlComment @validateXml(forFields: ["value"])

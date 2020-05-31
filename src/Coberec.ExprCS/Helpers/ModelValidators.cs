@@ -52,5 +52,12 @@ namespace Coberec.ExprCS
             };
             return err;
         }
+
+
+        public static ValidationErrors XmlComment(string xml)
+        {
+            // TODO: validate xml
+            return null;
+        }
     }
 }

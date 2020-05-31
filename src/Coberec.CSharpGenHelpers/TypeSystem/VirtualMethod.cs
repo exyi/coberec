@@ -13,9 +13,9 @@ using ICSharpCode.Decompiler.Util;
 namespace Coberec.CSharpGen.TypeSystem
 {
 
-    public sealed class VirtualMethod : IMethod, IMethodWithDefinition, IHideableMember
+    public sealed class VirtualMethod : IMethod, IMethodWithDefinition, IHideableMember, IWithDoccomment
     {
-        public VirtualMethod(ITypeDefinition declaringType, Accessibility accessibility, string name, IReadOnlyList<IParameter> parameters, IType returnType, bool isOverride = false, bool isVirtual = false, bool isSealed = false, bool isAbstract = false, bool isStatic = false, bool isHidden = false, IEnumerable<IMember> explicitImplementations = null)
+        public VirtualMethod(ITypeDefinition declaringType, Accessibility accessibility, string name, IReadOnlyList<IParameter> parameters, IType returnType, bool isOverride = false, bool isVirtual = false, bool isSealed = false, bool isAbstract = false, bool isStatic = false, bool isHidden = false, IEnumerable<IMember> explicitImplementations = null, string doccomment = null)
         {
             this.DeclaringTypeDefinition = declaringType ?? throw new ArgumentNullException(nameof(declaringType)); ;
             this.ReturnType = returnType ?? throw new ArgumentNullException(nameof(returnType));
@@ -31,10 +31,11 @@ namespace Coberec.CSharpGen.TypeSystem
             this.TypeParameters = Array.Empty<ITypeParameter>();
             this.ExplicitlyImplementedInterfaceMembers = explicitImplementations?.ToArray() ?? Array.Empty<IMember>();
             this.ThisIsRefReadOnly = declaringType.IsReadOnly;
+            this.Doccomment = doccomment;
         }
 
         /// generic method require dependency on the type parameters, which have dependency on its owner :/ So everything has to be lazy loaded after generic parameters are instantiated :(
-        public VirtualMethod(ITypeDefinition declaringType, Accessibility accessibility, string name, Func<IMethod, IReadOnlyList<IParameter>> parameters, Func<IMethod, IType> returnType, bool isOverride = false, bool isVirtual = false, bool isSealed = false, bool isAbstract = false, bool isStatic = false, bool isHidden = false, Func<IEntity, int, ITypeParameter>[] typeParameters = null, IEnumerable<IMember> explicitImplementations = null)
+        public VirtualMethod(ITypeDefinition declaringType, Accessibility accessibility, string name, Func<IMethod, IReadOnlyList<IParameter>> parameters, Func<IMethod, IType> returnType, bool isOverride = false, bool isVirtual = false, bool isSealed = false, bool isAbstract = false, bool isStatic = false, bool isHidden = false, Func<IEntity, int, ITypeParameter>[] typeParameters = null, IEnumerable<IMember> explicitImplementations = null, string doccomment = null)
         {
             this.DeclaringTypeDefinition = declaringType ?? throw new ArgumentNullException(nameof(declaringType)); ;
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
@@ -51,6 +52,7 @@ namespace Coberec.CSharpGen.TypeSystem
             this.ReturnType = returnType(this) ?? throw new ArgumentNullException(nameof(returnType));
             this.Parameters = parameters(this) ?? throw new ArgumentNullException(nameof(parameters));
             this.ThisIsRefReadOnly = declaringType.IsReadOnly;
+            this.Doccomment = doccomment;
         }
 
         public IReadOnlyList<ITypeParameter> TypeParameters { get; }
@@ -151,6 +153,8 @@ namespace Coberec.CSharpGen.TypeSystem
 
         public bool ThisIsRefReadOnly { get; set; }
 
+        public string Doccomment { get; }
+
         public ILFunction GetBody()
         {
             return BodyFactory?.Invoke();
@@ -242,5 +246,10 @@ namespace Coberec.CSharpGen.TypeSystem
     public interface IHideableMember
     {
         bool IsHidden { get; }
+    }
+
+    public interface IWithDoccomment
+    {
+        string Doccomment { get; }
     }
 }

@@ -13,9 +13,9 @@ using ICSharpCode.Decompiler.Util;
 namespace Coberec.CSharpGen.TypeSystem
 {
 
-    public sealed class VirtualType : ITypeDefinition, IHideableMember
+    public sealed class VirtualType : ITypeDefinition, IHideableMember, IWithDoccomment
     {
-        public VirtualType(TypeKind kind, Accessibility accessibility, FullTypeName name, bool isStatic, bool isSealed, bool isAbstract, ITypeDefinition declaringType = null, IModule parentModule = null, bool isHidden = false, Func<IEntity, int, ITypeParameter>[] typeParameters = null)
+        public VirtualType(TypeKind kind, Accessibility accessibility, FullTypeName name, bool isStatic, bool isSealed, bool isAbstract, ITypeDefinition declaringType = null, IModule parentModule = null, bool isHidden = false, Func<IEntity, int, ITypeParameter>[] typeParameters = null, string doccomment = null)
         {
             if (declaringType == null && parentModule == null) throw new ArgumentException("declaringType or parentModule parameter must be non-null");
             if (name.Name == null) throw new ArgumentException(nameof(name));
@@ -30,6 +30,7 @@ namespace Coberec.CSharpGen.TypeSystem
             this.IsHidden = isHidden;
             this.DirectBaseType = this.ParentModule.Compilation.FindType(KnownTypeCode.Object);
             this.TypeParameters = typeParameters?.ToImmutableArray().EagerSelect((p, i) => p(this, i)) ?? ImmutableArray<ITypeParameter>.Empty;
+            this.Doccomment = doccomment;
         }
 
         public TypeKind Kind { get; }
@@ -44,6 +45,7 @@ namespace Coberec.CSharpGen.TypeSystem
         public int TypeParameterCount => TypeParameters.Count;
 
         public IReadOnlyList<ITypeParameter> TypeParameters { get; }
+        public string Doccomment { get; }
 
         IReadOnlyList<IType> IType.TypeArguments => TypeParameters;
 

@@ -8,9 +8,9 @@ using ICSharpCode.Decompiler.TypeSystem.Implementation;
 
 namespace Coberec.CSharpGen.TypeSystem
 {
-    public sealed class VirtualProperty : IProperty, IHideableMember
+    public sealed class VirtualProperty : IProperty, IHideableMember, IWithDoccomment
     {
-        public VirtualProperty(ITypeDefinition declaringTypeDefinition, Accessibility accessibility, string name, IMethod getter, IMethod setter = null, bool isIndexer = false, bool isVirtual = false, bool isOverride = false, bool isStatic = false, bool isAbstract = false, bool isSealed = false, IReadOnlyList<IParameter> parameters = null, bool isHidden = false, IEnumerable<IMember> explicitImplementations = null)
+        public VirtualProperty(ITypeDefinition declaringTypeDefinition, Accessibility accessibility, string name, IMethod getter, IMethod setter = null, bool isIndexer = false, bool isVirtual = false, bool isOverride = false, bool isStatic = false, bool isAbstract = false, bool isSealed = false, IReadOnlyList<IParameter> parameters = null, bool isHidden = false, IEnumerable<IMember> explicitImplementations = null, string doccomment = null)
         {
             var returnType = getter?.ReturnType ?? setter?.Parameters.Last().Type ?? throw new Exception($"Property {name} does not have getter nor setter");
 
@@ -42,6 +42,7 @@ namespace Coberec.CSharpGen.TypeSystem
             this.Parameters = parameters;
             this.IsHidden = isHidden;
             this.ExplicitlyImplementedInterfaceMembers = explicitImplementations?.ToArray() ?? Array.Empty<IMember>();
+            this.Doccomment = doccomment;
         }
 
         public bool CanGet => Getter != null;
@@ -61,6 +62,8 @@ namespace Coberec.CSharpGen.TypeSystem
         public IType ReturnType { get; }
 
         public IEnumerable<IMember> ExplicitlyImplementedInterfaceMembers { get; }
+
+        public string Doccomment { get; set; }
 
         public bool IsExplicitInterfaceImplementation => ExplicitlyImplementedInterfaceMembers.Count() > 0;
 

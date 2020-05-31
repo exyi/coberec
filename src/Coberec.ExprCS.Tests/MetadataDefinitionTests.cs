@@ -241,5 +241,22 @@ namespace Coberec.ExprCS.Tests
             ));
             check.CheckOutput(cx);
         }
+
+        [Fact]
+        public void Doccomments()
+        {
+            var type = TypeSignature.Class("MyType", ns, Accessibility.APublic);
+            var td = TypeDef.Empty(type)
+                     .With(doccomment: new XmlComment("<summary> My type </summary>"))
+                     .AddAutoProperty("A", TypeSignature.String, Accessibility.APublic, doccomment: new XmlComment("<summary> My property </summary>"))
+                     ;
+
+            var fieldSgn = new FieldSignature(type, "Field", Accessibility.AInternal, TypeSignature.Int16, false, false);
+            td = td.AddMember(
+                new FieldDef(fieldSgn, new XmlComment("<summary> My field </summary>"))
+            );
+            cx.AddType(td);
+            check.CheckOutput(cx);
+        }
     }
 }

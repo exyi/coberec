@@ -195,7 +195,8 @@ namespace Coberec.ExprCS
                 parentModule: cx.MainILSpyModule,
                 typeParameters:
                     (sgn.DeclaringType()?.Apply(cx.GetTypeDef)?.TypeParameters ?? Enumerable.Empty<ITypeParameter>()).Select<ITypeParameter, Func<IEntity, int, ITypeParameter>>(p => (_, __) => p)
-                    .Concat(sgn.TypeParameters.Select<GenericParameter, Func<IEntity, int, ITypeParameter>>(p => (owner, index) => cx.GenericParameterStore.Register(p, owner, index))).ToArray()
+                    .Concat(sgn.TypeParameters.Select<GenericParameter, Func<IEntity, int, ITypeParameter>>(p => (owner, index) => cx.GenericParameterStore.Register(p, owner, index))).ToArray(),
+                doccomment: t.Doccomment?.Value
             );
 
             Assert.Equal((bool)vt.IsReferenceType, !sgn.IsValueType);
@@ -268,7 +269,8 @@ namespace Coberec.ExprCS
                 sgn.IsStatic,
                 isHidden,
                 typeParameters: sgn.TypeParameters.Select<GenericParameter, Func<IEntity, int, ITypeParameter>>(p => (owner, index) => cx.GenericParameterStore.Register(p, owner, index)).ToArray(),
-                explicitImplementations: explicitImpl != null ? new IMember[] { explicitImpl.Value.implementedMethod } : null
+                explicitImplementations: explicitImpl != null ? new IMember[] { explicitImpl.Value.implementedMethod } : null,
+                doccomment: m.Doccomment?.Value
             )
             .ApplyAction(mm => { if (!sneaky) cx.RegisterEntity(m, mm); });
         }
@@ -371,7 +373,8 @@ namespace Coberec.ExprCS
                 sgn.IsStatic,
                 mSgn.IsAbstract,
                 !mSgn.IsVirtual && mSgn.IsOverride,
-                explicitImplementations: explicitImpl != null ? new IMember[] { explicitImpl.Value.implementedProperty } : null
+                explicitImplementations: explicitImpl != null ? new IMember[] { explicitImpl.Value.implementedProperty } : null,
+                doccomment: property.Doccomment?.Value
             );
             cx.RegisterEntity(property, prop);
             return (prop, getter, setter);
@@ -390,7 +393,8 @@ namespace Coberec.ExprCS
                 isReadOnly: sgn.IsReadonly,
                 isVolatile: false,
                 isStatic: sgn.IsStatic,
-                isHidden: special
+                isHidden: special,
+                doccomment: field.Doccomment?.Value
             );
             if (special)
                 result.Attributes.Add(cx.Compilation.CompilerGeneratedAttribute());

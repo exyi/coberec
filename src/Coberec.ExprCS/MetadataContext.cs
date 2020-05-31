@@ -17,6 +17,7 @@ using ICSharpCode.Decompiler.CSharp.OutputVisitor;
 using Coberec.CSharpGen;
 using ICSharpCode.Decompiler.CSharp.Resolver;
 using Xunit;
+using ICSharpCode.Decompiler.Documentation;
 
 namespace Coberec.ExprCS
 {
@@ -397,6 +398,14 @@ namespace Coberec.ExprCS
         }
 // #endif
 
+        class FakeDocsProvider : IDocumentationProvider
+        {
+            public string GetDocumentation(IEntity entity)
+            {
+                return (entity as IWithDoccomment)?.Doccomment;
+            }
+        }
+
         private CSharpEmitter BuildCore()
         {
             CommitWaitingTypes();
@@ -405,6 +414,7 @@ namespace Coberec.ExprCS
             s.CSharpFormattingOptions.PropertyBraceStyle = BraceStyle.DoNotChange;
 
             var emitter = new CSharpEmitter(this.hackedCompilation, s, this.Settings.EmitPartialClasses);
+            emitter.DocumentationProvider = new FakeDocsProvider();
             return emitter;
         }
 

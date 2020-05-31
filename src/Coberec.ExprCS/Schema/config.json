@@ -19,6 +19,10 @@
         "isWritableReferenceType": {
             "ValidationMethodName": "Coberec.ExprCS.ModelValidators.IsWritableReferenceType",
             "ValidatorParameters": [ ]
+        },
+        "xml": {
+            "ValidationMethodName": "Coberec.ExprCS.ModelValidators.XmlComment",
+            "ValidatorParameters": [ ]
         }
     },
     "ExternalSymbols": [
@@ -52,6 +56,15 @@
             "ResultType": "Coberec.CoreLib.ValidationErrors",
             "Args": [
                 { "Name": "value", "Type": "Expression" }
+            ]
+        },
+        {
+            "DeclaredIn": "Coberec.ExprCS.ModelValidators",
+            "Name": "XmlComment",
+            "Kind": "StaticMethod",
+            "ResultType": "Coberec.CoreLib.ValidationErrors",
+            "Args": [
+                { "Name": "value", "Type": "System.String" }
             ]
         }
     ]
