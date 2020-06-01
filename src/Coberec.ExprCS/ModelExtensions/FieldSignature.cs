@@ -9,7 +9,6 @@ using R = System.Reflection;
 
 namespace Coberec.ExprCS
 {
-    /// <summary> Basic metadata about a field - <see cref="Name"/>, <see cref="Accessibility" />, <see cref="DeclaringType" />, ... </summary>
     public partial class FieldSignature
     {
         static partial void ValidateObjectExtension(ref CoreLib.ValidationErrorsBuilder e, FieldSignature f)
@@ -37,10 +36,10 @@ namespace Coberec.ExprCS
             return new FieldReference(signature, ImmutableArray<TypeReference>.Empty);
         }
 
-        public override string ToString() =>
-            ToString(this, this.ResultType);
+        public FmtToken Format() =>
+            Format(this, this.ResultType);
 
-        internal static string ToString(FieldSignature s, TypeReference resultType)
+        internal static string Format(FieldSignature s, TypeReference resultType)
         {
             var sb = new System.Text.StringBuilder();
             if (s.Accessibility != Accessibility.APublic) sb.Append(s.Accessibility).Append(" ");

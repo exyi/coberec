@@ -10,6 +10,14 @@
 							"Name": "",
 							"Parent": null
 						}
+					},
+					"CaseName": "NamespaceSignature",
+					"RawItem": {
+						"Name": "System",
+						"Parent": {
+							"Name": "",
+							"Parent": null
+						}
 					}
 				},
 				"Kind": "class",
@@ -31,6 +39,48 @@
 						"Name": "String",
 						"Parent": {
 							"Item": {
+								"Name": "System",
+								"Parent": {
+									"Name": "",
+									"Parent": null
+								}
+							},
+							"CaseName": "NamespaceSignature",
+							"RawItem": {
+								"Name": "System",
+								"Parent": {
+									"Name": "",
+									"Parent": null
+								}
+							}
+						},
+						"Kind": "class",
+						"IsValueType": false,
+						"CanOverride": false,
+						"IsAbstract": false,
+						"Accessibility": {
+							"Public": true,
+							"DerivedVisible": true,
+							"InternalVisible": true
+						},
+						"TypeParameters": []
+					},
+					"GenericParameters": []
+				},
+				"CaseName": "SpecializedType",
+				"RawItem": {
+					"Type": {
+						"Name": "String",
+						"Parent": {
+							"Item": {
+								"Name": "System",
+								"Parent": {
+									"Name": "",
+									"Parent": null
+								}
+							},
+							"CaseName": "NamespaceSignature",
+							"RawItem": {
 								"Name": "System",
 								"Parent": {
 									"Name": "",

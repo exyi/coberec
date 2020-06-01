@@ -2,7 +2,6 @@ using Coberec.CoreLib;
 
 namespace Coberec.ExprCS
 {
-    /// <summary> Expression that negates a given boolean expression. Equivalent of `!Expr` in C#. </summary>
     partial class NotExpression
     {
         static partial void ValidateObjectExtension(ref CoreLib.ValidationErrorsBuilder e, NotExpression obj)

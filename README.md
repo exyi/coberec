@@ -173,7 +173,7 @@ Since ExprCS is still a project in experimental stage and because it depends on 
 Note that you'll need .NET and Coberec installed, [see above](#installation):
 
 ```bash
-dotnet tool install -g Coberec.CLI --version 0.3.0
+dotnet tool install -g Coberec.CLI --version 0.5.2
 ```
 
 Clone the repository (incl. submodules):

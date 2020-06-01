@@ -8,6 +8,14 @@
 					"Name": "",
 					"Parent": null
 				}
+			},
+			"CaseName": "NamespaceSignature",
+			"RawItem": {
+				"Name": "System",
+				"Parent": {
+					"Name": "",
+					"Parent": null
+				}
 			}
 		},
 		"Kind": "class",
@@ -30,6 +38,14 @@
 					"Name": "",
 					"Parent": null
 				}
+			},
+			"CaseName": "NamespaceSignature",
+			"RawItem": {
+				"Name": "System",
+				"Parent": {
+					"Name": "",
+					"Parent": null
+				}
 			}
 		},
 		"Kind": "struct",
@@ -47,6 +63,20 @@
 		"Name": "IEnumerable",
 		"Parent": {
 			"Item": {
+				"Name": "Generic",
+				"Parent": {
+					"Name": "Collections",
+					"Parent": {
+						"Name": "System",
+						"Parent": {
+							"Name": "",
+							"Parent": null
+						}
+					}
+				}
+			},
+			"CaseName": "NamespaceSignature",
+			"RawItem": {
 				"Name": "Generic",
 				"Parent": {
 					"Name": "Collections",

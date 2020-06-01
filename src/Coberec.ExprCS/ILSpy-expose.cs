@@ -12,12 +12,21 @@ namespace Coberec.ExprCS
     {
         public Func<IMethod, MetadataContext, ILFunction> BuildBody { get; }
 
+        public override string CaseName => throw new NotImplementedException();
+
+        public override object RawItem => throw new NotImplementedException();
+
         private protected override bool EqualsCore(Expression b)
         {
             return object.ReferenceEquals(this, b);
         }
 
         public override T Match<T>(Func<BinaryExpression, T> binary, Func<NotExpression, T> not, Func<MethodCallExpression, T> methodCall, Func<NewObjectExpression, T> newObject, Func<FieldAccessExpression, T> fieldAccess, Func<ReferenceAssignExpression, T> referenceAssign, Func<DereferenceExpression, T> dereference, Func<VariableReferenceExpression, T> variableReference, Func<AddressOfExpression, T> addressOf, Func<NumericConversionExpression, T> numericConversion, Func<ReferenceConversionExpression, T> referenceConversion, Func<ConstantExpression, T> constant, Func<DefaultExpression, T> @default, Func<ParameterExpression, T> parameter, Func<ConditionalExpression, T> conditional, Func<FunctionExpression, T> function, Func<FunctionConversionExpression, T> functionConversion, Func<InvokeExpression, T> invoke, Func<BreakExpression, T> @break, Func<BreakableExpression, T> breakable, Func<LoopExpression, T> loop, Func<LetInExpression, T> letIn, Func<NewArrayExpression, T> newArray, Func<ArrayIndexExpression, T> arrayIndex, Func<BlockExpression, T> block, Func<LowerableExpression, T> lowerable)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override int GetHashCode()
         {
             throw new NotImplementedException();
         }

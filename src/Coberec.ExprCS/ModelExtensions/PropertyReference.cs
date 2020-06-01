@@ -8,7 +8,6 @@ using R = System.Reflection;
 
 namespace Coberec.ExprCS
 {
-    /// <summary> Represents a reference to a property. The generic parameters of the parent class are substituted - this class is basically <see cref="PropertySignature" /> + generic arguments </summary>
     public partial class PropertyReference
     {
         static partial void ValidateObjectExtension(ref CoreLib.ValidationErrorsBuilder e, PropertyReference p)
@@ -28,7 +27,6 @@ namespace Coberec.ExprCS
             Signature.Setter == null ? null :
             new MethodReference(Signature.Setter, this.TypeParameters, ImmutableArray<TypeReference>.Empty);
         public string Name() => Signature.Name;
-
 
         public static PropertyReference FromReflection(R.PropertyInfo prop)
         {

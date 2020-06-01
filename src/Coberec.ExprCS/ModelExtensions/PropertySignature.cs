@@ -9,7 +9,6 @@ using R = System.Reflection;
 
 namespace Coberec.ExprCS
 {
-    /// <summary> Basic metadata about a property - <see cref="Name" />, <see cref="Accessibility" />, <see cref="DeclaringType" />, ... </summary>
     public partial class PropertySignature
     {
         /// <summary> Signature of <see cref="Nullable{T}.HasValue" /> </summary>
@@ -28,7 +27,7 @@ namespace Coberec.ExprCS
 
             return new PropertySignature(declaringType, type, name, Accessibility.Max(getter, setter), isStatic, getMethod, setMethod);
         }
-        
+
         /// <summary> Creates a new property signature of an abstract property. </summary>
         public static PropertySignature Abstract(string name, TypeSignature declaringType, TypeReference type, Accessibility getter, Accessibility setter, bool isOverride = false) =>
             Create(name, declaringType, type, getter, setter, isOverride: isOverride, isVirtual: true, isAbstract: true);
@@ -80,10 +79,10 @@ namespace Coberec.ExprCS
             return new PropertyReference(signature, ImmutableArray<TypeReference>.Empty);
         }
 
-        public override string ToString() =>
-            ToString(this, this.Type);
+        public FmtToken Format() =>
+            Format(this, this.Type);
 
-        internal static string ToString(PropertySignature s, TypeReference resultType)
+        internal static string Format(PropertySignature s, TypeReference resultType)
         {
             var sb = new System.Text.StringBuilder();
             if (s.Accessibility != Accessibility.APublic) sb.Append(s.Accessibility).Append(" ");

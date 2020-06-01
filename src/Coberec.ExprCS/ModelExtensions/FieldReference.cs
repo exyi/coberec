@@ -7,7 +7,6 @@ using Coberec.CoreLib;
 
 namespace Coberec.ExprCS
 {
-    /// <summary> Represents a reference to a field. The generic parameters of the parent class are substituted - this class is basically <see cref="FieldSignature" /> + generic arguments </summary>
     public partial class FieldReference
     {
         static partial void ValidateObjectExtension(ref CoreLib.ValidationErrorsBuilder e, FieldReference f)
@@ -21,7 +20,7 @@ namespace Coberec.ExprCS
         public SpecializedType DeclaringType() => new SpecializedType(this.Signature.DeclaringType, this.TypeParameters);
         public TypeReference ResultType() => Signature.ResultType.SubstituteGenerics(Signature.DeclaringType.AllTypeParameters(), this.TypeParameters);
 
-        public override string ToString() => FieldSignature.ToString(Signature, ResultType());
+        public FmtToken Format() => FieldSignature.Format(Signature, ResultType());
 
         public static FieldReference FromReflection(R.FieldInfo field)
         {

@@ -5,9 +5,6 @@ using System.Linq;
 
 namespace Coberec.ExprCS
 {
-    /// <summary> Represents a type of a function not bound to any delegate. </summary>
-    /// <seealso cref="FunctionConversionExpression" />
-    /// <seealso cref="FunctionExpression" />
     public partial class FunctionType
     {
         /// <summary> Converts the function to a matching delegate, if possible (returns null otherwise). </summary>
@@ -33,11 +30,6 @@ namespace Coberec.ExprCS
                 var actionRef = TypeReference.SpecializedType(actionSig, this.Params.Select(p => p.Type).Append(this.ResultType).ToImmutableArray());
                 return actionRef;
             }
-        }
-
-        public override string ToString()
-        {
-            return $"({string.Join(", ", this.Params)}) -> {this.ResultType}";
         }
     }
 }

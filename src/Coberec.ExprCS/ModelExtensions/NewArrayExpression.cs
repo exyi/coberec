@@ -3,8 +3,6 @@ using Coberec.CoreLib;
 
 namespace Coberec.ExprCS
 {
-    /// <summary> Expression that creates a new uninitialized array. </summary>
-    /// <seealso cref="ExpressionFactory.MakeArray(Expression[])" />
     partial class NewArrayExpression
     {
         private static TypeReference[] AllowedDimensionTypes = new TypeReference[] {

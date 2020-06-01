@@ -8,7 +8,6 @@ using Xunit;
 
 namespace Coberec.ExprCS
 {
-    /// <summary> Represents a generic parameter of a type or method. </summary>
     public partial class GenericParameter
     {
         static readonly ConcurrentDictionary<(string ownerName, string name), GenericParameter> typeParameterAssignment = new ConcurrentDictionary<(string, string), GenericParameter>();
@@ -47,7 +46,5 @@ namespace Coberec.ExprCS
             Assert.Equal(t2.GenericParameterPosition, t.GenericParameterPosition);
             return Get(t2.DeclaringType, t2.Name);
         }
-
-        public override string ToString() => $"{this.Name}({this.Id})";
     }
 }

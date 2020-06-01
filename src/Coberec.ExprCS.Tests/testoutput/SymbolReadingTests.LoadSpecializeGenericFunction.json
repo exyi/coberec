@@ -15,6 +15,17 @@
 								"Parent": null
 							}
 						}
+					},
+					"CaseName": "NamespaceSignature",
+					"RawItem": {
+						"Name": "CoreLib",
+						"Parent": {
+							"Name": "Coberec",
+							"Parent": {
+								"Name": "",
+								"Parent": null
+							}
+						}
 					}
 				},
 				"Kind": "class",
@@ -35,6 +46,11 @@
 							"Id": "aaaaaaaa-bbbb-cccc-dddd-000000000001",
 							"Name": "T"
 						},
+						"CaseName": "GenericParameter",
+						"RawItem": {
+							"Id": "aaaaaaaa-bbbb-cccc-dddd-000000000001",
+							"Name": "T"
+						},
 						"IsReferenceType": null
 					},
 					"Name": "value",
@@ -50,6 +66,17 @@
 						"Name": "ValidationResult",
 						"Parent": {
 							"Item": {
+								"Name": "CoreLib",
+								"Parent": {
+									"Name": "Coberec",
+									"Parent": {
+										"Name": "",
+										"Parent": null
+									}
+								}
+							},
+							"CaseName": "NamespaceSignature",
+							"RawItem": {
 								"Name": "CoreLib",
 								"Parent": {
 									"Name": "Coberec",
@@ -79,6 +106,69 @@
 					"GenericParameters": [
 						{
 							"Item": {
+								"Id": "aaaaaaaa-bbbb-cccc-dddd-000000000001",
+								"Name": "T"
+							},
+							"CaseName": "GenericParameter",
+							"RawItem": {
+								"Id": "aaaaaaaa-bbbb-cccc-dddd-000000000001",
+								"Name": "T"
+							},
+							"IsReferenceType": null
+						}
+					]
+				},
+				"CaseName": "SpecializedType",
+				"RawItem": {
+					"Type": {
+						"Name": "ValidationResult",
+						"Parent": {
+							"Item": {
+								"Name": "CoreLib",
+								"Parent": {
+									"Name": "Coberec",
+									"Parent": {
+										"Name": "",
+										"Parent": null
+									}
+								}
+							},
+							"CaseName": "NamespaceSignature",
+							"RawItem": {
+								"Name": "CoreLib",
+								"Parent": {
+									"Name": "Coberec",
+									"Parent": {
+										"Name": "",
+										"Parent": null
+									}
+								}
+							}
+						},
+						"Kind": "struct",
+						"IsValueType": true,
+						"CanOverride": false,
+						"IsAbstract": false,
+						"Accessibility": {
+							"Public": true,
+							"DerivedVisible": true,
+							"InternalVisible": true
+						},
+						"TypeParameters": [
+							{
+								"Id": "aaaaaaaa-bbbb-cccc-dddd-000000000002",
+								"Name": "T"
+							}
+						]
+					},
+					"GenericParameters": [
+						{
+							"Item": {
+								"Id": "aaaaaaaa-bbbb-cccc-dddd-000000000001",
+								"Name": "T"
+							},
+							"CaseName": "GenericParameter",
+							"RawItem": {
 								"Id": "aaaaaaaa-bbbb-cccc-dddd-000000000001",
 								"Name": "T"
 							},
@@ -118,6 +208,48 @@
 									"Name": "",
 									"Parent": null
 								}
+							},
+							"CaseName": "NamespaceSignature",
+							"RawItem": {
+								"Name": "System",
+								"Parent": {
+									"Name": "",
+									"Parent": null
+								}
+							}
+						},
+						"Kind": "struct",
+						"IsValueType": true,
+						"CanOverride": false,
+						"IsAbstract": false,
+						"Accessibility": {
+							"Public": true,
+							"DerivedVisible": true,
+							"InternalVisible": true
+						},
+						"TypeParameters": []
+					},
+					"GenericParameters": []
+				},
+				"CaseName": "SpecializedType",
+				"RawItem": {
+					"Type": {
+						"Name": "Int32",
+						"Parent": {
+							"Item": {
+								"Name": "System",
+								"Parent": {
+									"Name": "",
+									"Parent": null
+								}
+							},
+							"CaseName": "NamespaceSignature",
+							"RawItem": {
+								"Name": "System",
+								"Parent": {
+									"Name": "",
+									"Parent": null
+								}
 							}
 						},
 						"Kind": "struct",
@@ -143,6 +275,17 @@
 				"Name": "ValidationResult",
 				"Parent": {
 					"Item": {
+						"Name": "CoreLib",
+						"Parent": {
+							"Name": "Coberec",
+							"Parent": {
+								"Name": "",
+								"Parent": null
+							}
+						}
+					},
+					"CaseName": "NamespaceSignature",
+					"RawItem": {
 						"Name": "CoreLib",
 						"Parent": {
 							"Name": "Coberec",
@@ -182,6 +325,48 @@
 											"Name": "",
 											"Parent": null
 										}
+									},
+									"CaseName": "NamespaceSignature",
+									"RawItem": {
+										"Name": "System",
+										"Parent": {
+											"Name": "",
+											"Parent": null
+										}
+									}
+								},
+								"Kind": "class",
+								"IsValueType": false,
+								"CanOverride": false,
+								"IsAbstract": false,
+								"Accessibility": {
+									"Public": true,
+									"DerivedVisible": true,
+									"InternalVisible": true
+								},
+								"TypeParameters": []
+							},
+							"GenericParameters": []
+						},
+						"CaseName": "SpecializedType",
+						"RawItem": {
+							"Type": {
+								"Name": "String",
+								"Parent": {
+									"Item": {
+										"Name": "System",
+										"Parent": {
+											"Name": "",
+											"Parent": null
+										}
+									},
+									"CaseName": "NamespaceSignature",
+									"RawItem": {
+										"Name": "System",
+										"Parent": {
+											"Name": "",
+											"Parent": null
+										}
 									}
 								},
 								"Kind": "class",
@@ -211,6 +396,11 @@
 					"Id": "aaaaaaaa-bbbb-cccc-dddd-000000000002",
 					"Name": "T"
 				},
+				"CaseName": "GenericParameter",
+				"RawItem": {
+					"Id": "aaaaaaaa-bbbb-cccc-dddd-000000000002",
+					"Name": "T"
+				},
 				"IsReferenceType": null
 			},
 			"IsStatic": false,
@@ -232,6 +422,48 @@
 						"Name": "Boolean",
 						"Parent": {
 							"Item": {
+								"Name": "System",
+								"Parent": {
+									"Name": "",
+									"Parent": null
+								}
+							},
+							"CaseName": "NamespaceSignature",
+							"RawItem": {
+								"Name": "System",
+								"Parent": {
+									"Name": "",
+									"Parent": null
+								}
+							}
+						},
+						"Kind": "struct",
+						"IsValueType": true,
+						"CanOverride": false,
+						"IsAbstract": false,
+						"Accessibility": {
+							"Public": true,
+							"DerivedVisible": true,
+							"InternalVisible": true
+						},
+						"TypeParameters": []
+					},
+					"GenericParameters": []
+				},
+				"CaseName": "SpecializedType",
+				"RawItem": {
+					"Type": {
+						"Name": "Boolean",
+						"Parent": {
+							"Item": {
+								"Name": "System",
+								"Parent": {
+									"Name": "",
+									"Parent": null
+								}
+							},
+							"CaseName": "NamespaceSignature",
+							"RawItem": {
 								"Name": "System",
 								"Parent": {
 									"Name": "",

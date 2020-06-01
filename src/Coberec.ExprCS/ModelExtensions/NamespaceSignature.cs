@@ -5,7 +5,6 @@ using System.Linq;
 
 namespace Coberec.ExprCS
 {
-    /// <summary> Namespace name separated by dots. Use <see cref="Parse(string)" /> to create an instance </summary>
     public partial class NamespaceSignature
     {
         static partial void ValidateObjectExtension(ref ValidationErrorsBuilder e, NamespaceSignature obj)
@@ -16,9 +15,9 @@ namespace Coberec.ExprCS
                 e.Add(ValidationErrors.Create($"Namespace in {obj.Parent} must have a non-empty name.").Nest("name"));
         }
 
-        public override string ToString() =>
+        public FmtToken Format() =>
             Parent == Global || Parent == null ? Name :
-            $"{Parent}.{Name}";
+            FmtToken.Concat(Parent, ".", Name).WithTokenNames("parent", "", "name");
         /// <summary> The global namespace that contains everything. This is the only case when NamespaceSignature has Parent=null </summary>
         public static NamespaceSignature Global = new NamespaceSignature("", null);
         public static NamespaceSignature System = new NamespaceSignature("System", Global);

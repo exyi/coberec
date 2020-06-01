@@ -2,8 +2,6 @@ using Coberec.CoreLib;
 
 namespace Coberec.ExprCS
 {
-    /// <summary> Expression that represents an assignment into a reference. Used to assign into variables and fields. </summary>
-    /// <seealso cref="ByReferenceType" />
     partial class ReferenceAssignExpression
     {
         static partial void ValidateObjectExtension(ref CoreLib.ValidationErrorsBuilder e, ReferenceAssignExpression obj)

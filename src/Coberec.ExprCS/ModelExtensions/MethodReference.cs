@@ -10,7 +10,6 @@ using R = System.Reflection;
 
 namespace Coberec.ExprCS
 {
-    /// <summary> Represents a reference to a method. The generic parameters of the parent class and the method are substituted - this class is basically <see cref="MethodSignature" /> + generic arguments </summary>
     public partial class MethodReference
     {
         static partial void ValidateObjectExtension(ref CoreLib.ValidationErrorsBuilder e, MethodReference m)
@@ -36,8 +35,8 @@ namespace Coberec.ExprCS
                                                .SubstituteGenerics(Signature.DeclaringType.AllTypeParameters(), this.TypeParameters));
         public string Name() => Signature.Name;
 
-        public override string ToString() =>
-            MethodSignature.ToString(Signature, this.MethodParameters, this.Params(), this.ResultType());
+        public FmtToken Format() =>
+            MethodSignature.Format(Signature, this.MethodParameters, this.Params(), this.ResultType());
 
         /// <summary> Creates a MethodReference from System.Reflections MethodInfo or ConstructorInfo. Also works for property getters, setters, static constructors, ... </summary>
         public static MethodReference FromReflection(R.MethodBase method)

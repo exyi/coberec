@@ -2,12 +2,14 @@ type ModuleSignature {
     name: String
 }
 
-type NamespaceSignature {
+# Namespace name separated by dots. Use <see cref="Parse(string)" /> to create an instance
+type NamespaceSignature @customFormat {
     name: String
     parent: NamespaceSignature!
 }
 
-type Accessibility {
+# Defines accessibility of a metadata member
+type Accessibility @customFormat {
     public: Boolean
     derivedVisible: Boolean
     internalVisible: Boolean
@@ -15,7 +17,9 @@ type Accessibility {
 
 union TypeOrNamespace = NamespaceSignature | TypeSignature
 
-type GenericParameter {
+# Represents a generic parameter of a type or method.
+type GenericParameter
+    @format(t: "{name}({id})") {
     id: ID
     name: String
 }
@@ -30,7 +34,8 @@ interface MemberReference {
     typeParameters: [TypeReference]
 }
 
-type TypeSignature implements MemberSignature {
+# Basic metadata about a type - <see cref="Name" />, <see cref="Kind" />, <see cref="Accessibility" />, ...
+type TypeSignature implements MemberSignature @customFormat {
     name: String
     parent: TypeOrNamespace
     kind: String
@@ -41,35 +46,43 @@ type TypeSignature implements MemberSignature {
     typeParameters: [GenericParameter] # TODO: document how nested types work
 }
 
-type SpecializedType {
+# A type reference to a signature with filled in type parameters. This class is basically <see cref="TypeSignature" /> + generic arguments
+type SpecializedType @customFormat {
     type: TypeSignature
     genericParameters: [TypeReference]
 }
 
-type ArrayType {
+# Type reference that represents an array `Type[...Dimensions]`
+type ArrayType @customFormat {
     type: TypeReference @validateTypeIsNotRef
     dimensions: Int @default(value: 1)
                     @validateRange(low: 1, high: 65535)
 }
 
-type ByReferenceType {
+# Reference type. In IL it is denoted as `Type&amp;`, in C# it is usually represented by `ref` keyword.
+type ByReferenceType
+    @format(t: "{type}&") {
     type: TypeReference
 }
 
-type PointerType {
+# unsafe pointer
+type PointerType
+    @format(t: "{type}*") {
     type: TypeReference @validateTypeIsNotRef
 }
 
-# represents an anonymous delegate
-# it has a limitation that the function can not return itself (by type), but it can for example return equivalent delegate type
-type FunctionType {
+# Represents a type of a function not bound to any delegate.
+# It has a limitation that the function can not return itself (by type), but it can for example return equivalent delegate type.
+type FunctionType
+    @format(t: "{params} -> {resultType}") {
     params: [MethodParameter]
     resultType: TypeReference
 }
 
 union TypeReference = SpecializedType | ArrayType | ByReferenceType | PointerType | GenericParameter | FunctionType
 
-type MethodParameter {
+# Represents a method parameter signature
+type MethodParameter @customFormat {
     type: TypeReference
     name: String
     hasDefaultValue: Boolean
@@ -77,7 +90,8 @@ type MethodParameter {
     isParams: Boolean
 }
 
-type MethodSignature implements MemberSignature {
+# Basic metadata about a method - <see cref="Name" />, <see cref="Accessibility" />, <see cref="Params" />, <see cref="DeclaringType" />, ...
+type MethodSignature implements MemberSignature @customFormat {
     declaringType: TypeSignature
     params: [MethodParameter]
     name: String
@@ -91,13 +105,15 @@ type MethodSignature implements MemberSignature {
     typeParameters: [GenericParameter]
 }
 
-type MethodReference implements MemberReference {
+# Represents a reference to a method. The generic parameters of the parent class and the method are substituted - this class is basically <see cref="MethodSignature" /> + generic arguments
+type MethodReference implements MemberReference @customFormat {
     signature: MethodSignature
     typeParameters: [TypeReference]
     methodParameters: [TypeReference]
 }
 
-type FieldSignature implements MemberSignature {
+# Basic metadata about a field - <see cref="Name"/>, <see cref="Accessibility" />, <see cref="DeclaringType" />, ...
+type FieldSignature implements MemberSignature @customFormat {
     declaringType: TypeSignature
     name: String
     accessibility: Accessibility
@@ -106,12 +122,14 @@ type FieldSignature implements MemberSignature {
     isReadonly: Boolean
 }
 
-type FieldReference implements MemberReference {
+# Represents a reference to a field. The generic parameters of the parent class are substituted - this class is basically <see cref="FieldSignature" /> + generic arguments
+type FieldReference implements MemberReference @customFormat {
     signature: FieldSignature
     typeParameters: [TypeReference]
 }
 
-type PropertySignature implements MemberSignature {
+# Basic metadata about a property - <see cref="Name" />, <see cref="Accessibility" />, <see cref="DeclaringType" />, ...
+type PropertySignature implements MemberSignature @customFormat {
     declaringType: TypeSignature
     type: TypeReference
     name: String
@@ -120,6 +138,8 @@ type PropertySignature implements MemberSignature {
     getter: MethodSignature!
     setter: MethodSignature!
 }
+
+# Represents a reference to a property. The generic parameters of the parent class are substituted - this class is basically <see cref="PropertySignature" /> + generic arguments
 type PropertyReference implements MemberReference {
     signature: PropertySignature
     typeParameters: [TypeReference]

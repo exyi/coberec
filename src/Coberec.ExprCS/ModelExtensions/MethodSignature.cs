@@ -9,7 +9,6 @@ using R = System.Reflection;
 
 namespace Coberec.ExprCS
 {
-    /// <summary> Basic metadata about a method - <see cref="Name" />, <see cref="Accessibility" />, <see cref="Params" />, <see cref="DeclaringType" />, ... </summary>
     public partial class MethodSignature
     {
         static partial void ValidateObjectExtension(ref CoreLib.ValidationErrorsBuilder e, MethodSignature m)
@@ -141,10 +140,10 @@ namespace Coberec.ExprCS
             return new MethodReference(signature, ImmutableArray<TypeReference>.Empty, ImmutableArray<TypeReference>.Empty);
         }
 
-        public override string ToString() =>
-            ToString(this, this.TypeParameters, this.Params, this.ResultType);
+        public FmtToken Format() =>
+            Format(this, this.TypeParameters, this.Params, this.ResultType);
 
-        internal static string ToString(MethodSignature s, IEnumerable<object> typeArgs, ImmutableArray<MethodParameter> parameters, TypeReference resultType)
+        internal static string Format(MethodSignature s, IEnumerable<object> typeArgs, ImmutableArray<MethodParameter> parameters, TypeReference resultType)
         {
             var sb = new System.Text.StringBuilder();
             if (s.Accessibility != Accessibility.APublic) sb.Append(s.Accessibility).Append(" ");

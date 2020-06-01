@@ -4,7 +4,6 @@ using System.Linq;
 
 namespace Coberec.ExprCS
 {
-    /// <summary> Expression representing a parameter or local variable. Apart from name and type, it is identified by the `Id`. </summary>
     public partial class ParameterExpression
     {
         /// <summary> Creates a new immutable <see cref="ParameterExpression" /> from the <paramref name="parameter" /> by copying its type and name. </summary>

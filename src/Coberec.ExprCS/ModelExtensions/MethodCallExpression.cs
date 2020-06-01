@@ -2,7 +2,6 @@ using Coberec.CoreLib;
 
 namespace Coberec.ExprCS
 {
-    /// <summary> Expression represents call of `Method` on object `Target` with the given `Args`. If `Method` is static, `Target` is null. </summary>
     partial class MethodCallExpression
     {
         static partial void ValidateObjectExtension(ref CoreLib.ValidationErrorsBuilder e, MethodCallExpression me)

@@ -7,7 +7,6 @@ using Coberec.CSharpGen;
 
 namespace Coberec.ExprCS
 {
-    /// <summary> A type reference to a signature with filled in type parameters. This class is basically <see cref="TypeSignature" /> + generic arguments </summary>
     public partial class SpecializedType
     {
         static partial void ValidateObjectExtension(ref CoreLib.ValidationErrorsBuilder e, SpecializedType t)
@@ -39,10 +38,11 @@ namespace Coberec.ExprCS
             this.GenericParameters.Length == 0 || parameters.Length == 0 ? this :
             With(genericParameters: GenericParameters.EagerSelect(t => t.SubstituteGenerics(parameters, arguments)));
 
-        public override string ToString() =>
+        public FmtToken Format() =>
             this.GenericParameters.IsEmpty
-                ? this.Type.ToString()
-                : $"{this.Type}<{string.Join(", ", GenericParameters)}>";
+                ? FmtToken.Single(this.Type, "type")
+                : FmtToken.Concat(this.Type, FmtToken.FormatArray(GenericParameters, "<", ">"))
+                          .WithTokenNames("type", "genericParameters");
 
     }
 }

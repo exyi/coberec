@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Coberec.CoreLib;
 
 namespace Coberec.ExprCS
 {
-	/// <summary> Defines accessibility of a metadata member </summary>
 	public sealed partial class Accessibility
 	{
 		/// <summary> `internal` </summary>
@@ -39,7 +39,7 @@ namespace Coberec.ExprCS
 			return AProtectedInternal;
 		}
 
-		public override string ToString() =>
+		public FmtToken Format() =>
 			this == AInternal ? "internal" :
 			this == APublic ? "public" :
 			this == APrivate ? "private" :

@@ -2,7 +2,6 @@ using Coberec.CoreLib;
 
 namespace Coberec.ExprCS
 {
-    /// <summary> Expression that creates a new object and invokes a constructor. Equivalent of `new Ctor(Args)`. </summary>
     partial class NewObjectExpression
     {
         static partial void ValidateObjectExtension(ref CoreLib.ValidationErrorsBuilder e, NewObjectExpression ne)

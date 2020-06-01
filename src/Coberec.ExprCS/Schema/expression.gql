@@ -1,55 +1,71 @@
-type BinaryExpression {
+# Expression evaluates a binary operator. Equivalent of `Left {Operator} Right` code.
+type BinaryExpression
+    @format(t: "({left} {operator} {right})") {
     operator: String
     left: Expression
     right: Expression
 }
 
-type NotExpression {
+# Expression that negates a given boolean expression. Equivalent of `!Expr` in C#.
+type NotExpression
+    @format(t: "!{expr}") {
     expr: Expression
 }
 
-type MethodCallExpression {
+# Expression represents call of `Method` on object `Target` with the given `Args`. If `Method` is static, `Target` is null.
+type MethodCallExpression
+    @format(t: "{target}.{method}{args}") {
     method: MethodReference
     args: [Expression]
     # automatically adjusts reference on the target (unwraps reference for objects, makes reference for structs)
     target: Expression!
 }
 
-type NewObjectExpression {
+# Expression that creates a new object and invokes a constructor. Equivalent of `new Ctor(Args)`.
+type NewObjectExpression
+    @format(t: "{ctor}{args}") {
     ctor: MethodReference
     args: [Expression]
 }
 
-# Gets a reference to the field
-type FieldAccessExpression {
+# Expression represents access to `Field` on object `Target`, returns the reference to the field. If `Field` is static, `Target` is null.
+type FieldAccessExpression
+    @format(t: "{target}.{field}") {
     field: FieldReference
     # automatically adjusts reference on the target (unwraps reference for objects, makes reference for structs)
     target: Expression!
 }
 
-type ReferenceAssignExpression {
+# Expression that represents an assignment into a reference. Used to assign into variables and fields.
+type ReferenceAssignExpression
+    @format(t: "{target} = {value}") {
     # target must be of type ByReference
     target: Expression @validateIsWritableReferenceType
     value: Expression
 }
 
 # returns a value from a reference
-type DereferenceExpression {
+type DereferenceExpression
+    @format(t: "*{expr}") {
     # expression must be of type ByReference
     expr: Expression @validateIsReferenceType
 }
 
 # returns a reference to a local variable or a parameter
-type VariableReferenceExpression {
+type VariableReferenceExpression
+    @format(t: "{variable}") {
     variable: ParameterExpression
 }
 
 # Stores the value into an anonymous temporary variable, and returns the address of that variable.
-type AddressOfExpression {
+type AddressOfExpression
+    @format(t: "&{expr}") {
     expr: Expression
 }
 
-type NumericConversionExpression {
+# Converts between primitive numeric types
+type NumericConversionExpression
+    @format(t: "ncast<{type}>({value})") {
     value: Expression
     type: TypeReference @validateTypeIsNotRef
     checked: Boolean
@@ -57,33 +73,42 @@ type NumericConversionExpression {
 
 # reference or boxing/unboxing conversion
 # automatically dereferences a by ref value before it's boxed/converted
-type ReferenceConversionExpression {
+type ReferenceConversionExpression
+    @format(t: "rcast<{type}>({value})") {
     value: Expression
     type: TypeReference
 }
 
-type ConstantExpression {
+# Expression that evaluates to the constant `Value`. Only supports primitive types and nulls. See <see cref="DefaultExpression" /> in case you want to create a default of a struct.
+type ConstantExpression
+    @format(t: "{value}:{type}") {
     value: Any!
     type: TypeReference @validateTypeIsNotRef
 }
 
-type DefaultExpression {
+# Expression that evaluates to the default of `Type`.
+type DefaultExpression
+    @format(t: "default({type})") {
     type: TypeReference @validateTypeIsNotRef
 }
 
-type ParameterExpression {
+# Expression representing a parameter or local variable. Apart from name and type, it is identified by the `Id`.
+type ParameterExpression
+    @format(t: "{name}[{id} : {type}]") {
     id: ID
     name: String!
     type: TypeReference
     mutable: Boolean
 }
 
+# Defines a `Variable` initialized with `Value`. Then evaluates `Target` with the variable in scope and returns its value
 type LetInExpression {
     variable: ParameterExpression
     value: Expression
     target: Expression
 }
 
+# Expressions equivalent to C#'s `if` or the `a ? b : c` ternary operator. If `Condition` is true, then `IfTrue`, else `IfFalse`.
 type ConditionalExpression {
     condition: Expression
     ifTrue: Expression
@@ -114,30 +139,36 @@ type FunctionConversionExpression {
 }
 
 # invokes a function
-type InvokeExpression {
+type InvokeExpression
+    @format(t: "{function}{args}") {
     # function must be of type FunctionType, delegates are not supported because the return type is not known without metadata lookup
     function: Expression
     args: [Expression]
 }
 
-type LabelTarget {
+type LabelTarget
+    @format(t: "Label {name}: {type}") {
     id: ID
     name: String!
     type: TypeReference
 }
 
-type NewArrayExpression {
+# Expression that creates a new uninitialized array.
+type NewArrayExpression
+    @format(t: "new array {type}{dimensions}") {
     type: ArrayType
     dimensions: [Expression]
 }
 
 # returns a reference to the specified array element
-type ArrayIndexExpression {
+type ArrayIndexExpression
+    @format(t: "{array}{indices}") {
     array: Expression
     indices: [Expression]
 }
 
-type BreakExpression {
+type BreakExpression
+    @format(t: "break {value} -> {target}") {
     value: Expression
     target: LabelTarget
 }
@@ -161,6 +192,7 @@ interface LowerableExpression {
     lowered: Expression
 }
 
+# Represents a code fragment - a single expression. May have many forms, see the nested classes for more information.
 union Expression =
       BinaryExpression
     | NotExpression

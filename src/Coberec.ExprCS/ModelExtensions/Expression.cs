@@ -7,7 +7,6 @@ using Xunit;
 
 namespace Coberec.ExprCS
 {
-    /// <summary> Represents a code fragment - a single expression. May have many forms, see the nested classes for more information. </summary>
     public partial class Expression
     {
         /// <summary> Does nothing and returns void. </summary>

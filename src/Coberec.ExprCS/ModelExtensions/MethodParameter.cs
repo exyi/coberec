@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
+using Coberec.CoreLib;
 using Xunit;
 
 namespace Coberec.ExprCS
@@ -24,16 +25,24 @@ namespace Coberec.ExprCS
         public MethodParameter WithDefault(object defaultValue) =>
             this.With(hasDefaultValue: true, defaultValue: defaultValue);
 
-        public override string ToString()
+        public FmtToken Format()
         {
-            var b = $"{this.Name}: {this.Type}";
+            var b = FmtToken.Concat(
+                this.IsParams ? "params " : "",
+                this.Name,
+                ": ",
+                this.Type
+            )
+                            .WithTokenNames("isParams", "name", "", "type");
             if (this.HasDefaultValue)
             {
-                b += $" = ";
+                string def;
                 if (this.DefaultValue == null)
-                    b += this.Type.IsReferenceType == true ? "null" : "default";
+                    def = this.Type.IsReferenceType == true ? "null" : "default";
                 else
-                    b += this.DefaultValue;
+                    def = this.DefaultValue.ToString();
+
+                b = FmtToken.Concat(b, " = ", def).WithTokenNames(null, "hasDefaultValue", "defaultValue");
             }
             return b;
         }

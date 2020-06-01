@@ -185,13 +185,13 @@ namespace Coberec.CoreLib
         public static FmtToken FormatArray<T>(ImmutableArray<T>? array) =>
             array == null ? "null" :
             FormatArray(array.Value);
-        public static FmtToken FormatArray<T>(ImmutableArray<T> array)
+        public static FmtToken FormatArray<T>(ImmutableArray<T> array, string lBrace = "[ ", string rBrace = " ]")
         {
             if (array.IsEmpty)
                 return EmptyArray;
 
             var b = ImmutableArray.CreateBuilder<object>(array.Length * 2 + 1);
-            b.Add("[ ");
+            b.Add(lBrace);
             var first = true;
             foreach (var x in array)
             {
@@ -200,7 +200,7 @@ namespace Coberec.CoreLib
                 first = false;
                 b.Add(x);
             }
-            b.Add(" ]");
+            b.Add(rBrace);
             var tokenMap = new string[b.Count];
             first = true;
             tokenMap[0] = "\\sep";
