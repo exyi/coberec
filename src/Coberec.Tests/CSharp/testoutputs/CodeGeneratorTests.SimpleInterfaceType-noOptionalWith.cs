@@ -106,7 +106,7 @@ namespace GeneratedProject.ModelNamespace
 
 		object ITraversableObject.GetValue(int propIndex)
 		{
-			return (propIndex == 0) ? Field543 : ((propIndex == 1) ? ((ValueType)SomeName) : ((ValueType)((propIndex == 2) ? AbcSS : null)));
+			return (propIndex == 0) ? ((object)Field543) : ((propIndex == 1) ? ((object)SomeName) : ((propIndex == 2) ? ((object)AbcSS) : null));
 		}
 
 		public override int GetHashCode()

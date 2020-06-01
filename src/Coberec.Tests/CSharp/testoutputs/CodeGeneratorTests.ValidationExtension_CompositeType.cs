@@ -63,7 +63,7 @@ namespace GeneratedProject.ModelNamespace
 				"Composite123 {Field543 = ",
 				Field543,
 				", abcSS = ",
-				(object)(object)AbcSS,
+				AbcSS,
 				"}"
 			}), new string[5]
 			{
@@ -77,7 +77,7 @@ namespace GeneratedProject.ModelNamespace
 
 		object ITraversableObject.GetValue(int propIndex)
 		{
-			return (propIndex == 0) ? Field543 : ((propIndex == 1) ? ((object)(object)AbcSS) : null);
+			return (propIndex == 0) ? Field543 : ((propIndex == 1) ? ((object)AbcSS) : null);
 		}
 
 		public override int GetHashCode()

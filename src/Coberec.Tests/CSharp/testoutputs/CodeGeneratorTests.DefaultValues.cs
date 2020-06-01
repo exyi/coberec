@@ -85,7 +85,7 @@ namespace GeneratedProject.ModelNamespace
 				", IntF = ",
 				IntF,
 				", FloatF = ",
-				(object)(object)FloatF,
+				FloatF,
 				", NullListF = ",
 				FmtToken.FormatArray(NullListF),
 				", ThisF = ",
@@ -113,7 +113,7 @@ namespace GeneratedProject.ModelNamespace
 
 		object ITraversableObject.GetValue(int propIndex)
 		{
-			return (propIndex == 0) ? StringF : ((propIndex == 1) ? NullableStringF : ((propIndex == 2) ? NullableIntF : ((propIndex == 3) ? IntF : ((propIndex == 4) ? ((object)(object)FloatF) : ((propIndex == 5) ? ((object)NullListF) : ((object)((propIndex == 6) ? ThisF : null)))))));
+			return (propIndex == 0) ? StringF : ((propIndex == 1) ? NullableStringF : ((propIndex == 2) ? ((object)NullableIntF) : ((propIndex == 3) ? ((object)IntF) : ((propIndex == 4) ? ((object)FloatF) : ((propIndex == 5) ? ((object)NullListF) : ((propIndex == 6) ? ThisF : null))))));
 		}
 
 		public override int GetHashCode()

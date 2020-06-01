@@ -53,7 +53,7 @@ namespace GeneratedProject.ModelNamespace
 				"a {h = ",
 				H,
 				", H = ",
-				(object)(object)H2,
+				H2,
 				"}"
 			}), new string[5]
 			{
@@ -67,7 +67,7 @@ namespace GeneratedProject.ModelNamespace
 
 		object ITraversableObject.GetValue(int propIndex)
 		{
-			return (propIndex == 0) ? H : ((propIndex == 1) ? ((object)(object)H2) : null);
+			return (propIndex == 0) ? H : ((propIndex == 1) ? ((object)H2) : null);
 		}
 
 		public override int GetHashCode()
