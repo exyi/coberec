@@ -31,7 +31,9 @@ namespace Coberec.CSharpGen.Emit
 
         public static MethodDef ImplementFormat(TypeSignature declaringType, M.TypeDef typeDef, (TypeField schema, FieldReference field)[] fields)
         {
-            if (typeDef.Directives.Any(d => d.Name == "customFormat")) return null;
+            var method = FormatMethodSignature(declaringType);
+            if (typeDef.Directives.Any(d => d.Name == "customFormat"))
+                return MethodDef.Create(method, @this => new DefaultExpression(method.ResultType));
 
             var formatDirective = typeDef.Directives.SingleOrDefault(d => d.Name == "format");
             var format = formatDirective?.Args?.Value<string>("t");
@@ -50,7 +52,6 @@ namespace Coberec.CSharpGen.Emit
                 .Select(Expression.Constant)
                 .Apply(ExpressionFactory.MakeArray);
 
-            var method = FormatMethodSignature(declaringType);
             return MethodDef.Create(method, @this => {
                 var expressions = fmt.Select(fr => fr.kind switch {
                     FragmentKind.Literal => Expression.Constant(fr.val),

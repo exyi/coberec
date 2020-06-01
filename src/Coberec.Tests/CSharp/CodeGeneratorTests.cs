@@ -358,6 +358,20 @@ type y implements x { p: a }
         }
 
         [Fact]
+        public void CustomFormat()
+        {
+            var schema = GraphqlLoader.Helpers.ParseSchema(@"
+type a @customFormat {
+		h: String
+}
+"
+                , invertNonNull: true);
+            var result = CSharpBackend.Build(schema, DefaultSettings);
+            // CheckItCompiles(result);
+            check.CheckString(result, fileExtension: "cs");
+        }
+
+        [Fact]
         public void PropertyCaseCollision()
         {
             var schema = GraphqlLoader.Helpers.ParseSchema(@"

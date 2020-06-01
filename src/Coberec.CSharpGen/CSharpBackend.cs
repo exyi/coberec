@@ -312,6 +312,12 @@ namespace Coberec.CSharpGen
 
             cx.Metadata.RegisterTypeMod(type, _ => { }, vtype => {
 
+                if (formatFn != null && typeDef.Directives.Any(d => d.Name == "customFormat"))
+                {
+                    var x = (VirtualMethod)vtype.Methods.Single(m => m.Name == formatFn.Signature.Name && m.Parameters.Count == formatFn.Signature.Params.Length);
+                    x.IsHidden = true;
+                }
+
                 if (cx.Settings.AddJsonPropertyAttributes)
                 {
                     foreach (var (f, p, _) in props)

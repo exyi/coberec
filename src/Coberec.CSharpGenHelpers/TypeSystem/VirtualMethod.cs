@@ -143,7 +143,7 @@ namespace Coberec.CSharpGen.TypeSystem
 
         public Func<ILFunction> BodyFactory { get; set; }
 
-        public bool IsHidden { get; }
+        public bool IsHidden { get; set; }
 
         public bool IsPartial { get; set; }
 

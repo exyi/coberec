@@ -47,8 +47,6 @@ namespace Coberec.ExprCS
         /// <summary> Creates a method definition of a static method without arguments. </summary>
         public static MethodDef Create(MethodSignature signature, Expression body)
         {
-            Assert.Empty(signature.Params);
-            Assert.True(signature.IsStatic);
             return new MethodDef(signature, ImmutableArray<ParameterExpression>.Empty, body);
         }
 
