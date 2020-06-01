@@ -74,7 +74,7 @@ namespace Coberec.CSharpGen.Emit
         }
 
         static readonly MethodSignature ConcatMethod = MethodReference.FromLambda(() => FmtToken.Concat(ImmutableArray<object>.Empty, new string[0])).Signature;
-        static readonly MethodSignature FormatArrayMethod = MethodReference.FromLambda(() => FmtToken.FormatArray(ImmutableArray<int>.Empty)).Signature;
+        static readonly MethodSignature FormatArrayMethod = MethodReference.FromLambda(() => FmtToken.FormatArray(ImmutableArray<int>.Empty, "", "")).Signature;
         static readonly MethodSignature FormatNullableArrayMethod = MethodReference.FromLambda(() => FmtToken.FormatArray(default(Nullable<ImmutableArray<int>>))).Signature;
 
         static Expression FormatField(ParameterExpression @this, FieldReference field)
