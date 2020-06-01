@@ -11,7 +11,7 @@ namespace NS
 			}
 			object f2(bool pBool1)
 			{
-				return pBool1 ? ((object)(object)f()) : null;
+				return pBool1 ? ((object)f()) : null;
 			}
 		}
 	}

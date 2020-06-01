@@ -6,7 +6,7 @@ namespace NS
 	{
 		public static object M()
 		{
-			return (object)(object)1;
+			return 1;
 		}
 	}
 	public class D

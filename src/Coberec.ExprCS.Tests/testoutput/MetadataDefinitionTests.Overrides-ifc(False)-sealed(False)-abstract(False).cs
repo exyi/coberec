@@ -19,7 +19,7 @@ namespace MyNamespace
 
 		protected override object M1()
 		{
-			return (object)(object)1;
+			return 1;
 		}
 
 		public override U0 M2<U0, U1>(U1 a)

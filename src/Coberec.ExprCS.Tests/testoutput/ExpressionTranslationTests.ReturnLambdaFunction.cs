@@ -20,7 +20,7 @@ namespace NS
 	{
 		public static Func<bool, object> M()
 		{
-			return (bool pBool1) => pBool1 ? ((object)(object)((Func<int>)(() => 1))()) : null;
+			return (bool pBool1) => pBool1 ? ((object)((Func<int>)(() => 1))()) : null;
 		}
 	}
 }

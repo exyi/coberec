@@ -290,10 +290,12 @@ namespace Coberec.ExprCS.CodeTranslation
                 );
         }
 
+        private int tmpVarIndex = 1;
+
         ILVariable CreateOutputVar(TypeReference type) =>
             type == TypeSignature.Void ?
                 null :
-                new ILVariable(VariableKind.Local, this.Metadata.GetTypeReference(type));
+                new ILVariable(VariableKind.Local, this.Metadata.GetTypeReference(type)){ Name = "tmp_" + tmpVarIndex++ };
 
         StatementBlock TranslateBreak(BreakExpression e)
         {
@@ -426,7 +428,7 @@ namespace Coberec.ExprCS.CodeTranslation
 
             var input = value.Instr();
             var instruction =
-                conversion.IsBoxingConversion ? new Box(input, to) :
+                conversion.IsBoxingConversion ? new Box(input, value.Type) :
                 conversion.IsUnboxingConversion ? new UnboxAny(input, to) :
                 (ILInstruction)input;
 

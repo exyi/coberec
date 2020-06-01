@@ -36,6 +36,7 @@ namespace Coberec.ExprCS.Tests
         ParameterExpression pString1 = ParameterExpression.Create(TypeSignature.String, "pString1");
         ParameterExpression pObject = ParameterExpression.Create(TypeSignature.Object, "pObject");
         ParameterExpression pTime = ParameterExpression.Create(TypeSignature.TimeSpan, "pTime");
+        ParameterExpression pImmutableArray = ParameterExpression.Create(TypeSignature.ImmutableArrayOfT.Specialize(TypeSignature.String), "pImmutableArray");
 
         public ExpressionTranslationTests()
         {
@@ -454,6 +455,25 @@ namespace Coberec.ExprCS.Tests
         {
             cx.AddTestExpr(Expression.Constant(null, TypeSignature.NullableOfT.Specialize(TypeSignature.Boolean)));
             cx.AddTestExpr(Expression.Constant(true, TypeSignature.NullableOfT.Specialize(TypeSignature.Boolean)));
+
+            check.CheckOutput(cx);
+        }
+
+        [Fact]
+        public void ConditionalBoxing()
+        {
+            cx.AddTestExpr(Expression.Conditional(pBool1,
+                Expression.Constant(0).Box(),
+                Expression.Constant<object>(null)
+            ), pBool1);
+            cx.AddTestExpr(Expression.Conditional(pBool1,
+                Expression.Constant(0).Box(),
+                Expression.Constant("").Box()
+            ), pBool1);
+            cx.AddTestExpr(Expression.Conditional(pBool1,
+                pImmutableArray.Read().Box(),
+                Expression.Constant<object>(null)
+            ), pBool1, pImmutableArray);
 
             check.CheckOutput(cx);
         }

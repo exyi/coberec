@@ -6,7 +6,7 @@ namespace NS
 	{
 		public static object M()
 		{
-			return ((Func<bool, object>)((bool pBool1) => pBool1 ? ((object)(object)((Func<int>)(() => 1))()) : null))(arg: true);
+			return ((Func<bool, object>)((bool pBool1) => pBool1 ? ((object)((Func<int>)(() => 1))()) : null))(arg: true);
 		}
 	}
 }
