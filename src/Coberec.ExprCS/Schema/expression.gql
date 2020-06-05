@@ -103,8 +103,11 @@ type ParameterExpression
 
 # Defines a `Variable` initialized with `Value`. Then evaluates `Target` with the variable in scope and returns its value
 type LetInExpression {
+    # the variable declared by this expression
     variable: ParameterExpression
+    # initial value of the `Variable`
     value: Expression
+    # expression evaluated after the variable is created
     target: Expression
 }
 
