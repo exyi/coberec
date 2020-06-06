@@ -59,7 +59,7 @@ type VariableReferenceExpression
 
 # Stores the value into an anonymous temporary variable, and returns the address of that variable.
 type AddressOfExpression
-    @format(t: "&{expr}") {
+    @format(t: "addr_of({expr})") {
     expr: Expression
 }
 
