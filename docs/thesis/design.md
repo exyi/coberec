@@ -169,9 +169,89 @@ Then, we use `Console.WriteLine(object)` to print a `MyNumber` instance to stdou
 Conversion to `object`, the expected argument of `WriteLine` method is implicit, but if we do not write the conversion explicitly, the `Console.WriteLine(double)` overload will be called instead.
 In practice, this could lead to reduced precision of the output or wrong output format; most importantly it is a violation of the promise that our library will always reference exactly the symbol user has ordered.
 
-Being explicit in every aspect is a way chosen by many code generators. TODO
+Being explicit in every aspect is a way chosen by many code generators.
+An example might the code generator for resource (`.resx`) files ([example file](https://github.com/dotnet/runtime/blob/3bb5f14/src/libraries/Common/tests/Resources/Strings.Designer.cs)) or DotVVM view compiler ([generator implementation](https://github.com/riganti/dotvvm/blob/61ee3fd/src/DotVVM.Framework/Compilation/DefaultViewCompilerCodeEmitter.cs#L702)).
+However, the explicitness heavily afflicts readability of the produced code.
+We think that that transparency and "debuggability" is a very important advantage of code generation compared to the other approaches, so we would like to get the best of both worlds by having a smart code generator.
+
+Implementing such a smart code generator would be very demanding, so we are not aware of anyone doing that in C# for the purpose of code generation.
+However, the [ILSpy project](https://github.com/icsharpcode/ILSpy) shares the same problem and it already has a very reliable C# emitter.
+ILSpy is a decompiler for .NET assemblies and the authors take correctness and precision very seriously.
+
+We could say that ILSpy is also a code generator, but the source metadata is the .NET intermediate language (IL).
+In the first step of the decompilation, ILSpy parses IL into an internal abstract tree - [the ILAst tree](https://github.com/icsharpcode/ILSpy/blob/faea7ee90d636fe8d2bc6a2f7f7b00dada9f01b2/doc/ILAst.txt).
+After that, many transformations are ran on the tree and then it is translated into a C# syntax tree.
+Few other transformation run on the C# syntax tree and then it is formatted into a text form.
+
+To avoid too noisy output and too complicated implementation, we will translate our expression into ILSpy's internal ILAst tree and then let ILSpy produce the code.
 
 ## Metadata
 
 Since we can not depend on System.Reflection, we need another to represent references to symbols.
-We also want to generate code that defines new symbols, so our model must be account for that.
+We also want to allow users to define new symbols, so our model must be account for that.
+
+### ILSpy type system
+
+ILSpy has its own type system built on top of [`System.Reflection.Metadata` library](https://docs.microsoft.com/en-us/dotnet/api/system.reflection.metadata?view=netcore-3.1) (that is very different from standard Reflection).
+`System.Reflection.Metadata` only allows reading .NET assemblies, it is not possible to define new symbols on fly.
+However, ILSpy type system is quite extensible, so it is possible to declare new symbols.
+
+We started with using the ILSpy type system directly in our expression trees, but it has several deficiencies.
+In ILSpy, all the symbols are known in advance, there are not any new symbols emerging after the assemblies are loaded.
+This is not the case in our project, where the entire point is to declare new symbols.
+Types in ILSpy system contain references to all other related symbols like declaring type and the members.
+That is convenient when we inspect the types, but complicates everything when the types are created.
+The references in ILSpy type system are cyclic, so we have to make the some of the properties mutable to make their creation possible.
+ILSpy however assumes that symbols do not change at some places and caches information.
+
+Having mutable types also complicates the design for us.
+While the expression tree is created, we would like to validate basic constraints (if types fit, correct number of arguments was specified, ...).
+The validation however stops making sense, when some of the validated properties may change.
+Having an immutable model of metadata would be very beneficial for this purpose.
+
+Also, by using ILSpy type system, we would lock ourselves to using ILSpy as a backend.
+At the time publishing of this work, there is no support for any other backend.
+However, it could make sense to create one - for example, we could add support for Reflection.Emit and Linq.Expression to provide a common API for generating code at compile time and code at runtime.
+
+### Signatures
+
+We cannot simply copy the ILSpy system or reflection and allow additions of new symbols, since we want to have the metadata immutable.
+Immutability will be a promise that whenever a function gets information about a symbol, it won't change.
+
+We need to allow adding new symbols even when there are cyclic references (like recursive methods and recursive types).
+This means that information about type can not contain its members and information about methods can not contain the body.
+We will split the responsibilities - type or method **definition** will contain all information about its contents and a **signature**, that will only contain the most basic information.
+
+To define a type definition, the user will need all members of the type already defined.
+On the other hand, creating a signature will be trivial - they will just need to know the full name and basic information (parameters, ...).
+To reference a symbol from code (such as calling a method), only the signature will be needed.
+So, symbols can be referenced before they are defined with all the information.
+Moreover, validating usage should be sound, since all properties of the type, method, field or property signature are going to be immutable.
+
+Type signatures contain information about its full name, accessibility, kind of the type (interface, struct, class, ...), if it is abstract or sealed and the generic type parameters.
+Type members contain a signature of the declaring type, name of the member and other basic information (arguments, result type, if it is static, virtual or abstract).
+
+> For more details, see the documentation of `TypeSignature`, `MethodSignature`, `FieldSignature` and `PropertySignature` (TODO link)
+
+### References
+
+.NET has support generics - types and methods may be parametrized by a type argument.
+Since we want to support the concept, every time we will be referencing a symbol from code, we will provide a list of type arguments for that symbol.
+
+It is important to make a distinction between a symbol signature and a symbol reference.
+Simply put, signature is a generic version of the symbol - as it is declared in the code, the type parameters are unassigned.
+Reference is a specialized version of the symbol - the type parameters have their arguments filled in.
+When declaring symbols, we use the signatures - we only know the definition of the type parameter.
+On the other hand, in code, we almost always need to know the type including its type argument.
+It would not make any sense to create a instance of `List<?>`, for example.
+
+When the symbol is not generic, there are no generic arguments to be filled and the reference becomes basically equivalent to a signature.
+Because most types nd method are not generic, this is a very common situation and we will have an implicit conversion from signature to reference.
+It will throw an exception if there would be missing types arguments, which is not considered a good practice for implicit conversions.
+However, it saves a lot of typing, so we find it useful anyway.
+
+> Note that the type arguments may still contain different generic parameters.
+> When we are declaring a generic type or method, we will be using the its generic parameters (instances of `GenericParameter`) in the symbol references.
+> We can then use the parameters in the arguments of other types.
+> The different between a signature and a reference is similar to `typeof(List<>)` and `typeof(List<X>)`.
+> In the second case (similar to reference), the List is not specialized by another parameter `X`, not its own `T`.
