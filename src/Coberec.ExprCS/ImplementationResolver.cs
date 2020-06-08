@@ -9,7 +9,7 @@ namespace Coberec.ExprCS
     static class ImplementationResolver
     {
         public static TypeSignature UnwrapSignature(SpecializedType st) =>
-            st.GenericParameters.Length == 0 ? st.Type : throw new NotSupportedException($"Generic type is not supported in this context.");
+            st.TypeArguments.Length == 0 ? st.Type : throw new NotSupportedException($"Generic type is not supported in this context.");
 
         public static TypeDef AutoResolveImplementations(TypeDef type, MetadataContext cx)
         {
@@ -34,7 +34,7 @@ namespace Coberec.ExprCS
                              .Where(m2 => method.Signature.Accessibility == m2.Item2.Accessibility)
                              .Where(m2 => method.Signature.IsOverride || m2.Item2.DeclaringType.Kind == "interface")
                              .ToArray();
-                    return method.With(implements: method.Implements.AddRange(mm.Select(m => m.Item2.Specialize(m.Item1.GenericParameters, m.Item2.TypeParameters.Select(TypeReference.GenericParameter)))));
+                    return method.With(implements: method.Implements.AddRange(mm.Select(m => m.Item2.Specialize(m.Item1.TypeArguments, m.Item2.TypeParameters.Select(TypeReference.GenericParameter)))));
                 }
                 else if (member is PropertyDef property && properties.Contains(property.Signature.Name))
                 {
@@ -43,7 +43,7 @@ namespace Coberec.ExprCS
                              .Where(p2 => property.Signature.Accessibility == p2.Item2.Accessibility)
                              .Where(p2 => property.Signature.IsOverride || p2.Item2.DeclaringType.Kind == "interface")
                              .ToArray();
-                    return property.With(implements: property.Implements.AddRange(pp.Select(p => p.Item2.Specialize(p.Item1.GenericParameters))));
+                    return property.With(implements: property.Implements.AddRange(pp.Select(p => p.Item2.Specialize(p.Item1.TypeArguments))));
                 }
                 else return member;
             }).ToImmutableArray();

@@ -13,12 +13,12 @@ namespace Coberec.ExprCS
         {
             if (f.Signature is null) return;
             var expectedCount = f.Signature.DeclaringType.TotalParameterCount();
-            if (expectedCount != f.TypeParameters.Length)
-                e.Add(ValidationErrors.Create($"Declaring type {f.Signature.DeclaringType} expected {expectedCount} parameters, got [{string.Join(", ", f.TypeParameters)}]"));
+            if (expectedCount != f.TypeArguments.Length)
+                e.Add(ValidationErrors.Create($"Declaring type {f.Signature.DeclaringType} expected {expectedCount} parameters, got [{string.Join(", ", f.TypeArguments)}]"));
         }
 
-        public SpecializedType DeclaringType() => new SpecializedType(this.Signature.DeclaringType, this.TypeParameters);
-        public TypeReference ResultType() => Signature.ResultType.SubstituteGenerics(Signature.DeclaringType.AllTypeParameters(), this.TypeParameters);
+        public SpecializedType DeclaringType() => new SpecializedType(this.Signature.DeclaringType, this.TypeArguments);
+        public TypeReference ResultType() => Signature.ResultType.SubstituteGenerics(Signature.DeclaringType.AllTypeParameters(), this.TypeArguments);
 
         public FmtToken Format() => FieldSignature.Format(Signature, ResultType());
 
@@ -26,7 +26,7 @@ namespace Coberec.ExprCS
         {
             var s = FieldSignature.FromReflection(field);
             var declaringType = ((TypeReference.SpecializedTypeCase) TypeReference.FromType(field.DeclaringType)).Item;
-            return new FieldReference(s, declaringType.GenericParameters);
+            return new FieldReference(s, declaringType.TypeArguments);
         }
 
         /// <summary> Gets the top most accessed field from the expression. For example `(X a) => a.B.C.D` will return descriptor of the field `D`. </summary>

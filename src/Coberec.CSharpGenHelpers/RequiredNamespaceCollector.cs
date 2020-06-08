@@ -35,8 +35,6 @@ namespace Coberec.CSharpGen.Emit
 			HandleAttributes(module.GetModuleAttributes(), namespaces);
 		}
 
-		static readonly ICSharpCode.Decompiler.TypeSystem.GenericContext genericContext = default;
-
 		public static void CollectNamespaces(IEntity entity, IModule module,
 			HashSet<string> namespaces)
 		{

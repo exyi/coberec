@@ -246,33 +246,33 @@ namespace Coberec.ExprCS
         public IEnumerable<MethodReference> GetMemberMethods(SpecializedType type, params TypeReference[] typeArgs) =>
             GetMemberMethodDefs(type.Type)
             .Where(m => m.TypeParameters.Length == typeArgs.Length)
-            .Select(m => new MethodReference(m, type.GenericParameters, typeArgs.ToImmutableArray()));
+            .Select(m => new MethodReference(m, type.TypeArguments, typeArgs.ToImmutableArray()));
 
         /// <summary> Lists all method references of the specified <paramref name="type" /> of the specified <paramref name="name" />. Only includes the methods declared in this type, not the inherited ones. </summary>
         public IEnumerable<MethodReference> GetMemberMethods(SpecializedType type, string name, params TypeReference[] typeArgs) =>
             GetMemberMethodDefs(type.Type, name)
             .Where(m => m.TypeParameters.Length == typeArgs.Length)
-            .Select(m => new MethodReference(m, type.GenericParameters, typeArgs.ToImmutableArray()));
+            .Select(m => new MethodReference(m, type.TypeArguments, typeArgs.ToImmutableArray()));
 
         /// <summary> Lists all field references of the specified <paramref name="type" />. Only includes the fields declared in this type, not the inherited ones. </summary>
         public IEnumerable<FieldReference> GetMemberFields(SpecializedType type) =>
             GetMemberFieldDefs(type.Type)
-            .Select(f => new FieldReference(f, type.GenericParameters));
+            .Select(f => new FieldReference(f, type.TypeArguments));
 
         /// <summary> Get the member field of the specified <paramref name="type" />with specified <paramref name="name" />. Only includes the fields declared in this type, not the inherited ones. </summary>
         public FieldReference GetMemberField(SpecializedType type, string name) =>
             GetMemberFieldDef(type.Type, name)
-            ?.Apply(f => new FieldReference(f, type.GenericParameters));
+            ?.Apply(f => new FieldReference(f, type.TypeArguments));
 
         /// <summary> Lists all property references of the specified <paramref name="type" />. Only includes the properties declared in this type, not the inherited ones. </summary>
         public IEnumerable<PropertyReference> GetMemberProperties(SpecializedType type) =>
             GetMemberPropertyDefs(type.Type)
-            .Select(p => new PropertyReference(p, type.GenericParameters));
+            .Select(p => new PropertyReference(p, type.TypeArguments));
 
         /// <summary> Get the member property of the specified <paramref name="type" /> with specified <paramref name="name" />. Only includes the properties declared in this type, not the inherited ones. </summary>
         public PropertyReference GetMemberProperty(SpecializedType type, string name) =>
             GetMemberPropertyDef(type.Type, name)
-            ?.Apply(p => new PropertyReference(p, type.GenericParameters));
+            ?.Apply(p => new PropertyReference(p, type.TypeArguments));
 
         /// <summary> Lists all member references of the specified <paramref name="type" />. Only includes the members declared in this type, not the inherited ones. Note that only methods without generic arguments are returned, if you want to get to them, use <see cref="GetMemberMethods(SpecializedType, TypeReference[])" /> </summary>
         public IEnumerable<MemberReference> GetMembers(SpecializedType type) =>
@@ -314,19 +314,19 @@ namespace Coberec.ExprCS
            (this.definedTypes.TryGetValue(type.Type, out var t) ? t.Implements :
             GetTypeDef(type.Type).DirectBaseTypes.Where(b => b.Kind == TypeKind.Interface).Select(SymbolLoader.TypeRef).Select(t => Assert.IsType<TypeReference.SpecializedTypeCase>(t).Item)
            )
-            .Select(t => t.SubstituteGenerics(type.Type.AllTypeParameters(), type.GenericParameters));
+            .Select(t => t.SubstituteGenerics(type.Type.AllTypeParameters(), type.TypeArguments));
 
         /// <summary> Gets all base type signatures of the specified <paramref name="type" />. </summary>
         public IEnumerable<SpecializedType> GetBaseTypes(SpecializedType type) =>
            (this.definedTypes.TryGetValue(type.Type, out var t) ? GetBaseTypes(t.Extends ?? TypeSignature.Object.NotGeneric()).Append(t.Extends ?? TypeSignature.Object.NotGeneric()) :
             GetTypeDef(type.Type).GetAllBaseTypes().Select(SymbolLoader.TypeRef).Select(t => Assert.IsType<TypeReference.SpecializedTypeCase>(t).Item)
            )
-            .Select(t => t.SubstituteGenerics(type.Type.AllTypeParameters(), type.GenericParameters));
+            .Select(t => t.SubstituteGenerics(type.Type.AllTypeParameters(), type.TypeArguments));
 
 
         private Dictionary<TypeSignature, List<ILSpyArbitraryTypeModification>> typeMods = new Dictionary<TypeSignature, List<ILSpyArbitraryTypeModification>>();
 
-        /// <summary> The settings that controls how the code is generated set in <see cref="Create(string, IEnumerable{string}, EmitSettings)" />. Note that you can only read this property, if you'd like to change it, use the last parameter of the Create method. </summary>
+        /// <summary> The settings that controls how the code is generated set in <see cref="Create(IEnumerable{string}, EmitSettings)" />. Note that you can only read this property, if you'd like to change it, use the last parameter of the Create method. </summary>
         public EmitSettings Settings { get; }
 
         /// <summary> Registers a functions that can modify the ILSpy type definition. This may be useful if a feature is missing from ExprCS. </summary>

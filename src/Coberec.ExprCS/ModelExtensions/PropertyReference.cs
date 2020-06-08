@@ -14,25 +14,25 @@ namespace Coberec.ExprCS
         {
             if (p.Signature is null) return;
             var expectedCount = p.Signature.DeclaringType.TotalParameterCount();
-            if (expectedCount != p.TypeParameters.Length)
-                e.Add(ValidationErrors.Create($"Type {p.Signature.DeclaringType} expected {expectedCount} parameters, got [{string.Join(", ", p.TypeParameters)}]"));
+            if (expectedCount != p.TypeArguments.Length)
+                e.Add(ValidationErrors.Create($"Type {p.Signature.DeclaringType} expected {expectedCount} parameters, got [{string.Join(", ", p.TypeArguments)}]"));
         }
 
-        public SpecializedType DeclaringType() => new SpecializedType(this.Signature.DeclaringType, this.TypeParameters);
-        public TypeReference Type() => Signature.Type.SubstituteGenerics(Signature.DeclaringType.AllTypeParameters(), this.TypeParameters);
+        public SpecializedType DeclaringType() => new SpecializedType(this.Signature.DeclaringType, this.TypeArguments);
+        public TypeReference Type() => Signature.Type.SubstituteGenerics(Signature.DeclaringType.AllTypeParameters(), this.TypeArguments);
         public MethodReference Getter() =>
             Signature.Getter == null ? null :
-            new MethodReference(Signature.Getter, this.TypeParameters, ImmutableArray<TypeReference>.Empty);
+            new MethodReference(Signature.Getter, this.TypeArguments, ImmutableArray<TypeReference>.Empty);
         public MethodReference Setter() =>
             Signature.Setter == null ? null :
-            new MethodReference(Signature.Setter, this.TypeParameters, ImmutableArray<TypeReference>.Empty);
+            new MethodReference(Signature.Setter, this.TypeArguments, ImmutableArray<TypeReference>.Empty);
         public string Name() => Signature.Name;
 
         public static PropertyReference FromReflection(R.PropertyInfo prop)
         {
             var signature = PropertySignature.FromReflection(prop);
             var declaringType = ((TypeReference.SpecializedTypeCase) TypeReference.FromType(prop.DeclaringType)).Item;
-            return new PropertyReference(signature, declaringType.GenericParameters);
+            return new PropertyReference(signature, declaringType.TypeArguments);
         }
 
         //// <summary> Gets the top most accessed property from the expression. For example `(X a) => a.B.C.D` will return descriptor of the property `D`. </summary>

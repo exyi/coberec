@@ -73,7 +73,8 @@ namespace Coberec.ExprCS
                     1 => ImmutableArray_Create1,
                     2 => ImmutableArray_Create2,
                     3 => ImmutableArray_Create3,
-                    4 => ImmutableArray_Create4
+                    4 => ImmutableArray_Create4,
+                    _ => throw new Exception("invalid assumption")
                 };
                 return Expression.StaticMethodCall(
                     method.Specialize(elementType),

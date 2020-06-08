@@ -84,7 +84,7 @@ namespace Coberec.CSharpGen.Emit
             var nunwrap = access.Type().UnwrapNullableValueType() ?? field.ResultType();
             if (nunwrap.IsGenericInstanceOf(TypeSignature.ImmutableArrayOfT))
             {
-                var elemType = nunwrap.MatchST(st => st.GenericParameters.Single(), otherwise: null);
+                var elemType = nunwrap.MatchST(st => st.TypeArguments.Single(), otherwise: null);
                 return Expression.StaticMethodCall(
                     (isNullable ? FormatNullableArrayMethod : FormatArrayMethod).Specialize(elemType),
                     access

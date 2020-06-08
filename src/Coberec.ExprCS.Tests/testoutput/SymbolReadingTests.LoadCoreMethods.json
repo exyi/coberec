@@ -65,7 +65,7 @@
 						},
 						"TypeParameters": []
 					},
-					"GenericParameters": []
+					"TypeArguments": []
 				},
 				"CaseName": "SpecializedType",
 				"RawItem": {
@@ -99,7 +99,7 @@
 						},
 						"TypeParameters": []
 					},
-					"GenericParameters": []
+					"TypeArguments": []
 				},
 				"IsReferenceType": true
 			},
@@ -115,7 +115,7 @@
 			"HasSpecialName": false,
 			"TypeParameters": []
 		},
-		"TypeParameters": [],
-		"MethodParameters": []
+		"TypeArguments": [],
+		"MethodTypeArguments": []
 	}
 }

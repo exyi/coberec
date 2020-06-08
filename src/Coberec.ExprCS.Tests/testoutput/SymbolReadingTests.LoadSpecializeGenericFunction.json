@@ -103,7 +103,7 @@
 							}
 						]
 					},
-					"GenericParameters": [
+					"TypeArguments": [
 						{
 							"Item": {
 								"Id": "aaaaaaaa-bbbb-cccc-dddd-000000000001",
@@ -161,7 +161,7 @@
 							}
 						]
 					},
-					"GenericParameters": [
+					"TypeArguments": [
 						{
 							"Item": {
 								"Id": "aaaaaaaa-bbbb-cccc-dddd-000000000001",
@@ -195,8 +195,8 @@
 				}
 			]
 		},
-		"TypeParameters": [],
-		"MethodParameters": [
+		"TypeArguments": [],
+		"MethodTypeArguments": [
 			{
 				"Item": {
 					"Type": {
@@ -229,7 +229,7 @@
 						},
 						"TypeParameters": []
 					},
-					"GenericParameters": []
+					"TypeArguments": []
 				},
 				"CaseName": "SpecializedType",
 				"RawItem": {
@@ -263,7 +263,7 @@
 						},
 						"TypeParameters": []
 					},
-					"GenericParameters": []
+					"TypeArguments": []
 				},
 				"IsReferenceType": false
 			}
@@ -346,7 +346,7 @@
 								},
 								"TypeParameters": []
 							},
-							"GenericParameters": []
+							"TypeArguments": []
 						},
 						"CaseName": "SpecializedType",
 						"RawItem": {
@@ -380,7 +380,7 @@
 								},
 								"TypeParameters": []
 							},
-							"GenericParameters": []
+							"TypeArguments": []
 						},
 						"IsReferenceType": true
 					},
@@ -415,7 +415,7 @@
 			"HasSpecialName": false,
 			"TypeParameters": []
 		},
-		"TypeParameters": [
+		"TypeArguments": [
 			{
 				"Item": {
 					"Type": {
@@ -448,7 +448,7 @@
 						},
 						"TypeParameters": []
 					},
-					"GenericParameters": []
+					"TypeArguments": []
 				},
 				"CaseName": "SpecializedType",
 				"RawItem": {
@@ -482,11 +482,11 @@
 						},
 						"TypeParameters": []
 					},
-					"GenericParameters": []
+					"TypeArguments": []
 				},
 				"IsReferenceType": false
 			}
 		],
-		"MethodParameters": []
+		"MethodTypeArguments": []
 	}
 }

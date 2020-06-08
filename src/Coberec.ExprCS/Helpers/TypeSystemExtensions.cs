@@ -54,7 +54,7 @@ namespace Coberec.ExprCS
         /// </example>
         public static bool IsOpen(this TypeReference type) =>
             type.Match(
-                specializedType => specializedType.GenericParameters.Any(IsOpen),
+                specializedType => specializedType.TypeArguments.Any(IsOpen),
                 arrayType => arrayType.Type.IsOpen(),
                 byReferenceType => byReferenceType.Type.IsOpen(),
                 pointerType => pointerType.Type.IsOpen(),
@@ -78,7 +78,7 @@ namespace Coberec.ExprCS
         /// Gets the T from <see cref="System.Nullable{T}" /> - i.e. a value type that is nullable. Returns null if <paramref name="type" /> is not nullable value type.
         /// </summary>
         public static TypeReference UnwrapNullableValueType(this TypeReference type) =>
-            type.MatchST(st => st.Type == TypeSignature.NullableOfT ? st.GenericParameters.Single() : null, otherwise: _ => null);
+            type.MatchST(st => st.Type == TypeSignature.NullableOfT ? st.TypeArguments.Single() : null, otherwise: _ => null);
 
         /// <summary>
         /// Gets the invoke method for a delegate type.
@@ -227,7 +227,7 @@ namespace Coberec.ExprCS
             foreach (var baseType in cx.GetBaseTypes(collectionType)) {
                 if (baseType.Type == TypeSignature.IEnumerableOfT || (allowIEnumerator && baseType.Type == TypeSignature.IEnumeratorOfT)) {
                     isGeneric = true;
-                    return Assert.Single(baseType.GenericParameters);
+                    return Assert.Single(baseType.TypeArguments);
                 }
                 if (baseType.Type == TypeSignature.IEnumerable || (allowIEnumerator && baseType.Type == TypeSignature.IEnumerator))
                     foundNonGenericIEnumerable = true;

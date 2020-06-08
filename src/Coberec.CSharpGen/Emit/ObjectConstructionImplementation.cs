@@ -129,7 +129,7 @@ namespace Coberec.CSharpGen.Emit
                 if (type.IsGenericInstanceOf(Type_ImmutableArrayOfT)) // TODO: nullable types (depends on sane decompilation of conditionals)
                 {
                     // ImmutableArray<X>
-                    var t = ((TypeReference.SpecializedTypeCase)nullUnwrappedType).Item.GenericParameters.Single();
+                    var t = ((TypeReference.SpecializedTypeCase)nullUnwrappedType).Item.TypeArguments.Single();
                     Expression nonNullable(Expression e) => e.CallMethod(Method_ToImmutableArray.SpecializeFromDeclaringType(t));
                     Expression nullable(Expression e) =>
                         Expression.Conditional(

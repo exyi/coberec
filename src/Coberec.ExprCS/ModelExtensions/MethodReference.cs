@@ -16,27 +16,27 @@ namespace Coberec.ExprCS
         {
             if (m.Signature is null) return;
             var expectedCount = m.Signature.DeclaringType.TotalParameterCount();
-            if (expectedCount != m.TypeParameters.Length)
-                e.Add(ValidationErrors.Create($"Type {m.Signature.DeclaringType} expected {expectedCount} parameters, got [{string.Join(", ", m.TypeParameters)}]"));
-            if (m.Signature.TypeParameters.Length != m.MethodParameters.Length)
-                e.Add(ValidationErrors.Create($"Method {m.Signature} expected {expectedCount} type parameters, got [{string.Join(", ", m.MethodParameters)}]"));
+            if (expectedCount != m.TypeArguments.Length)
+                e.Add(ValidationErrors.Create($"Type {m.Signature.DeclaringType} expected {expectedCount} parameters, got [{string.Join(", ", m.TypeArguments)}]"));
+            if (m.Signature.TypeParameters.Length != m.MethodTypeArguments.Length)
+                e.Add(ValidationErrors.Create($"Method {m.Signature} expected {expectedCount} type parameters, got [{string.Join(", ", m.MethodTypeArguments)}]"));
         }
 
         /// <summary> Method declaring type. Generic type parameters are substituted according to the type arguments. </summary>
         /// <seealso cref="MethodSignature.DeclaringType" />
-        public SpecializedType DeclaringType() => new SpecializedType(this.Signature.DeclaringType, this.TypeParameters);
+        public SpecializedType DeclaringType() => new SpecializedType(this.Signature.DeclaringType, this.TypeArguments);
         /// <summary> Method result type. Generic type parameters are substituted according to the type arguments. </summary>
         /// <seealso cref="MethodSignature.ResultType" />
-        public TypeReference ResultType() => Signature.ResultType.SubstituteGenerics(Signature.TypeParameters, this.MethodParameters).SubstituteGenerics(Signature.DeclaringType.AllTypeParameters(), this.TypeParameters);
+        public TypeReference ResultType() => Signature.ResultType.SubstituteGenerics(Signature.TypeParameters, this.MethodTypeArguments).SubstituteGenerics(Signature.DeclaringType.AllTypeParameters(), this.TypeArguments);
         /// <summary> Method parameters. Generic type parameters are substituted according to the type arguments. </summary>
         /// <seealso cref="MethodSignature.Params" />
         public ImmutableArray<MethodParameter> Params() =>
-            Signature.Params.EagerSelect(p => p.SubstituteGenerics(Signature.TypeParameters, this.MethodParameters)
-                                               .SubstituteGenerics(Signature.DeclaringType.AllTypeParameters(), this.TypeParameters));
+            Signature.Params.EagerSelect(p => p.SubstituteGenerics(Signature.TypeParameters, this.MethodTypeArguments)
+                                               .SubstituteGenerics(Signature.DeclaringType.AllTypeParameters(), this.TypeArguments));
         public string Name() => Signature.Name;
 
         public FmtToken Format() =>
-            MethodSignature.Format(Signature, this.MethodParameters, this.Params(), this.ResultType());
+            MethodSignature.Format(Signature, this.MethodTypeArguments, this.Params(), this.ResultType());
 
         /// <summary> Creates a MethodReference from System.Reflections MethodInfo or ConstructorInfo. Also works for property getters, setters, static constructors, ... </summary>
         public static MethodReference FromReflection(R.MethodBase method)
@@ -47,7 +47,7 @@ namespace Coberec.ExprCS
             var methodArgs = method.IsGenericMethod ?
                              method.GetGenericArguments().EagerSelect(TypeReference.FromType) :
                              ImmutableArray<TypeReference>.Empty;
-            return new MethodReference(signature, declaringType.GenericParameters, methodArgs);
+            return new MethodReference(signature, declaringType.TypeArguments, methodArgs);
         }
 
         /// <summary> Gets the top most invoked method from the expression. For example `(String a) => a.Trim(anything)` will return descriptor of the Trim method. The function also supports properties (it will return the getter) and constuctors (using the `new XXX()` syntax). </summary>

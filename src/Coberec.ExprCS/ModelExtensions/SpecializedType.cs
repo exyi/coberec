@@ -13,8 +13,8 @@ namespace Coberec.ExprCS
         {
             if (t.Type is null) return;
             var expectedCount = t.Type.TotalParameterCount();
-            if (expectedCount != t.GenericParameters.Length)
-                e.Add(ValidationErrors.Create($"Type {t.Type} expected {expectedCount} parameters, got [{string.Join(", ", t.GenericParameters)}]"));
+            if (expectedCount != t.TypeArguments.Length)
+                e.Add(ValidationErrors.Create($"Type {t.Type} expected {expectedCount} parameters, got [{string.Join(", ", t.TypeArguments)}]"));
         }
 
         public SpecializedType(TypeSignature type, params TypeReference[] genericArgs)
@@ -24,24 +24,24 @@ namespace Coberec.ExprCS
         public SpecializedType DeclaringType() =>
             this.Type.Parent.Match(
                 ns => null,
-                t => t.Specialize(this.GenericParameters.Take(t.TypeParameters.Length).ToImmutableArray())
+                t => t.Specialize(this.TypeArguments.Take(t.TypeParameters.Length).ToImmutableArray())
             );
 
         public SpecializedType SubstituteGenerics(
             IEnumerable<GenericParameter> parameters,
             IEnumerable<TypeReference> arguments) =>
-            this.GenericParameters.Length == 0 ? this :
+            this.TypeArguments.Length == 0 ? this :
             SubstituteGenerics(parameters.ToImmutableArray(), arguments.ToImmutableArray());
         public SpecializedType SubstituteGenerics(
             ImmutableArray<GenericParameter> parameters,
             ImmutableArray<TypeReference> arguments) =>
-            this.GenericParameters.Length == 0 || parameters.Length == 0 ? this :
-            With(genericParameters: GenericParameters.EagerSelect(t => t.SubstituteGenerics(parameters, arguments)));
+            this.TypeArguments.Length == 0 || parameters.Length == 0 ? this :
+            With(typeArguments: this.TypeArguments.EagerSelect(t => t.SubstituteGenerics(parameters, arguments)));
 
         public FmtToken Format() =>
-            this.GenericParameters.IsEmpty
+            this.TypeArguments.IsEmpty
                 ? FmtToken.Single(this.Type, "type")
-                : FmtToken.Concat(this.Type, FmtToken.FormatArray(GenericParameters, "<", ">"))
+                : FmtToken.Concat(this.Type, FmtToken.FormatArray(this.TypeArguments, "<", ">"))
                           .WithTokenNames("type", "genericParameters");
 
     }

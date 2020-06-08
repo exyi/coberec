@@ -135,7 +135,7 @@ type FunctionReference {
 # Does function -> function (by using covariance/contravariance)
 #      delegate -> function
 #      function -> delegate
-#      delegate -> delegate (must be only compatible, for example can convert Func<int, bool> <-> Predicate<bool>)
+#      delegate -> delegate (must be only compatible, for example can convert Func&lt;int, bool> &lt;-> Predicate&lt;bool>)
 type FunctionConversionExpression {
     value: Expression
     type: TypeReference

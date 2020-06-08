@@ -2,7 +2,7 @@ type ModuleSignature {
     name: String
 }
 
-# Namespace name separated by dots. Use <see cref="Parse(string)" /> to create an instance
+# Namespace name separated by dots. Use <see cref="NamespaceSignature.Parse(string)" /> to create an instance
 type NamespaceSignature @customFormat {
     name: String
     parent: NamespaceSignature!
@@ -31,25 +31,32 @@ interface MemberSignature {
 
 interface MemberReference {
     signature: MemberSignature
-    typeParameters: [TypeReference]
+    typeArguments: [TypeReference]
 }
 
-# Basic metadata about a type - <see cref="Name" />, <see cref="Kind" />, <see cref="Accessibility" />, ...
+# Basic metadata about a type - <see cref="TypeSignature.Name" />, <see cref="TypeSignature.Kind" />, <see cref="TypeSignature.Accessibility" />, ...
 type TypeSignature implements MemberSignature @customFormat {
+    # Name of the type
     name: String
+    # Where the type is declared
     parent: TypeOrNamespace
+    # Type of the type. interface, class, struct, delegate, enum
     kind: String
+    # If the type is passed by value. Corresponds to the C# `where T: struct` construct
     isValueType: Boolean
+    # If the type can be inherited from. Basically corresponds to "not sealed", but value types, delegates and static classes also can not overridden
     canOverride: Boolean
+    # If the type can not be instantiated. Interfaces, abstract classes and static classes are abstract
     isAbstract: Boolean
     accessibility: Accessibility
-    typeParameters: [GenericParameter] # TODO: document how nested types work
+    # Type parameters (generic parameters) of this type. Only contains parameters of this specific type, not the parent type.
+    typeParameters: [GenericParameter]
 }
 
 # A type reference to a signature with filled in type parameters. This class is basically <see cref="TypeSignature" /> + generic arguments
 type SpecializedType @customFormat {
     type: TypeSignature
-    genericParameters: [TypeReference]
+    typeArguments: [TypeReference]
 }
 
 # Type reference that represents an array `Type[...Dimensions]`
@@ -108,8 +115,8 @@ type MethodSignature implements MemberSignature @customFormat {
 # Represents a reference to a method. The generic parameters of the parent class and the method are substituted - this class is basically <see cref="MethodSignature" /> + generic arguments
 type MethodReference implements MemberReference @customFormat {
     signature: MethodSignature
-    typeParameters: [TypeReference]
-    methodParameters: [TypeReference]
+    typeArguments: [TypeReference]
+    methodTypeArguments: [TypeReference]
 }
 
 # Basic metadata about a field - <see cref="Name"/>, <see cref="Accessibility" />, <see cref="DeclaringType" />, ...
@@ -125,7 +132,7 @@ type FieldSignature implements MemberSignature @customFormat {
 # Represents a reference to a field. The generic parameters of the parent class are substituted - this class is basically <see cref="FieldSignature" /> + generic arguments
 type FieldReference implements MemberReference @customFormat {
     signature: FieldSignature
-    typeParameters: [TypeReference]
+    typeArguments: [TypeReference]
 }
 
 # Basic metadata about a property - <see cref="Name" />, <see cref="Accessibility" />, <see cref="DeclaringType" />, ...
@@ -142,5 +149,5 @@ type PropertySignature implements MemberSignature @customFormat {
 # Represents a reference to a property. The generic parameters of the parent class are substituted - this class is basically <see cref="PropertySignature" /> + generic arguments
 type PropertyReference implements MemberReference {
     signature: PropertySignature
-    typeParameters: [TypeReference]
+    typeArguments: [TypeReference]
 }

@@ -38,7 +38,7 @@ namespace Coberec.ExprCS
         public static TS.IType GetTypeReference(this MetadataContext c, TypeReference tref) =>
             tref.Match(
                 st => {
-                    if (st.GenericParameters.IsEmpty)
+                    if (st.TypeArguments.IsEmpty)
                         return (IType)c.GetTypeDef(st.Type);
                     var genericType =
                         // when we have a parent type, we first need specialize it, then we can specialize our type
@@ -48,7 +48,7 @@ namespace Coberec.ExprCS
 
                     return new ParameterizedType(
                         genericType,
-                        st.GenericParameters
+                        st.TypeArguments
                         //   .Skip(st.GenericParameters.Length - st.Type.TypeParameters.Length)
                           .Select(p => GetTypeReference(c, p)));
                 },
@@ -108,8 +108,8 @@ namespace Coberec.ExprCS
         {
             var m = GetMethod(cx, method.Signature);
             var result = m.Specialize(new TypeParameterSubstitution(
-                method.TypeParameters.EagerSelect(t => GetTypeReference(cx, t)).NullIfEmpty(),
-                method.MethodParameters.EagerSelect(t => GetTypeReference(cx, t)).NullIfEmpty()));
+                method.TypeArguments.EagerSelect(t => GetTypeReference(cx, t)).NullIfEmpty(),
+                method.MethodTypeArguments.EagerSelect(t => GetTypeReference(cx, t)).NullIfEmpty()));
             Assert.Equal(SymbolLoader.TypeRef(result.ReturnType), method.ResultType());
             return result;
         }
@@ -126,7 +126,7 @@ namespace Coberec.ExprCS
         public static IField GetField(this MetadataContext cx, FieldReference field)
         {
             var f = GetField(cx, field.Signature);
-            var result = (IField)f.Specialize(new TypeParameterSubstitution(field.TypeParameters.EagerSelect(t => GetTypeReference(cx, t)).NullIfEmpty(), null));
+            var result = (IField)f.Specialize(new TypeParameterSubstitution(field.TypeArguments.EagerSelect(t => GetTypeReference(cx, t)).NullIfEmpty(), null));
             Assert.Equal(SymbolLoader.TypeRef(result.ReturnType), field.ResultType());
             return result;
         }
@@ -144,7 +144,7 @@ namespace Coberec.ExprCS
         public static IProperty GetProperty(this MetadataContext cx, PropertyReference prop)
         {
             var p = GetProperty(cx, prop.Signature);
-            var result = (IProperty)p.Specialize(new TypeParameterSubstitution(prop.TypeParameters.EagerSelect(t => GetTypeReference(cx, t)).NullIfEmpty(), null));
+            var result = (IProperty)p.Specialize(new TypeParameterSubstitution(prop.TypeArguments.EagerSelect(t => GetTypeReference(cx, t)).NullIfEmpty(), null));
             Assert.Equal(SymbolLoader.TypeRef(result.ReturnType), prop.ResultType());
             return result;
         }
