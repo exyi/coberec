@@ -259,3 +259,47 @@ However, it significantly reduces noises of the user code, so we find it helpful
 > We can then use the generic parameters in the arguments of other types.
 > The difference between a signature and a reference is similar to the difference between `typeof(List<>)` and `typeof(List<X>)` in .NET Reflection.
 > In the second case (similar to reference), the List is not specialized by another parameter `X`, not its own parameter `T`.
+
+
+## Functions and delegates
+
+C# has support for functions declared inside of methods - either as lambda function or local functions. (TODO link docs)
+The concept of delegates allows us to work with the function as with any object - i.e. store them in variables, fields, parameters and return them from methods.
+Local function and lambda function can capture variables from the scope where they are declared.
+
+Since local function is almost equivalent to a lambda assigned to a local variable, we have decided to simplify the concept and only support lambda function.
+When the lambda function is immediately assigned to a variable, we will translate it into a C# local function, which arguably looks nicer.
+However, to declare a function variable in C#, we would need a delegate matching the function signature.
+Finding a matching delegate is usually not a problem, unless our function has `ref` parameters (TODO link) or very many arguments - we can usually use `Action<...>` or `Func<...>` delegates from the standard library.
+
+The lack of a matching delegates would make it impossible to declare local functions taking parameters by reference.
+That could be quite limiting.
+However, since we own and design the type system, we could add a special function type - an inline delegate.
+This is nothing new under the sun - most functional programming languages have a "function type".
+
+There is one more problem with delegates that we can solve using our function types.
+Delegates are basically special objects with an Invoke method matching the signature of the delegate, so our type signature is not going to contain the actual arguments and return type.
+Not only we would not be able to validate the arguments of an invocation - we would not be able to determine result type of the invocation expression.
+For all other expressions, we can do that, and most of the validation logic depends on the `Expression.Type()` method (see TODO link Type method).
+
+Including the delegate arguments and return type in the type signature is not even possible - delegates can return themselves: `delegate A A()` is perfectly valid C# code.
+Since our types are immutable, it would not be possible to construct such a delegate.
+Not only it would not be possible to create such code; more importantly, we could not even load assemblies with such types into our type system.
+
+```gql
+type FunctionType {
+    params: [MethodParameter]
+    resultType: TypeReference
+}
+```
+
+Our function type simply contains parameters and the return type.
+We will only allow invocations when the target is an expression of FunctionType and FunctionExpression, will return the FunctionType.
+To convert between delegates and function, we are going to provide FunctionConversionExpression.
+
+> Apparently, it is not possible to return itself from the FunctionType as such type would have to return itself.
+> However, we can still return a delegate from type function.
+> Afterwards, the delegate can be freely converted into a function type, and invoked again.
+
+> Note that FunctionConversionExpression can also convert between FunctionTypes, when the parameters and return types are compatible.
+> For consistency, it can also convert between different delegate types, which is a bit problematic in C# itself, so it will result in a lambda function being emitted.

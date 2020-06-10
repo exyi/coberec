@@ -118,7 +118,7 @@ type ConditionalExpression {
     ifFalse: Expression
 }
 
-# creates an anonymous function. Should translate to a local function or a lambda expression
+# creates an anonymous function. Will be translated to a local function or a lambda expression
 type FunctionExpression {
     params: [MethodParameter]
     args: [ParameterExpression]
