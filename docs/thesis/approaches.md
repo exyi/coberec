@@ -86,12 +86,44 @@ It would be nice to steal the ease of use for the end users, but we do not see a
 
 ## Scala macros
 
+
+
 ## D's mixin
 
 ## Dynamic (JSON deserialization)
 
-Note that C# has a `dynamic` keyword, which allows programmers to do exactly this kind of things.
-In our experience, it not used very widely, since C# programmers do not want to lose their type safety.
+All discussed languages were statically typed.
+However, dynamically typed platforms have a lot to say about the problem of boilerplate code.
+
+Obvious advantage of dynamically type platforms is that there is no problem to create new types at runtime.
+For example, in Javascript, the `{}` creates an empty object and simply assigning to a new field creates it.
+We can also assign to a variable field using the `obj["myField"] = value` notation; and any expression may be used instead of `"myField"`.
+Unlike in C# where we have to declare the types in code, we just create them at runtime.
+This means that there is no need to declare an expected type when we want to deserialize an object from JSON.
+
+Using a [`Proxy` object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy), we can even intercept fundamental operations on an object, like field access.
+Instead of generating API clients, this powerful mechanism may be used to create an object that translates method calls into API calls.
+A simple demonstration of such API client (and more) may be found in [Alberto Gimeno's article about JS Proxies](https://medium.com/dailyjs/how-to-use-javascript-proxies-for-fun-and-profit-365579d4a9f8)
+
+A slight disadvantage of such approach may be runtime performance.
+However, in cases when Javascript is used, the throughput of API invocations does not matter too much.
+On the other hand, the code size is a very important consideration for client-side Javascript applications, so it a great advantage when an API client that is only 20 lines of code.
+
+> Other languages than Javascript often have similar concepts, but we do not have the space here to go though all of them.
+> For brevity, let us just focus on Javascript in this section.
+
+The obvious disadvantage is the lack of guidance before the program runs - there are no types to guide the compiler or an IDE.
+We may also lack runtime validation of the objects.
+If the server were to send a string instead of a number in the JSON object, we would be unlikely to notice until we show it to the user.
+On the contrary, such misbehavior will crash during deserialization on a strongly typed platform like .NET.
+
+> Interesting compromise could be to use the dynamic API clients, or at least dynamic object created from JSON deserialization.
+> To achieve the type safety, a TypeScript definition could be generated from a common schema.
+
+Note that C# has a `dynamic` keyword, which allows programmers use C# as a dynamically type language.
+It supports almost anything we can do with the Javascript Proxy objects.
+Yet, in our experience, it not used very widely, since C# programmers do not want to lose their type safety.
+However, one of the most popular JSON (de)serializer, Newtonsoft.Json, supports it - we can simply declare `dynamic myObject = JObject.Parse(myJson)` and use it as we would in JS (see the [documentation for more details](https://www.newtonsoft.com/json/help/html/QueryJsonDynamic.htm))
 
 ## IL weaving
 
