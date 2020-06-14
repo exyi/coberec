@@ -142,13 +142,13 @@ Since the code generator is just a function returning string, there is almost no
 It can not integrate with the calling so tightly as we have seen in Scala.
 Yet, combined with D compile-time reflection, it can still offer much tighter integration than a separate code generator process.
 
-## Dynamic (JSON deserialization)
+## Dynamic languages
 
-All discussed languages were statically typed.
+All languages discussed above were statically typed.
 However, dynamically typed platforms have a lot to say about the problem of boilerplate code.
 
-Obvious advantage of dynamically type platforms is that there is no problem to create new types at runtime.
-For example, in Javascript, the `{}` creates an empty object and simply assigning to a new field creates it.
+The advantage of most dynamically type platforms is that there is no problem to create a new type at runtime.
+For example, in Javascript, the `{}` creates an empty object and simply assigning to a field creates a new field if it does not exist already.
 We can also assign to a variable field using the `obj["myField"] = value` notation; and any expression may be used instead of `"myField"`.
 Unlike in C# where we have to declare the types in code, we just create them at runtime.
 This means that there is no need to declare an expected type when we want to deserialize an object from JSON.
@@ -177,15 +177,16 @@ It supports almost anything we can do with the Javascript Proxy objects.
 Yet, in our experience, it not used very widely, since C# programmers do not want to lose their type safety.
 However, one of the most popular JSON (de)serializer, Newtonsoft.Json, supports it - we can simply declare `dynamic myObject = JObject.Parse(myJson)` and use it as we would in JS (see the [documentation for more details](https://www.newtonsoft.com/json/help/html/QueryJsonDynamic.htm))
 
-## C# source generators
+## C# 9 Source Generators
 
+C# is going to introduce an API for integrating source code generators into the compiler.
+It is a way to write plugins that add symbols to the compilation during the process.
 Note that at the time of writing this work, C# source generators are still in preview, so we have not tried using them.
 
-C# source generators is a way to write plugins to the C# compiler.
-The API is quite straightforward - the plugins simply adds new files to the C# compilation object.
-The different from separate code generation process it that the source generator has access to information about other compiled objects.
+The API is quite straightforward - the plugin simply adds new source files to the C# compilation object.
+The different from separate code generation process is that the source generator has access to information about other compiled objects.
 We will have to wait to see what will turn up in the .NET ecosystem, all this is still in the future.
-It seems, however, that it should be possible to generate code that depends on the metadata of other types - possibly replacing serializers, dependency injection frameworks and many more libraries that are reflection-based today.
+It seems, however, that it should be possible to generate code that depends on the metadata of other types - possibly replacing serializers, dependency injection frameworks and many more libraries that are currently reflection-based.
 
 Let us have a look at the code example from the [Source Generators announcement](https://devblogs.microsoft.com/dotnet/introducing-c-source-generators/):
 
@@ -251,7 +252,106 @@ When the logic is dynamic or the code is generated at runtime, this is reasonabl
 With compile-time code generation, it is not possible to know what will come at the runtime.
 So, the generated code will have to be very generic to cover all the possible options, or we will se a revival of separate configuration files.
 
-## IL weaving
+## IL rewriting
 
+Rewriting of the intermediate language is a powerful technique used by many .NET projects.
+The point is to generate the boilerplate after the code is compiled.
+In principle, the transformation may do anything to the compiled code.
+Although the power of IL rewriting is nearly unlimited, the transform should be reasonable to keep the code understandable.
+Usually the transformation only:
 
-## Roslyn tree
+* Overrides optional methods like ToString, GetHashCode and Equals.
+  For example [Fody.Equals](https://github.com/Fody/Equals)
+* Instruments methods with logging, timing, exception handling or calls of INotifyPropertyChanged.
+  For example [Fody.PropertyChanged](https://github.com/Fody/PropertyChanged), [Tracer](https://github.com/csnemes/tracer) or [Fody.MethodTimer](https://github.com/Fody/MethodTimer)
+* Replace basic constructs.
+  May redirect method calls to a different methods.
+  For example [LoggerIsEnabled.Fody](https://github.com/wazowsk1/LoggerIsEnabled.Fody) adds a condition around logging statements.
+  Or, [Fody.Caseless](https://github.com/Fody/Caseless) makes all string comparisons case insensitive.
+* Replaces empty method bodies.
+  For example [With.Fody](https://github.com/mikhailshilkov/With.Fody) automatically implements a With methods for immutable objects.
+
+All the mentioned example are from the .NET ecosystem and use a common abstraction [Fody](https://github.com/Fody/Fody).
+As they claim in the project description, it greatly reduces the effort needed to integrate the rewriting step into .NET build.
+
+> Manipulating the IL of an assembly as part of a build requires a significant amount of plumbing code.
+> This plumbing code involves knowledge of both the MSBuild and Visual Studio APIs.
+> Fody attempts to eliminate that plumbing code through an extensible add-in model.
+
+Other platforms have similar projects.
+In the Javascript ecosystem, there is usually multiple steps rewriting Javascript itself to
+
+* Replace new features with the ones that even older browsers understand.
+* Bundle multiple modules together to make the distribution over network more efficient.
+* Minify the code to make the bundle smaller in size.
+
+The concerns about older version of the virtual machine and application size are much stronger on the web.
+Still, even in the .NET ecosystem, there is a .NET IL Linker that does tree shaking on the used methods.
+Such transformations are however a bit out of scope of this work.
+We are slowly getting into the area of compiler optimizations, which may sometimes also help to reduce boilerplate, but it is not the main point.
+
+The limitation of IL rewriting is that introducing new symbols is quite dubious.
+The problem is that the project compilation runs before the rewriting step.
+If we are adding symbols after the project is compiled, the project itself must not reference them.
+Alternatively, there must be a dummy symbol that the C# compiler may use, and then the IL rewriter will redirect it to the new symbol.
+
+The already mentioned [With.Fody](https://github.com/mikhailshilkov/With.Fody) library has this exact issue.
+It implements a `With` method to create a modified clone of an immutable object.
+Given an object:
+
+```csharp
+public class MyClass
+{
+    public MyClass(int a, string b)
+    {
+        this.A = a;
+        this.B = b;
+    }
+
+    public int A { get; }
+
+    public string B { get; }
+}
+```
+
+The Fody add-in will introduce a method for each property:
+```csharp
+public MyClass With(int value)
+{
+    return new MyClass(value, this.B);
+}
+
+public MyClass With(string value)
+{
+    return new MyClass(this.A, value);
+}
+```
+
+This by itself would work fine, if the project was a class library that never calls the `With` method.
+Nevertheless, there is a way - we introduce the dummy symbol.
+We will add a generic `With<T>(T value)` method to the class, which the C# compiler will use in that project.
+As the author claims in a very descriptive blog post
+
+> It is safe to call With methods in the same assembly where the class is defined: the calls get adapted to the real implementation automatically.
+
+TODO image dependency graph explanation
+
+<!-- ## Roslyn tree TODO maybe -->
+<!-- 
+## Summary
+
+As we could expect, there is no silver bullet.
+We have discussed many different ways programmers use to avoid writing boilerplate code.
+It is not easy to compare them, since there may be many more hidden properties that apply in a given situation.
+Nevertheless, we will rank each one for few criteria.
+This is not a complete design decision table, just a summary of what we have discussed above.
+
+The criteria are
+
+* Compilation performance impact - how much time is added to the build process.
+* Startup performance impact - how much time is added to the application startup.
+* Throughput performance impact - if the code is going to be slower when using given technology.
+* Reliability - how likely is the implementation going to be buggy.
+* Transparency - how clearly can the user see what is going on.
+ -->
+
