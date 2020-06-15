@@ -338,7 +338,7 @@ TODO image dependency graph explanation
 
 <!-- ## Roslyn tree TODO maybe -->
 
-## Summary
+<!-- ## Summary
 
 As we could expect, there is no silver bullet.
 We have discussed many different ways programmers use to avoid writing boilerplate code.
@@ -354,4 +354,46 @@ The criteria are
 * Reliability - how likely is the implementation going to be buggy.
 * Transparency - how clearly can the user see what is going on.
 
-Reflection
+Reflection -->
+
+
+## Summary
+
+As we could expect, there is no silver bullet.
+We have discussed many different ways programmers use to avoid writing boilerplate code.
+With this background we might be able to tell how does code generation compare to alternatives.
+
+TODO: move to the end?
+
+**Transparency** - The generated code can be simply read and debugged when it misbehaves.
+It is true that this point really depends on output quality of the generator and complexity of the generated program.
+However, we think this is the main advantage, so we really focus on the output code quality with the ExprCS abstract and the GraphQL Schema compiler.
+Alternative approaches usually do not come even close the transparency we can offer with source generation.
+Even with D `mixin` and presumably C# 9 Source Generators, we can not directly open the generated source file and place a debugger breakpoint in it.
+
+**Runtime Performance** - Source generation does not need any runtime initialization and we can generate fairly specialized and optimized code for the specific task.
+Both startup time and throughput performance is probably going to be decent.
+This is not an exclusive advantage, macros, IL rewriting are on par with code generation, since they also generate code.
+
+**API creation** - Code generation is nearly the only discussed approach that can introduce new API symbols.
+While dynamic languages can introduce new symbols at runtime, it does not offer type safety and does not guide the user through autocompletion.
+However, it is exactly when we generate large API that we hit a whole edge case parade - the symbols must get valid names, we must reference other symbols correctly, etc.
+
+**Portable Principle** - In principle, we can generate code in any text-based programming language.
+In this work, we focus on C#, but we could have a similar project for any programming language.
+By contract, macros and reflection-based tricks are mostly focused on a single platform - there is not a way to create similar API for C# and for, let us say, Python.
+However, writing a robust code generator is not as easy, so we only claim that the principle is portable.
+Most of the work done on a code generator is unfortunately not going to be portable.
+
+Obviously, it is no silver bullet, there is many problems compared to alternatives.
+
+**Code size** - Generating a lot of boilerplate code is going to affect the application size, which may sometimes degrade performance.
+It is most problematic for client-side web applications, where the size of Javascript code is crucial for reasonable load time.
+It is a shame that we do not want to use code generation in JavaScript.
+It is a very convenient language for code generation, since the number of edge cases is much lower compared to C#.
+
+**Compilation time** - Another step in the build process is going to affect the time it takes to compile the project.
+Not only does it make it slower, it also complicates the process and makes it less reliable (due to missing dependencies, bugs, and similar issues)
+
+**Reliability** - Especially when we generate a large API, the number of edge cases the code generator may hit is vast.
+It is the issue we want to tackle in this work - create an abstraction that will make it possible to write a reliable code generator.
