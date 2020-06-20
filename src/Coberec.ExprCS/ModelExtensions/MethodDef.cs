@@ -19,7 +19,7 @@ namespace Coberec.ExprCS
             if (obj.Body is null && !isWithoutBody)
                 e.Add(ValidationErrors.Create($"Method is not abstract, so it must contain a body."));
             if (obj.Body is object && isWithoutBody)
-                e.Add(ValidationErrors.Create($"Method is abstract, so it must not contain a body."));
+                e.Add(ValidationErrors.Create($"Method is abstract, so it must not contain a body. Did you intent to use MethodDef.InterfaceDef?"));
 
             if (!isWithoutBody)
             {
@@ -54,6 +54,9 @@ namespace Coberec.ExprCS
         /// <param name="body">A factory function that gets all the arguments in an array and returns the method body. If not static, the `this` parameter is first in the array. </param>
         public static MethodDef CreateWithArray(MethodSignature signature, Func<ImmutableArray<ParameterExpression>, Expression> body)
         {
+            _ = signature ?? throw new ArgumentNullException(nameof(signature));
+            _ = body ?? throw new ArgumentNullException(nameof(body));
+
             var args = signature.Params.Select(ParameterExpression.Create);
             if (!signature.IsStatic)
                 args = args.Prepend(ParameterExpression.CreateThisParam(signature.DeclaringType));
@@ -78,9 +81,6 @@ namespace Coberec.ExprCS
         /// <summary> Creates an empty method definition. Useful when declaring an interface or an abstract method. </summary>
         public static MethodDef InterfaceDef(MethodSignature signature)
         {
-            if ("interface" != signature.DeclaringType.Kind &&
-                !signature.IsAbstract)
-                throw new ArgumentException($"InterfaceDef can only be used interface or abstract methods.");
             return CreateWithArray(signature, _ => null);
         }
 

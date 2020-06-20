@@ -66,9 +66,9 @@ namespace Coberec.ExprCS
 
         /// <summary> Creates new static method signature </summary>
         public static MethodSignature Static(string name, TypeSignature declaringType, Accessibility accessibility, TypeReference returnType, params MethodParameter[] parameters) =>
-            Static(name, declaringType, accessibility, returnType, parameters.AsEnumerable());
+            Static(name, declaringType, accessibility, returnType, null, parameters);
         /// <summary> Creates new static method signature </summary>
-        public static MethodSignature Static(string name, TypeSignature declaringType, Accessibility accessibility, TypeReference returnType, IEnumerable<MethodParameter> parameters, IEnumerable<GenericParameter> genericParameters = null) =>
+        public static MethodSignature Static(string name, TypeSignature declaringType, Accessibility accessibility, TypeReference returnType, IEnumerable<GenericParameter> genericParameters, params MethodParameter[] parameters) =>
             new MethodSignature(declaringType, parameters.ToImmutableArray(), name, returnType, isStatic: true, accessibility, isVirtual: false, isOverride: false, isAbstract: false, hasSpecialName: false, genericParameters?.ToImmutableArray() ?? ImmutableArray<GenericParameter>.Empty);
 
         /// <summary> Creates new instance method signature. The method is not override, not virtual, not abstract </summary>
@@ -81,6 +81,18 @@ namespace Coberec.ExprCS
         /// <summary> Creates new instance abstract method signature. It is not override, but you can apply `.With(isOverride: true)` to the result to make it. </summary>
         public static MethodSignature Abstract(string name, TypeSignature declaringType, Accessibility accessibility, TypeReference returnType, params MethodParameter[] parameters) =>
             new MethodSignature(declaringType, parameters.ToImmutableArray(), name, returnType, isStatic: false, accessibility, isVirtual: true, isOverride: false, isAbstract: true, hasSpecialName: false, ImmutableArray<GenericParameter>.Empty);
+
+        /// <summary> Creates new instance abstract method signature. It is not override, but you can apply `.With(isOverride: true)` to the result to make it. </summary>
+        public static MethodSignature Abstract(string name, TypeSignature declaringType, Accessibility accessibility, TypeReference returnType, IEnumerable<GenericParameter> typeParameters, params MethodParameter[] parameters) =>
+            new MethodSignature(declaringType, parameters.ToImmutableArray(), name, returnType, isStatic: false, accessibility, isVirtual: true, isOverride: false, isAbstract: true, hasSpecialName: false, typeParameters.ToImmutableArray());
+
+        /// <summary> Creates new instance virtual method signature. </summary>
+        public static MethodSignature Virtual(string name, TypeSignature declaringType, Accessibility accessibility, TypeReference returnType, params MethodParameter[] parameters) =>
+            new MethodSignature(declaringType, parameters.ToImmutableArray(), name, returnType, isStatic: false, accessibility, isVirtual: true, isOverride: false, isAbstract: false, hasSpecialName: false, ImmutableArray<GenericParameter>.Empty);
+
+        /// <summary> Creates new instance virtual method signature. </summary>
+        public static MethodSignature Virtual(string name, TypeSignature declaringType, Accessibility accessibility, TypeReference returnType, IEnumerable<GenericParameter> typeParameters, params MethodParameter[] parameters) =>
+            new MethodSignature(declaringType, parameters.ToImmutableArray(), name, returnType, isStatic: false, accessibility, isVirtual: true, isOverride: false, isAbstract: false, hasSpecialName: false, typeParameters.ToImmutableArray());
 
         /// <summary> Creates new method signature with brand new type parameters. Since you can't have declared multiple methods with the same type parameters, you should use Clone to create similar method signatures. </summary>
         public MethodSignature Clone()

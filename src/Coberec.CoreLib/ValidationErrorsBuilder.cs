@@ -31,6 +31,11 @@ namespace Coberec.CoreLib
             this.index++;
         }
 
+        public void AddErr(string msg) => Add(ValidationErrors.Create(msg));
+        public void AddErr(string msg, string f) => Add(ValidationErrors.Create(msg).Nest(f));
+        public void AddErr(string msg, string f1, string f2) => Add(ValidationErrors.Create(msg).Nest(f2).Nest(f1));
+        public void AddErr(string msg, string f1, string f2, string f3) => Add(ValidationErrors.Create(msg).Nest(f3).Nest(f2).Nest(f1));
+
         public bool HasErrors => this.r is object;
 
         public ValidationErrors Build()

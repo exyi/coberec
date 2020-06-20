@@ -16,12 +16,41 @@ namespace Coberec.ExprCS
         public static PropertyDef Create(
             PropertySignature signature,
             Func<ParameterExpression, Expression> getter,
-            Func<ParameterExpression, ParameterExpression, Expression> setter = null) =>
-            new PropertyDef(
+            Func<ParameterExpression, ParameterExpression, Expression> setter = null)
+        {
+            _ = signature ?? throw new ArgumentNullException(nameof(signature));
+            if (signature.IsStatic)
+                throw new ArgumentException($"The property '{signature}' is static, so PropertyDef.Create may not be used. Please use the CreateStatic method instead.", nameof(signature));
+            if (signature.Getter is object && getter is null)
+                throw new ArgumentNullException(nameof(getter), $"A getter body must be specified for property '{signature}'");
+            if (signature.Setter is object && setter is null)
+                throw new ArgumentNullException(nameof(getter), $"A setter body must be specified for property '{signature}'");
+            return new PropertyDef(
                 signature,
-                getter == null ? null : MethodDef.Create(signature.Getter, getter),
-                setter == null ? null : MethodDef.Create(signature.Setter, setter)
+                getter == null || signature.Getter == null ? null : MethodDef.Create(signature.Getter, getter),
+                setter == null || signature.Setter == null ? null : MethodDef.Create(signature.Setter, setter)
             );
+        }
+
+        /// <summary> Creates a static property definition with the specified getter and setter factories. In principle, this method is similar to <see cref="MethodDef.Create(MethodSignature, Func{ParameterExpression, Expression})" /> </summary>
+        public static PropertyDef CreateStatic(
+            PropertySignature signature,
+            Expression getter,
+            Func<ParameterExpression, Expression> setter = null)
+        {
+            _ = signature ?? throw new ArgumentNullException(nameof(signature));
+            if (!signature.IsStatic)
+                throw new ArgumentException($"The property '{signature}' is not static, so PropertyDef.CreateStatic may not be used. Please use the Create method instead.", nameof(signature));
+            if (signature.Getter is object && getter is null)
+                throw new ArgumentNullException(nameof(getter), $"A getter body must be specified for property '{signature}'");
+            if (signature.Setter is object && setter is null)
+                throw new ArgumentNullException(nameof(getter), $"A setter body must be specified for property '{signature}'");
+            return new PropertyDef(
+                signature,
+                getter == null || signature.Getter == null ? null : MethodDef.Create(signature.Getter, getter),
+                setter == null || signature.Setter == null ? null : MethodDef.Create(signature.Setter, setter)
+            );
+        }
 
         /// <summary> Creates an empty property definition. Useful when declaring an interface. </summary>
         public static PropertyDef InterfaceDef(PropertySignature signature, XmlComment doccomment = null) =>

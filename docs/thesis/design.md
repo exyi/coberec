@@ -303,3 +303,13 @@ To convert between delegates and function, we are going to provide FunctionConve
 
 > Note that FunctionConversionExpression can also convert between FunctionTypes, when the parameters and return types are compatible.
 > For consistency, it can also convert between different delegate types, which is a bit problematic in C# itself, so it will result in a lambda function being emitted.
+
+## MetadataContext
+
+
+
+## External References
+
+TODO:
+
+## ILSpy Fallback

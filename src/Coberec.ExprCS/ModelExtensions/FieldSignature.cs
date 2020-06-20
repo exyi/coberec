@@ -15,6 +15,12 @@ namespace Coberec.ExprCS
         {
         }
 
+        public static FieldSignature Instance(string name, TypeSignature declaringType, Accessibility accessibility, TypeReference returnType, bool isReadonly = true) =>
+            new FieldSignature(declaringType, name, accessibility, returnType, isStatic: false, isReadonly);
+
+        public static FieldSignature Static(string name, TypeSignature declaringType, Accessibility accessibility, TypeReference returnType, bool isReadonly = true) =>
+            new FieldSignature(declaringType, name, accessibility, returnType, isStatic: true, isReadonly);
+
         /// <summary> Fills in the generic parameters. </summary>
         public FieldReference Specialize(params TypeReference[] typeArgs) =>
             new FieldReference(this, typeArgs.ToImmutableArray());

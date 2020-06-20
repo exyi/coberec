@@ -11,6 +11,20 @@ namespace Coberec.ExprCS
 {
     public partial class PropertySignature
     {
+        static partial void ValidateObjectExtension(ref ValidationErrorsBuilder e, PropertySignature p)
+        {
+            if (p.Getter is null && p.Setter is null)
+            {
+                e.AddErr("Getter or setter must specified", "getter");
+                e.AddErr("Setter or getter must specified", "setter");
+            }
+            if (p.Getter is object)
+            {
+                if (!p.Getter.Params.IsEmpty)
+                    e.AddErr("Getter must have no parameters", "getter", "params");
+            }
+        }
+
         /// <summary> Signature of <see cref="Nullable{T}.HasValue" /> </summary>
         public static readonly PropertySignature Nullable_HasValue =
             PropertyReference.FromLambda<int?>(a => a.HasValue).Signature;
@@ -20,8 +34,6 @@ namespace Coberec.ExprCS
 
         public static PropertySignature Create(string name, TypeSignature declaringType, TypeReference type, Accessibility getter, Accessibility setter, bool isStatic = false, bool isVirtual = false, bool isOverride = false, bool isAbstract = false)
         {
-            if (getter == null && setter == null) throw new ArgumentNullException(nameof(getter), "Property must have getter or setter.");
-
             var getMethod = getter?.Apply(a => new MethodSignature(declaringType, ImmutableArray<MethodParameter>.Empty, "get_" + name, type, isStatic, a, isVirtual, isOverride, isAbstract, true, ImmutableArray<GenericParameter>.Empty));
             var setMethod = setter?.Apply(a => new MethodSignature(declaringType, ImmutableArray.Create(new MethodParameter(type, "value")), "set_" + name, TypeSignature.Void, isStatic, a, isVirtual, isOverride, isAbstract, true, ImmutableArray<GenericParameter>.Empty));
 
@@ -29,15 +41,15 @@ namespace Coberec.ExprCS
         }
 
         /// <summary> Creates a new property signature of an abstract property. </summary>
-        public static PropertySignature Abstract(string name, TypeSignature declaringType, TypeReference type, Accessibility getter, Accessibility setter, bool isOverride = false) =>
+        public static PropertySignature Abstract(string name, TypeSignature declaringType, TypeReference type, Accessibility getter, Accessibility setter = null, bool isOverride = false) =>
             Create(name, declaringType, type, getter, setter, isOverride: isOverride, isVirtual: true, isAbstract: true);
 
         /// <summary> Creates a new property signature of a static property. </summary>
-        public static PropertySignature Static(string name, TypeSignature declaringType, TypeReference type, Accessibility getter, Accessibility setter) =>
+        public static PropertySignature Static(string name, TypeSignature declaringType, TypeReference type, Accessibility getter, Accessibility setter = null) =>
             Create(name, declaringType, type, getter, setter, isStatic: true);
 
         /// <summary> Creates a new property signature of an instance property. </summary>
-        public static PropertySignature Instance(string name, TypeSignature declaringType, TypeReference type, Accessibility getter, Accessibility setter, bool isVirtual = false, bool isOverride = false) =>
+        public static PropertySignature Instance(string name, TypeSignature declaringType, TypeReference type, Accessibility getter, Accessibility setter = null, bool isVirtual = false, bool isOverride = false) =>
             Create(name, declaringType, type, getter, setter, isOverride: isOverride, isVirtual: isVirtual, isAbstract: false);
 
         /// <summary> Declares a property that overrides the <paramref name="overriddenProperty" /> in the specified declaring type. The property must be virtual or from an interface. </summary>
