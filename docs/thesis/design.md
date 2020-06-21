@@ -366,6 +366,8 @@ However, when there is a method collision with a higher priority property or whe
 > This may still create problems when relying on implicit conversions.
 > Hopefully, this is quite rare and will not lead to many problems.
 
+Since all references to the renamed symbols are symbols, nothing in the expression is invoked by name, we rename all usages automatically.
+
 ## External References
 
 The ExprCS code emitter must know everything about the symbols that are used in the code.
@@ -397,3 +399,16 @@ The Source Generators run in the C# compiler, so we could simply use the metadat
 
 ## ILSpy Fallback
 
+C# has a rich set of language features and it is not possible to express everything in our simplified expression model.
+We hope that we will be able to fill in the important missing bits, but it will probably never be complete.
+For this reason, we are going to provide a simple fallback API that allows users to build the ILAst directly or do any post-processing to the ILSpy typesystem entities.
+
+We are going to introduce a RegisterTypeMod method on the MetadataContext that will register a function to a specified type signature.
+The function will be run on the created type object - a VirtualType.
+The function is allowed to do anything - add new symbols, modify the existing ones, remove or hide symbols, etc.
+However, there is the risk of breaking the automatic symbol renaming by adding more symbols that were not expected.
+It is thus recommended to add dummy symbols and then replace them.
+
+Another option is to put a special ILSpyMethodBody expression.
+It contains a function that returns a ILFunction - an ILAst node that represents the whole function.
+This option is somewhat lightweight compared to the RegisterTypeMod and also less risky in terms of symbol renaming.
