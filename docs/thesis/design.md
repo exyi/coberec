@@ -304,12 +304,96 @@ To convert between delegates and function, we are going to provide FunctionConve
 > Note that FunctionConversionExpression can also convert between FunctionTypes, when the parameters and return types are compatible.
 > For consistency, it can also convert between different delegate types, which is a bit problematic in C# itself, so it will result in a lambda function being emitted.
 
-## MetadataContext
+## Metadata Context
 
+Using the Expression class, we can define the code that we can put into metadata definitions.
+Then we need to collect the type definitions, connect them with references libraries and emit the C# code.
+We will introduce a MetadataContext class that will have the following responsibilities:
 
+1. Load symbols from the referenced assemblies
+2. Allow the user to add new types into it.
+3. Allow the user to explore the registered and referenced symbols.
+4. Emit the added types into C# code - either a single string or multiple files.
+
+Since we are building the API on top of ILSpy, MetadataContext is going to be a wrapper of the ILSpy ICompilation object, which has a similar role of holding all the type information together.
+
+In principle, the API workflow is going to look like
+
+* Create MetadataContext: `context = MetadataContext.Create(references: listOfReferencedAssemblies)`
+* Explore referenced symbols: `context.GetNamespaceMembers(namespace)`, `context.GetMembers(type)` or similar
+* Add new type definitions: `context.AddType(typeDef)`
+* Build the result - generate the C# code: `context.EmitToString()` or `context.EmitToDirectory(...)`
+
+It is likely that significant parts of the code working with the MetadataContext are only going to use it only for symbol exploration and not to add new types.
+So, it could make sense to split the context into a type that only allows exploration and type that also allows adding new types.
+However, listing types is dependent on the AddType method, as it also lists the added types.
+Having a read-only context could create a false sense of immutability, and we would have multiple objects that are interconnected by mutations.
+We choose against this division of responsibilities, this way it is simpler and will hopefully be less confusing.
+
+## Symbol Renaming
+
+As we already discussed that naming of the generated types, methods and properties is a significant problem for code generators.
+Most existing code generators handle it somehow heuristically and it quite easy to come up with an input that forces it to produce invalid output.
+It is a topic for a different discussion how big of a problem this is - it depends strongly on the specific use-case.
+However, our abstraction mostly solves this problem once for all.
+<!-- Often, this is not a problem - when we are generating code from metadata written by the same programmer, they will simply rename the symbol in the source schema.
+Even when it is some specification from a different project, the programmer can sometimes simply edit it to avoid a name collision.
+However, is could be convenient to fetch the metadata automatically by the build system.
+Then, editing add a lot of burden to the user.
+And, even in simple cases -->
+
+We let the API user register symbols with any names - even completely invalid C# identifiers.
+When we get to the point of generating C# code, we have to transform the registered metadata into ILSpy type system.
+It is in this step that we do the symbol naming.
+
+First, we sanitize each name of invalid characters.
+Optionally, we transform the casing into the C# recommended PascalCase.
+Then, we assign names to types, one by one.
+We can not name the type the same as another type in the namespace, and we also can not name it as any of its members.
+From principle, we refuse to name the type as .NET special method like `Finalize`, `GetHashCode`, etc.
+Even when type does not contain the method, it would not be possible to add it later.
+
+Then, we name the members of the type and we try to prioritize them based on the damage done by renaming them to something else.
+The absolute priority are overridden methods and properties - they must have exactly the same name as they have in the base type.
+Fortunately, C# does not support multiple class inheritance, so we are not in a risk of collision.
+Interface implementations are not as critical, we can rename the public method and add an [explicit interface implementation](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/interfaces/explicit-interface-implementation).
+Then we simply try to prioritize public members over private or internal ones.
+
+We try not to rename methods since C# supports method overloading.
+However, when there is a method collision with a higher priority property or when we have two method with the same parameters, we will do the rename anyway.
+
+> Note that we do not rename method unless they have exactly the same parameters.
+> This may still create problems when relying on implicit conversions.
+> Hopefully, this is quite rare and will not lead to many problems.
 
 ## External References
 
-TODO:
+The ExprCS code emitter must know everything about the symbols that are used in the code.
+If we want to use external libraries we must explicitly include them in the project.
+When a new MetadataContext is created, we can use the `references` parameter with a list of paths to referenced libraries.
+
+Sometimes it is useful to generate code into a existing project that already contains some code.
+If we want to reference symbols from this code we can not add an assembly reference, as it is the same project we are just building.
+For that case, we will need an External Symbol API.
+We will declare the types we expect to be in the project and register them in the MetadataContext.
+
+Since we are already going to have a quite complex API for defining types, the simplest option is to reuse it.
+We will add an `isExternal` parameter to the MetadataContext.AddType method.
+When set to true, the added type will not be included in the output, but the emitter will know that it exists.
+
+> The API will require us to specify even the bodies of the declared methods, as we are reusing the same types.
+> This does not make much sense, but it is easier this way.
+> Providing an empty method body is very easy for the user - simply return a `default(ReturnType)` expression.
+
+This simple addition breaks the fundamental barrier that we can not call handwritten code from the generated code.
+However, unlike in macro or reflection-based approaches, this connection is still very far from easy-to-use.
+We can not inspect the handwritten code, and we even have to redeclare it.
+
+This may be quite a significant issue of code generation and resolving it could be quite interesting direction for future extension of the project.
+One idea would be to parse the existing C# code to extract the declared symbols from it.
+Parsing the entire C# could be very significant performance cost, though.
+With version 9, C# should get the Source Generators feature, as we discussed in the previous chapter (TODO link).
+The Source Generators run in the C# compiler, so we could simply use the metadata from the compilation.
 
 ## ILSpy Fallback
+
