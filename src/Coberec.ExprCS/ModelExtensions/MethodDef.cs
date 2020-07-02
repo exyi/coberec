@@ -12,6 +12,9 @@ namespace Coberec.ExprCS
     {
 		static partial void ValidateObjectExtension(ref ValidationErrorsBuilder e, MethodDef obj)
         {
+            if (obj.Implements.IsDefault)
+                e.AddErr("default(ImmutableArray<...>) is not allowed value", "implements");
+
             var sgn = obj.Signature;
             if (obj.Body is object && obj.Body.Type() != sgn.ResultType)
                 e.Add(ValidationErrors.Create($"Method body was expected to return {sgn.ResultType}, not {obj.Body.Type()}").Nest("body")); // TODO: expression type validation
@@ -23,6 +26,9 @@ namespace Coberec.ExprCS
 
             if (!isWithoutBody)
             {
+                if (obj.ArgumentParams.IsDefault)
+                    e.AddErr("default(ImmutableArray<...>) is not allowed value", "argumentParams");
+
                 var expectedArgs = obj.Signature.Params.Select(p => p.Type).ToImmutableArray();
                 if (!sgn.IsStatic)
                     expectedArgs = expectedArgs.Insert(0, sgn.DeclaringType.SpecializeByItself());
@@ -36,6 +42,17 @@ namespace Coberec.ExprCS
                             .Nest("type").Nest(i.ToString()).Nest("argumentParams")
                         );
                 }
+
+                if (!sgn.IsStatic)
+                {
+                    var firstArgument = obj.ArgumentParams.First();
+                    if (sgn.DeclaringType.IsValueType)
+                    {
+                        if (TypeReference.ByReferenceType(sgn.DeclaringType.SpecializeByItself()) != firstArgument.Type)
+                            e.AddErr($"Method on value type should have this of a reference type: {firstArgument.Type}&", "argumentParams", "0", "type");
+                    }
+                }
+
             }
 
             // TODO: deep validate expression in the context

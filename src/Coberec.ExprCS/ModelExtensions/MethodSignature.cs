@@ -13,6 +13,9 @@ namespace Coberec.ExprCS
     {
         static partial void ValidateObjectExtension(ref CoreLib.ValidationErrorsBuilder e, MethodSignature m)
         {
+            if (m.Params.IsDefault)
+                e.AddErr("default(ImmutableArray<...>) is not allowed value", "params");
+
             if (m.IsConstructor() && m.IsStatic)
                 e.Add(ValidationErrors.Create($"Constructor '{m}' can't be static").Nest("isStatic"));
             if (m.IsStaticConstructor() && !m.IsStatic)

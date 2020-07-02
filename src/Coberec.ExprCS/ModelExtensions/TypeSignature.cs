@@ -77,8 +77,18 @@ namespace Coberec.ExprCS
         {
             if (this == Void) return "void";
             else if (this == Int32) return "int";
+            else if (this == Boolean) return "bool";
             else if (this == Object) return "object";
             else if (this == String) return "string";
+            else if (this == Int64) return "long";
+            else if (this == Int16) return "short";
+            else if (this == UInt16) return "ushort";
+            else if (this == UInt32) return "uint";
+            else if (this == UInt64) return "ulong";
+            else if (this == Single) return "float";
+            else if (this == Double) return "double";
+            else if (this == IntPtr) return "nint";
+            else if (this == UIntPtr) return "nuint";
 
             var sb = new System.Text.StringBuilder();
             if (this.Accessibility != Accessibility.APublic) sb.Append(this.Accessibility).Append(" ");

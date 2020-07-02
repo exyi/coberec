@@ -154,6 +154,8 @@ namespace Coberec.ExprCS.Tests
                      ;
             cx.AddType(td);
             check.CheckOutput(cx);
+
+            check.CheckString(td.ToString());
         }
 
         [Theory]

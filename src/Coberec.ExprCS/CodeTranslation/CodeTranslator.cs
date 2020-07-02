@@ -238,8 +238,10 @@ namespace Coberec.ExprCS.CodeTranslation
 
             var value = this.TranslateExpression(e.Value);
 
+            // TODO: add support for voids?
+            if (e.Value.Type() == TypeSignature.Void)
+                throw new NotSupportedException($"Variables of type void are not supported. In expression {e}");
             Assert.False(value.IsVoid);
-            Assert.NotEqual(TypeSignature.Void, e.Variable.Type); // TODO: add support for voids?
             Assert.Equal(value.Type, this.Metadata.GetTypeReference(e.Variable.Type));
 
             var ilVar = new ILVariable(VariableKind.Local, value.Type);

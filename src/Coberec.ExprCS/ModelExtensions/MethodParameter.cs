@@ -10,6 +10,13 @@ namespace Coberec.ExprCS
 {
     public partial class MethodParameter
     {
+		static partial void ValidateObjectExtension(ref ValidationErrorsBuilder e, MethodParameter p)
+        {
+            if (p.Type == TypeSignature.Void)
+                e.AddErr($"Method parameter must not have a type void.", "type");
+        }
+
+
         public MethodParameter(TypeReference type, string name)
             : this(type, name, false, null, isParams: false) { }
 

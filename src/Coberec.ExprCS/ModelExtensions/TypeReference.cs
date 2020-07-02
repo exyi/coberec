@@ -20,7 +20,7 @@ namespace Coberec.ExprCS
             functionType: _ => true
         );
 
-        /// <summary> Returns true, if the type can not have any super classes </summary>
+        /// <summary> Returns true, if the type can not have any subclasses </summary>
         public bool IsSealed() => this.Match<bool>(
             specializedType: t => t.Type.IsValueType || (!t.Type.CanOverride && t.Type.Kind != "delegate"),
             //                                                                             ^ TODO: more involved (co/contra) variance check?

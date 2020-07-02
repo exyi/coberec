@@ -432,9 +432,23 @@ union U = A | B
             check.CheckString(result, fileExtension: "cs");
         }
 
+        [Fact]
+        public void ThesisExample()
+        {
+            var schema = GraphqlLoader.Helpers.ParseSchema(@"type T {
+    a: Int
+    b: [String] @validateNotEmpty
+}"
+                , invertNonNull: true);
+
+            var result = CSharpBackend.Build(schema, DefaultSettings);
+            CheckItCompiles(result);
+            check.CheckString(result, fileExtension: "cs");
+        }
+
         // [Property(MaxTest = 2000, EndSize = 10_000)]
-        // [Property(MaxTest = 600, EndSize = 3_000)]
-        [Property]
+        [Property(EndSize = 20_000)]
+        // [Property]
         // [Property(Replay = "(802755643,296687915)")]
         public void GenerateArbitrarySchema(DataSchema schema)
         {

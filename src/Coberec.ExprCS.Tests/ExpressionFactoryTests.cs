@@ -12,9 +12,11 @@ namespace Coberec.ExprCS.Tests
         public void ArrayInitializer()
         {
             cx.AddTestExpr(ExpressionFactory.MakeArray(TypeSignature.Boolean));
-            cx.AddTestExpr(ExpressionFactory.MakeArray(TypeSignature.Boolean, Expression.Constant(true), Expression.Constant(false)));
+            var boolArray = ExpressionFactory.MakeArray(TypeSignature.Boolean, Expression.Constant(true), Expression.Constant(false));
+            cx.AddTestExpr(boolArray);
 
             check.CheckOutput(cx);
+            check.CheckString(boolArray.ToString());
         }
 
         [Fact]

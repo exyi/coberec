@@ -1,11 +1,11 @@
+// #define MORE_TESTS
+#if MORE_TESTS
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using ICSharpCode.Decompiler.CSharp;
 using Xunit;
-// #define MORE_TESTS
-#if MORE_TESTS
 namespace Coberec.ExprCS.Tests
 {
 
