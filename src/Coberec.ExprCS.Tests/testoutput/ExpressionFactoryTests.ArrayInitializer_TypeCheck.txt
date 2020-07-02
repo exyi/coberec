@@ -1,2 +1,2 @@
-ArgumentException occurred: Items of type struct System.Boolean were expected, but item 1:int has type int (Parameter 'items')
+ArgumentException occurred: Items of type bool were expected, but item 1:int has type int (Parameter 'items')
     at Expression Coberec.ExprCS.ExpressionFactory.MakeArray(TypeReference elementType, ImmutableArray<Expression> items)

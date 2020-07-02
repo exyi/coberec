@@ -286,9 +286,9 @@ In the Javascript ecosystem, there are usually multiple rewriting steps involved
 * To minify the code to make the bundle smaller in size.
 
 The concerns about older versions of the virtual machine and application size are much stronger on the web.
-Still, even in the .NET ecosystem, there is a .NET IL Linker that does tree shaking to reduce the binary size.
+Still, even in the .NET ecosystem, there is a .NET IL Linker project that does tree shaking to reduce the binary size.
 Such transformations are however a bit out of scope of this work.
-We are slowly getting into the area of compiler optimizations, which may sometimes also help to reduce boilerplate, but it is not its main point.
+We are slowly getting into the area of compiler optimizations, which may sometimes also help to reduce boilerplate, but it is not the main point.
 
 The limitation of IL rewriting is that introducing new symbols is quite dubious.
 The problem is that the project compilation runs before the rewriting step.
@@ -336,6 +336,10 @@ As the author claims in a very descriptive blog post
 
 TODO image dependency graph explanation
 
+Another problem with IL Rewriting is that the .NET tooling is not well-prepared for it.
+Some advanced development features might stop working.
+For example, Edit & Continue feature does not work with [Fody](https://github.com/Fody/Fody/tree/c31ea96b5be6ce66b992614dda2af2c0a9bb91d2#edit-and-continue) nor with [PostSharp](https://doc.postsharp.net/requirements#incompatibilities), a commercial tool doing IL Rewriting.
+
 <!-- ## Roslyn tree TODO maybe -->
 
 <!-- ## Summary
@@ -373,7 +377,7 @@ Even with D `mixin` and presumably C# 9 Source Generators, we can not directly o
 
 **Runtime Performance** - Source generation does not need any runtime initialization and we can generate fairly specialized and optimized code for the specific task.
 Both startup time and throughput performance is probably going to be decent.
-This is not an exclusive advantage, macros, IL rewriting are on par with code generation, since they also generate code.
+This is not an exclusive advantage, macros, IL rewriting are on par with code generation, since it also generates code.
 
 **API creation** - Code generation is nearly the only discussed approach that can introduce new API symbols.
 While dynamic languages can introduce new symbols at runtime, it does not offer type safety and does not guide the user through autocompletion.

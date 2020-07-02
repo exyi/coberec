@@ -1,6 +1,6 @@
 {
 	"genericMethod_S": "static Create<int>(value: int): struct Coberec.CoreLib.ValidationResult`1<int>",
-	"genericParent_S": "Expect(message: string): struct System.Boolean",
+	"genericParent_S": "Expect(message: string): bool",
 	"genericMethod": {
 		"Signature": {
 			"DeclaringType": {

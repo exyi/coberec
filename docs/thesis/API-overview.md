@@ -317,3 +317,5 @@ td = td.AddMember(
     new FieldDef(fieldSgn, new XmlComment("<summary> My field </summary>"))
 );
 ```
+
+More detailed documentation of the API may be found [in Github project](https://github.com/exyi/coberec/#complete-exprcs-documentation).
