@@ -168,7 +168,7 @@ namespace Coberec.CoreLib
         public static void ThrowErrors(this ValidationErrors errors, string message = "Validation has failed", object validatedObject = null)
         {
             if (!errors.IsValid())
-                throw new ValidationErrorException(errors, message);
+                throw new ValidationErrorException(errors, message, validatedObject);
         }
 
         public static ValidationErrors Nest(this ValidationErrors errors, string field)

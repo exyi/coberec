@@ -268,7 +268,7 @@ namespace Coberec.CSharpGen.Emit
             if (hasSentinelParam)
                 parameters = parameters.Skip(1).ToImmutableArray();
 
-            var method = MethodSignature.Static("Create", type, Accessibility.APublic, returnType, parameters);
+            var method = MethodSignature.Static("Create", type, Accessibility.APublic, returnType, parameters.ToArray());
 
             defaultValues ??= ImmutableArray.Create(new Expression[method.Params.Length]);
 
