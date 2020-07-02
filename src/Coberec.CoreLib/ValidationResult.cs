@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Coberec.CoreLib
 {
-    public struct ValidationResult<T>
+    public readonly struct ValidationResult<T>
     {
         public readonly ValidationErrors Errors;
         public readonly T ValueOrDefault;
@@ -39,6 +39,25 @@ namespace Coberec.CoreLib
             else
                 return mapping(ValueOrDefault);
 
+        }
+
+        public ValidationResult<TResult> SelectMany<U, TResult>(
+            Func<T, ValidationResult<U>> mapping,
+            Func<T, U, TResult> mapping2,
+            Func<ValidationErrors, ValidationErrors> errorMapping = null)
+        {
+            if (Errors == null) throw new InvalidOperationException("Invalid object created.");
+            if (!Errors.IsValid())
+                return new ValidationResult<TResult>(errorMapping == null ? Errors : errorMapping(Errors), default);
+            else
+            {
+                var x = mapping(ValueOrDefault);
+                if (x.Errors == null) throw new InvalidOperationException("Invalid object created.");
+                if (x.Errors.IsValid())
+                    return new ValidationResult<TResult>(ValidationErrors.Valid, mapping2(ValueOrDefault, x.ValueOrDefault));
+                else
+                    return new ValidationResult<TResult>(x.Errors, default);
+            }
         }
 
         public ValidationResult<T> NestErr(string field)
