@@ -89,6 +89,8 @@ namespace Coberec.ExprCS
             else if (this == Double) return "double";
             else if (this == IntPtr) return "nint";
             else if (this == UIntPtr) return "nuint";
+            else if (this == Byte) return "byte";
+            else if (this == SByte) return "byte";
 
             var sb = new System.Text.StringBuilder();
             if (this.Accessibility != Accessibility.APublic) sb.Append(this.Accessibility).Append(" ");
