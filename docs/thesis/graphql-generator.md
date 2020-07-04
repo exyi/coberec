@@ -99,3 +99,6 @@ The project is not hard to bootstrap from historical source codes, but the cycli
 
 > We could also do it vice-versa and reference the Expression API library NuGet package to build the code generator.
 > However, the code generator was much more stable than the Expression API when we were developing the project.
+
+
+Next: [Implementation of the API](./internals.md)

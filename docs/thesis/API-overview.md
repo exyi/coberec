@@ -319,3 +319,6 @@ td = td.AddMember(
 ```
 
 More detailed documentation of the API may be found [in Github project](https://github.com/exyi/coberec/#complete-exprcs-documentation).
+
+
+Next: [C# from GraphQL Schema Generator](./graphql-generator.md)

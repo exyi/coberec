@@ -167,3 +167,5 @@ Large random GraphQL types are good for uncovering edge cases in the symbol rena
 
 > We do have a lot of small tests for isolated cases, but we are still missing tests for more complex method bodies.
 > The GraphQL Schema only generates quite simple methods, although there is a lot of symbols.
+
+Next: [Conclusion](./conclusion.md)

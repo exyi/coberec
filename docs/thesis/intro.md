@@ -1,7 +1,8 @@
 # Introduction
 
-Modern software engineering practices often lead to need of lots of boilerplate code.
-Such code is not only annoying to write, but also makes reading the code tedious.
+Modern software engineering practices often lead to a need to write a lot of repetitive code.
+Such code is not only labour-intensive to write, but also makes reading tedious.
+Programmer usually call the repetitive code with little information [**boilerplate code**](https://en.wikipedia.org/wiki/Boilerplate_code).
 While the programming practices are likely going to reduce the maintenance cost as a whole,
 the boilerplate code is often troublesome to maintain -
 for example, multiple symbols might have to be renamed instead of a single one.
@@ -11,10 +12,10 @@ for example, multiple symbols might have to be renamed instead of a single one.
 Since boilerplate code is a very common software affliction, people have invented many cures to it.
 However, as it goes in software engineering, there is no silver bullet and thus a lot of room for further development.
 
-Very generic approach is to generate the code that we don't like to write at the project build.
-Obviously, this requires us to write program that emits the desired code, but often, just a simple script can save a lot of trouble.
+Very generic approach is to generate the code that we do not want to write manually.
+Obviously, this requires us to write program that emits the desired code, but often, only a simple script can save a significant amount of time.
 In more complex scenarios, when the code is generated from complex set of metadata such as OpenAPI specification, the code generators stop being simple scripts.
-Build-time code generation usually does not offer very good integration with the other code, since the generator does not have the knowledge of existing symbols.
+Build-time code generation usually does not offer very good integration with the remaining code, since the generator does not have the knowledge of existing symbols.
 For example, code generation is suitable for API clients, but it would be hard to apply it to generating getters and setters for a class.
 
 > **Building a project** is usually not as simple as executing the compiler.
@@ -23,7 +24,7 @@ For example, code generation is suitable for API clients, but it would be hard t
 In this work, we'll study the code generation. It is very useful to briefly investigate the other approaches as well, though.
 
 As suggested by many internet discussions, for almost every problem with repetitive code, a choice of another programming language would eliminate it.
-Choice of programming language is however a complicate decision -
+Choice of programming language is however a complicated decision -
 It is very hard to undo during the project lifetime and it would often backfire on another problem that was easier in the original language.
 
 Many programming languages support some kind of compile-time meta-programming to eliminate the issue with boilerplate code.
@@ -58,3 +59,5 @@ The API user will provide a semantic model of the desired code and our library w
 Obviously, abstractions come with a cost.
 We will sacrifice ease of use, since the API will force the user to be overly explicit about with type is used, which method is invoked, etc.
 We will also sacrifice execution speed, as the library will perform checks and transformations on the model that are would unnecessary if we were emitting the code directly.
+
+Next: [Approaches to Reducing Boilerplate Code](./approaches.md)

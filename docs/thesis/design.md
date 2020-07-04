@@ -68,7 +68,7 @@ For example, a single method argument would get evaluated, and then we could not
 For this reason, Linq Expressions do not support jumps to arbitrary locations, but the limitations are unclear.
 
 WebAssembly is another expression-based system which handles control flow in a slightly different way.
-It has an `if` instruction, which is very similar to our `ConditinalExpression`.
+It has an `if` instruction, which is very similar to our `ConditionalExpression`.
 WebAssembly does not have `goto` and only supports an infinite loop (`loop` instruction) and break to a label (`br` and its shortcuts).
 The lack of the `goto` instruction ensures structured control flow, which fits nicely into the concept of expression-based code.
 
@@ -333,7 +333,7 @@ We choose against this division of responsibilities, this way it is simpler and 
 ## Symbol Renaming
 
 As we already discussed that naming of the generated types, methods and properties is a significant problem for code generators.
-Most existing code generators handle it somehow heuristically and it quite easy to come up with an input that forces it to produce invalid output.
+Most existing code generators handle it somehow heuristically and it is quite easy to come up with an input that forces it to produce invalid output.
 It is a topic for a different discussion how big of a problem this is - it depends strongly on the specific use-case.
 However, our abstraction mostly solves this problem once for all.
 <!-- Often, this is not a problem - when we are generating code from metadata written by the same programmer, they will simply rename the symbol in the source schema.
@@ -360,7 +360,7 @@ Interface implementations are not as critical, we can rename the public method a
 Then we simply try to prioritize public members over private or internal ones.
 
 We try not to rename methods since C# supports method overloading.
-However, when there is a method collision with a higher priority property or when we have two method with the same parameters, we will do the rename anyway.
+However, when there is a method collision with a higher priority property or when we have two methods with the same parameters, we will do the rename anyway.
 
 > Note that we do not rename method unless they have exactly the same parameters.
 > This may still create problems when relying on implicit conversions.
@@ -412,3 +412,6 @@ It is thus recommended to add dummy symbols and then replace them.
 Another option is to put a special ILSpyMethodBody expression.
 It contains a function that returns a ILFunction - an ILAst node that represents the whole function.
 This option is somewhat lightweight compared to the RegisterTypeMod and also less risky in terms of symbol renaming.
+
+
+Next: [API Overview](./API-overview.md)

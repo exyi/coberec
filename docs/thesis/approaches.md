@@ -1,4 +1,4 @@
-# Approaches to reducing boilerplate code
+# Approaches to Reducing Boilerplate Code
 
 As we suggested in the introduction, people came up with plenty of approaches to avoid writing boilerplate code.
 In this chapter, we will explore some of them.
@@ -401,3 +401,5 @@ Not only does it make it slower, it also complicates the process and makes it le
 
 **Reliability** - Especially when we generate a large API, the number of edge cases the code generator may hit is vast.
 It is the issue we want to tackle in this work - create an abstraction that will make it possible to write a reliable code generator.
+
+Next: [Design](./design.md)
