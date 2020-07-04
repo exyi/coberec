@@ -80,7 +80,7 @@ For completeness and clarity, let us skim over the basic constructs.
 The table below shows how a C# code fragment is represented by the Expression.
 
 | C# | ExprCS Expression
-|-----|-----|----|
+|-----|-----|
 | `1` | `Expression.Constant(1)`
 | `"abc"` | `Expression.Constant("abc")`
 | `a + b` | `Expression.Binary("+", a, b)`
