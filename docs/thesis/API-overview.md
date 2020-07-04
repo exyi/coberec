@@ -1,13 +1,13 @@
 # API overview
 
 In this chapter, we will briefly show how is the library used.
-We want to familiarize the reader with the usage, before we discuss more implementation details.
-For more complete guides and examples, please see the documentation (TODO: link).
+We want to familiarize the reader with the usage before we discuss more implementation details.
+For more complete guides and examples, please see the [documentation](https://github.com/exyi/coberec/).
 
 ## Hello world
 
-First, we will show the a simple program, that creates a program that prints "Hello world!".
-Even though the result will be very simple, we will see the boilerplate that is needed to initialize the source code generator.
+First, we will show a simple program, that creates a program that prints "Hello world!".
+Even though the result is elementary, we will see the boilerplate that is needed to initialize the source code generator.
 
 
 ```csharp
@@ -45,13 +45,12 @@ cx.AddType(type);
 var csharp = cx.EmitToString();
 ```
 
-First, we need to create the signatures of the symbols we plan to declare.
-We need to reference the `Console.WriteLine` method and for that we need the MethodReference.
-For convenience, we can create the reference from a C# lambda function - otherwise we could create it from a MethodInfo (from Reflection) or find the method in the MetadataContext.
-The method body is fairly simple, we just call the method and return 0, so we create a block with the two expressions.
+First, we need to create the signatures of the symbols we plan to declare, and we need to create a MethodReference to the `Console.WriteLine` method.
+For convenience, we can create the reference from a C# lambda function - otherwise, we could create it from a MethodInfo (from Reflection) or find the method in the MetadataContext.
+The method body is fairly simple, we only call the method and return 0, so we create a block with the two expressions.
 
-To format it into a string, we need a [MetadataContext](TODO link) - a class that holds the information about all symbols in the referenced assemblies and the symbols we have declared.
-We do not need any references beyond the standard library, so we do not have to specify any parameters; otherwise we could pass an array of references into the Create method.
+To format it into a string, we need a [MetadataContext](./design.md#metadata-context) - the class that holds information about all symbols in the referenced assemblies and the symbols we have declared.
+We do not need any references beyond the standard library, so we do not have to specify any parameters; otherwise, we could pass an array of references into the Create method.
 After all, we call the `EmitToString` method, which finally invokes the entire machinery including ILSpy and produces the code:
 
 
@@ -60,24 +59,24 @@ using System;
 
 namespace MyApp.HelloWorld
 {
-	public class Program
-	{
-		public static int Main()
-		{
-			Console.WriteLine("Hello world!");
-			return 0;
-		}
-	}
+    public class Program
+    {
+        public static int Main()
+        {
+            Console.WriteLine("Hello world!");
+            return 0;
+        }
+    }
 }
 ```
 
 ## Expression API
 
 The core of our API is the `Expression` class.
-It incorporates the core model and some helper methods to construct the model in a more convenient way.
+It incorporates the core model and some helper methods to construct the model more conveniently.
 We discussed how we are going to represent more complex code figures in the Design chapter.
-For completeness and clarity, let us skim over the basic constructs.
-The table below shows how a C# code fragment is represented by the Expression.
+For completeness and clarity, let us skim over the basic C# constructs.
+The table below shows how the Expression represents various C# code fragments.
 
 | C# | ExprCS Expression
 |-----|-----|
@@ -121,15 +120,15 @@ The table below shows how a C# code fragment is represented by the Expression.
 
 > By far, not all C# constructs are in the table.
 > It is possible to express some using these basic components.
-> Unfortunately, it is not possible to express other constructs using this API.
-> In such case, users may fall back to using the ILSpy tree directly, as we have shown in the ILSpy Fallback chapter.
+> Unfortunately, some constructs can not be expressed this API.
+> In such case, users may fall back to using the ILSpy tree directly, as we have shown in the [ILSpy Fallback](./design.md#ilspy-fallback) chapter.
 
-More detailed documentation is available in the attachment or on the web. TODO link
+More detailed documentation is available in the attachment or [on the web](https://github.com/exyi/coberec/blob/master/docs/csharp-features/cheatsheet.md).
 
 ## Metadata definitions
 
 The second aspect of C# code is the types, methods, properties and fields.
-We have designed a broad API for defining the symbols in the rich .NET type system.
+We have designed a broad API for defining symbols in the rich .NET type system.
 
 Namespaces are easy to declare, we can just call `NamespaceSignature.Parse("MyNamespace")`.
 
@@ -161,7 +160,7 @@ var paramT = GenericParameter.Create("T");
 var genericClass = TypeSignature.Class("GenericClass", ns, @public, genericParameters: new [] { paramT })
 ```
 
-Interface implementations and base types are not specified in the signature, but in the `TypeDef`.
+Interface implementations and base types are not specified in the signature, but the `TypeDef`.
 The following example shows how to declare a derived class and an interface.
 
 ```csharp
@@ -248,7 +247,7 @@ var definition = MethodDef.CreateWithArray(
 ```
 
 In case we have a fixed number of parameters, we can use an overload of the Create method.
-Instead of passing an array, we get them in separate arguments of the lambda function.
+Instead of having the arguments in an array, we get them in separate arguments to the lambda function.
 For example, we could declare a static method for number addition in the following way:
 
 ```csharp
@@ -304,7 +303,7 @@ For getter-only properties, the field is used to assign a value in the construct
 
 All member definitions have a `doccomment` field.
 In C#, documentation comments must be valid XML, so the documentation comments in the metadata must conform.
-We can either set the field while the definition is created, or use the `With(doccomment: ...)` method.
+We can either set the field while we create the definition, or use the `With(doccomment: ...)` method.
 
 ```csharp
 var type = TypeSignature.Class("MyType", ns, Accessibility.APublic);
