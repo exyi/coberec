@@ -7,7 +7,8 @@ While the programming practices are likely going to reduce the maintenance cost 
 the boilerplate code is often troublesome to maintain -
 for example, multiple symbols might have to be renamed instead of a single one.
 
-> We will use the term **symbol** as a generic term for a method, function, variable, property, type, etc. See [Wikipedia - Symbol](https://en.wikipedia.org/wiki/Symbol_(programming))
+> We will use the term **symbol** as a generic term for a method, function, variable, property, type, etc.
+> See [Wikipedia - Symbol](https://en.wikipedia.org/wiki/Symbol_(programming))
 
 Since boilerplate code is a very common software affliction, people have invented many cures to it.
 However, as it goes in software engineering, there is no silver bullet and thus a lot of room for further development.
@@ -16,13 +17,16 @@ A generic approach is to generate the code that we do not want to write manually
 Obviously, this requires us to write program that emits the desired code, but often, only a simple script can save a significant amount of time.
 In more complex scenarios, when the code is generated from complex set of metadata such as OpenAPI specification, the code generators can get quite complex.
 Build-time code generation usually does not offer very good integration with the remaining code, since the generator does not have the knowledge of existing symbols.
-For example, code generation is suitable for API clients, but it would be hard to apply it to generating getters and setters for a class.
+For example, it is suitable for API clients, but it would be hard to apply it to generating getters and setters for a class.
 
 > **Building a project** is usually not as simple as executing the compiler.
 > The build process is executed by a build system and one of the build steps may be code generation.
 
-Our project is an abstraction for code generation, so we will mostly concern ourselves about it.
+In this thesis, we will focus on code generators that execute during the build.
+Our project is an abstraction for code generation, it works for C#, and targets especially the more complex generators.
 Nevertheless, it is very useful to briefly investigate alternative approaches as well.
+
+## Reducing Boilerplate
 
 As suggested by many internet discussions, for almost every problem with repetitive code, a choice of another programming language would eliminate it.
 Choice of programming language is however a complicated decision -
@@ -41,13 +45,13 @@ This approach is chosen by many .NET libraries to do serialization ([Newtonsoft.
 The limitation is, that we can not declare any new API during runtime, because the compiler would have to know about the symbols at compile time to allow the programmer to use them.
 This limitation however does not exist in dynamically typed languages, which makes the technique even more powerful (and less safe to use).
 
-## Code generation abstraction
+## Code Generation Abstraction
 
 In basics, code generation is done very easily by printing out code fragments.
 This approach works very well in simple cases, when the output space is fairly limited.
 For example, a program to pre-generate a list of prime numbers for a hash function could be just a few lines in any reasonable scripting language.
 
-As the space of possible outputs rises, a lot of complications may arise.
+As the space of possible outputs rises, a lot of complications may appear.
 When the symbols names are variable, we have to sanitize them, since our target language likely does not allow any string to be an identifier.
 Then, we have to make sure that there are no name collisions after the sanitization.
 When referencing existing symbols we have to be extra careful to really reference the expected symbol, and not a different one with the same name.
