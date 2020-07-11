@@ -7,7 +7,7 @@ Moreover, we will see many good ideas that we can reuse in our work.
 
 ## .NET Reflection
 
-.NET has an API for runtime type introspection.
+.NET has an [API for runtime type introspection](https://docs.microsoft.com/en-us/dotnet/framework/reflection-and-codedom/reflection).
 Not only does it support listing the type members and their metadata, but we can also invoke them.
 Many .NET libraries rely on custom attributes or naming conventions to automatically discover types, invoke methods on them or list object properties for serialization or pretty-printing.
 
@@ -21,14 +21,20 @@ The dependency injection framework automatically resolves the dependencies; agai
 All of this reduces boilerplate code that would be only initializing the service classes, and it is straightforward to use.
 Of course, there are costs:
 
-* **transparency**: We cannot just look at the code to see why it creates an unexpected service. It is also hard to debug, since it is not our code that is being executed.
-* **startup performance**: Reflection is quite slow, and we force the runtime into loading all metadata for types that may not be needed.
-* **throughput performance**: Reflection is slow when we get to invoke many methods. For example, using Reflection for serializing an object into JSON would be prohibitively expensive, while creating few instances of the services is probably fine.
+* **transparency**:
+  We cannot just look at the code to see why it does something unexpected.
+  It is also hard to debug, since it is not our code that is being executed.
+* **startup performance**:
+  Reflection force runtime to load all metadata for types which impose additional startup costs.
+* **throughput performance**:
+  Invoking methods via reflection is significantly slower than a standard invocation.
+  For example, using Reflection for serializing an object into JSON would be prohibitively expensive, while creating few instances of the services is probably fine.
 
 ## Linq.Expressions + Reflection.Emit
 
 In .NET, not only it is possible to use existing types and methods using Reflection, but we can also create new methods and new implementations of interfaces.
-The technique of code generation is very often used to make the code run faster when using Reflection.
+In addition to using existing types and methods via Reflection, .NET also permits creation of new methods and new implementations of interfaces.
+This technique is often be used to improve performance of code that is using Reflection.
 Probably all serializers use it to achieve reasonable performance.
 
 > As a side note, it is also possible to inspect the bytecode of existing methods.
@@ -38,9 +44,10 @@ Probably all serializers use it to achieve reasonable performance.
 We do not have to emit IL instructions manually, which would be quite cumbersome.
 .NET provides an excellent abstraction called Linq Expressions.
 It is an abstract tree semantically similar to C#, so the API is very accessible to C# developers.
-See the documentation of the [`System.Linq.Expressions.Expression` class](https://docs.microsoft.com/en-us/dotnet/api/system.linq.expressions.expression?view=netframework-4.7.2) for more details on the API.
 
-When combined with System.Reflection.Emit, we can even define new types, implement interfaces and override virtual methods.
+> See the [`System.Linq.Expressions.Expression` documentation](https://docs.microsoft.com/en-us/dotnet/api/system.linq.expressions.expression?view=netframework-4.7.2) for more details on the Expression API.
+
+When combined with Reflection Emit, we can even define new types, implement interfaces and override virtual methods.
 This is sometimes used to automatically declare service decorators for tracing, logging and similar tasks.
 
 Refit, a library that makes writing API clients easier, uses Reflection Emit in a bit unusual way.
@@ -56,6 +63,8 @@ public interface IGitHubApi
 
 This example will run an HTTP GET request to `/users/NAME` when we call `GetUser("NAME")`.
 We still have to define the methods and the input and output types (the `User` in this case), but otherwise the boilerplate is reduced to the bare minimum.
+
+> See the [`System.Reflection.Emit.AssemblyBuilder` documentation](https://docs.microsoft.com/en-us/dotnet/api/system.reflection.emit.assemblybuilder?view=netcore-3.1) for more information about creating new types.
 
 With runtime code generation, we significantly reduce the performance problem with throughput while the startup time may rise significantly.
 Furthermore, it is quite unfriendly to runtimes which do not use JIT - such as .NET on mobile devices or WebAssembly.
