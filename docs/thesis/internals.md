@@ -20,7 +20,7 @@ When the code is requested, we invoke CommitWaitingTypes method.
 At this point, the types and their content will be converted into ILSpy's internal representation.
 When the translation is performed, most of the tree will be type-checked - checked that the referenced symbols exist and have the expected properties.
 
-## Metadata translation
+## Metadata Translation
 
 The reason why type definitions are translated and checked in bulk in the CommitWaitingTypes is that the types may be referencing each other.
 If the types were translated and registered one after another, the backward references would be invalid and cause the registration to fail.
@@ -38,7 +38,7 @@ The commit process is performed by the CommitWaitingTypes and has these steps:
 
 The translation from ExprCS metadata classes into ILSpy type system is handled by the MetadataContext class.
 
-## Expression translation
+## Expression Translation
 
 The ExprCS expression are converted into ILSpy internal abstract tree called [ILAst](https://github.com/icsharpcode/ILSpy/blob/faea7ee90d636fe8d2bc6a2f7f7b00dada9f01b2/doc/ILAst.txt).
 The CodeTranslator class performs this transformation.
@@ -100,7 +100,7 @@ Otherwise we pick any matching delegate like the `Func<...>` or `Action<...>`.
 > Functions that take too many arguments or take them by reference might not have a matching delegate.
 > In such case, the translation will fail, and the user will have to declare the delegate explicitly.
 
-## API usability
+## API Usability
 
 The expression and metadata API is made to be easy to use and debug.
 

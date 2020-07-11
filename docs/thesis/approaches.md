@@ -21,12 +21,12 @@ The dependency injection framework automatically resolves the dependencies; agai
 All of this reduces boilerplate code that would be only initializing the service classes, and it is straightforward to use.
 Of course, there are costs:
 
-* **transparency**:
+* **Transparency**:
   We cannot just look at the code to see why it does something unexpected.
   It is also hard to debug, since it is not our code that is being executed.
-* **startup performance**:
+* **Startup Performance**:
   Reflection force runtime to load all metadata for types which impose additional startup costs.
-* **throughput performance**:
+* **Throughput Performance**:
   Invoking methods via reflection is significantly slower than a standard invocation.
   For example, using Reflection for serializing an object into JSON would be prohibitively expensive, while creating few instances of the services is probably fine.
 
@@ -76,7 +76,7 @@ It is not impossible to use it, but the need to register all types referenced by
 As we will show in the [Design](./design.md) chapter, Linq Expression from the .NET framework had a very significant influence on the design of our API.
 Even though we do not generate bytecode at runtime but C# code before compilation, our expression tree looks very similar.
 
-## F# type providers
+## F# Type Providers
 
 At the time of writing this work, C# does not have any mechanism for making compiler plugins or macros.
 However, F#, another .NET language, has support for type providers.
@@ -99,7 +99,7 @@ Unfortunately for the C# developers, not many type providers are generative, so 
 F# type providers are a neat technology that inspires similar features in other languages, but the F# compiler API is unfortunately quite cumbersome.
 It would be nice to steal the ease of use for the type provider users, but we do not see a way to replicate it in C#.
 
-## Scala macros
+## Scala Macros
 
 Scala is a functional programming language with a very capable macro system.
 Scala macros are similar to F# type providers - macros are basically plugins to the Scala compiler.
@@ -160,7 +160,7 @@ Since the code generator is just a function returning a string, there is almost 
 It can not integrate with the calling code so tightly as we have seen in Scala.
 Yet, combined with D compile-time reflection, it can still offer much tighter integration than a separate code generation process.
 
-## Dynamic languages
+## Dynamic Languages
 
 So far, we have only discussed statically typed languages.
 However, dynamically typed platforms have a lot to say to the problem of boilerplate code.
@@ -266,7 +266,7 @@ When the logic is dynamic, or the code is generated at runtime, this is reasonab
 With compile-time code generation, it is not going to be possible to know what will come at the runtime.
 So, either the generated code will have to be very generic to cover all the possible options, or we will see a revival of separate configuration files.
 
-## IL rewriting
+## IL Rewriting
 
 Rewriting of the intermediate language is a powerful technique used by many .NET projects.
 The point is to generate the boilerplate after the project is compiled.
@@ -390,7 +390,7 @@ Both startup time and throughput performance is probably going to be decent.
 This is not an exclusive advantage, macros, IL rewriting are on par with code generation, since these also generates code.
 However, in some cases the the speed may be afflicted by the increase in code size.
 
-**API creation** - Code generation is nearly the only discussed approach that can introduce new API symbols.
+**API Creation** - Code generation is nearly the only discussed approach that can introduce new API symbols.
 While dynamic languages can introduce new symbols at runtime, it does not offer type safety and IDEs can not guide the user through autocompletion.
 However, it is exactly when we generate large APIs that we hit a whole edge case parade - the symbols must get valid names, there must not be any collisions, we must reference other symbols correctly, etc.
 
@@ -403,12 +403,12 @@ In theory, we could design a common abstraction, but is also rather a holy grail
 
 Obviously, code generation is no silver bullet, there is also many problems compared to alternatives.
 
-**Code size** - Generating a lot of boilerplate code is going to affect the application size, which may sometimes degrade performance.
+**Code Size** - Generating a lot of boilerplate code is going to affect the application size, which may sometimes degrade performance.
 It is most problematic for client-side web applications, where the size of Javascript code is crucial for reasonable load time.
 It is a shame that we do not want to use code generation in JavaScript.
 It is a very convenient language for code generation, since the number of edge cases is much lower compared to C#.
 
-**Compilation time** - Another step in the build process is going to affect the time it takes to compile the project.
+**Compilation Time** - Another step in the build process is going to affect the time it takes to compile the project.
 Not only does it make it slower, it also complicates the process and makes it less reliable (due to missing dependencies, bugs, and similar issues)
 
 **Reliability** - Especially when we generate a large API, the number of edge cases the code generator may hit is vast.

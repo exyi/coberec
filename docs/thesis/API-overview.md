@@ -1,10 +1,10 @@
-# API overview
+# API Overview
 
 In this chapter, we will briefly show how is the library used.
 We want to familiarize the reader with the usage before we discuss more implementation details.
 For more complete guides and examples, please see the [documentation](https://github.com/exyi/coberec/).
 
-## Hello world
+## Hello World
 
 First, we will show a simple program, that creates a program that prints "Hello world!".
 Even though the result is elementary, we will see the boilerplate that is needed to initialize the source code generator.
@@ -27,7 +27,7 @@ var writeLineRef = MethodReference.FromLambda(() => Console.WriteLine(""));
 var body = Expression.Block(
     new [] {
         // we invoke the WriteLine method
-        Expression.StaticMethodCall(writeLineRef, Expression.Constant("Hello world!"))
+        Expression.StaticMethodCall(writeLineRef, Expression.Constant("Hello World!"))
     },
     // and return 0
     result: Expression.Constant(0)
@@ -125,7 +125,7 @@ The table below shows how the Expression represents various C# code fragments.
 
 More detailed documentation is available in the attachment or [on the web](https://github.com/exyi/coberec/blob/master/docs/csharp-features/cheatsheet.md).
 
-## Metadata definitions
+## Metadata Definitions
 
 The second aspect of C# code is the types, methods, properties and fields.
 We have designed a broad API for defining symbols in the rich .NET type system.

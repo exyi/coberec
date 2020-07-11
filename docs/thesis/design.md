@@ -2,7 +2,7 @@
 
 In this chapter, we will go through the design decisions made during the project development, explore alternatives and also some potential for future development.
 
-## `System.Linq.Expressions` influence
+## `System.Linq.Expressions` Influence
 
 We have had a good experience with the `System.Linq.Expressions` interface provided in .NET, which can be used to build methods at runtime.
 The API is a very reliable abstraction for emitting IL instructions at runtime.
@@ -15,7 +15,7 @@ However, we must not depend on Reflection to avoid the issues with dependencies,
 Our design of the code model is thus also expression-based, and the API will be very familiar to a Linq Expressions user.
 There are going to be differences, though.
 
-### Expression based model
+### Expression Based Model
 
 Major similarity to Linq Expressions is that every code fragment is an expression; there are no statements.
 That does not mean that the generated code will always be a single expression; the expressions will get expanded into a reasonable C# form.
@@ -27,7 +27,7 @@ To simplify the concept, we will represent every code fragment as a generalized 
 Our expressions do not have to return anything - we allow returning `void` and we will allow variable declarations and inline blocks in the expressions.
 From that perspective, our code model would be similar to F#, Scala or other expression-based languages.
 
-## Blocks and variables
+## Blocks and Variables
 
 We will represent blocks and variable definitions a bit differently than Linq Expressions do, to more closely follow the single responsibility principle and thus make the types simpler.
 Linq Expressions use one node type ([BlockExpression](https://docs.microsoft.com/en-us/dotnet/api/system.linq.expressions.blockexpression?view=netcore-3.1)) to both declare variables and chain expressions.
@@ -54,7 +54,7 @@ type LetInExpression {
 The name is inspired by the `let variable = value in target` syntax from F#, since this expression has the same semantics.
 First, the variable is initialized by the `value` and then `target` is evaluated with the new variable in scope.
 
-## Control flow
+## Control Flow
 
 Same as in Linq Expressions, we have a ConditionalExpression representing an `if` statement or the `a ? b : c` ternary operator.
 Other control flow statements (loops and jumps) are a bit more different to C# in our expression-based model.
@@ -123,7 +123,7 @@ We may store the references in variables, pass them as arguments and return them
 We cannot, however, store them in a field - C# does not allow references inside of objects; references can not be stored on the garbage collected heap.
 That also means that reference variables can not be captured in a closure of a local function nor a lambda function.
 
-## ILSpy as a backend
+## ILSpy as a Backend
 
 C# is a complex language with many edge cases, so emitting code that corresponds to the exact symbols specified by the expression is very tricky.
 To illustrate that, consider a few examples.
@@ -220,7 +220,7 @@ At the time publishing of this work, there is no support for any other.
 However, it could make sense to add support for Reflection.Emit and Linq.Expression backend.
 That would provide a common API for generating code compile-time and code at runtime.
 
-### Symbol signatures
+### Symbol Signatures
 
 We cannot simply copy the ILSpy system or Reflection and allow adding new symbols, since we want to have the metadata immutable.
 Immutability will be a promise that whenever a function gets information about a symbol, it will not change.
@@ -241,7 +241,7 @@ Type members contain a signature of the declaring type, name of the member and o
 
 > For more details, see the documentation of TypeSignature, MethodSignature, FieldSignature and PropertySignature (TODO link)
 
-### Symbol references
+### Symbol References
 
 .NET has support for generics - types and methods may be parametrized by a type argument.
 Since we want to support the concept, every time we will be referencing a symbol from the expression, we will provide a list of type arguments for that symbol.
@@ -265,7 +265,7 @@ However, it significantly reduces noises of the user code, so we find it helpful
 > In the second case (similar to reference), the List is not specialized by another parameter `TParam`, not its own parameter `T`.
 
 
-## Functions and delegates
+## Functions and Delegates
 
 C# has support for functions declared inside of methods - either as [lambda functions](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/statements-expressions-operators/lambda-expressions) or [local functions](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/local-functions).
 The concept of delegates allows us to work with a function as with any object - i.e. store them in variables, fields, parameters and return them from methods.

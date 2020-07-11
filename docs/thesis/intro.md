@@ -13,7 +13,7 @@ for example, multiple symbols might have to be renamed instead of a single one.
 Since boilerplate code is a very common software affliction, people have invented many cures to it.
 However, as it goes in software engineering, there is no silver bullet and thus a lot of room for further development.
 
-A generic approach is to generate the code that we do not want to write manually.
+A generic approach is to generate the code that is tedious to write manually.
 Obviously, this requires us to write program that emits the desired code, but often, only a simple script can save a significant amount of time.
 In more complex scenarios, when the code is generated from complex set of metadata such as OpenAPI specification, the code generators can get quite complex.
 Build-time code generation usually does not offer very good integration with the remaining code, since the generator does not have the knowledge of existing symbols.
@@ -55,8 +55,8 @@ As the space of possible outputs rises, a lot of complications may appear.
 When the symbols names are variable, we have to sanitize them, since our target language likely does not allow any string to be an identifier.
 Then, we have to make sure that there are no name collisions after the sanitization.
 When referencing existing symbols we have to be extra careful to really reference the expected symbol, and not a different one with the same name.
-In C#, we could reference everything by full names to avoid this problem.
-In general, being overly explicit prevents issues, but afflicts readability of the generated code.
+In C#, everything could be referenced by a full name to avoid this problem.
+In general, being overly explicit prevents issues, but it afflicts readability of the generated code.
 
 The goal of our project is to provide an abstraction for source code generators that will help to solve these issues.
 The API user will provide a semantic model of the desired code and our library will translate it to a matching C# code.
