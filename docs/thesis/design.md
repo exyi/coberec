@@ -67,11 +67,10 @@ The single method argument would get evaluated, and then we could not continue w
 For this reason, Linq Expressions do not support jumps to arbitrary locations, but the limitations are unclear.
 
 WebAssembly is another expression-based system which handles control flow in a slightly different way.
-It has an `if` instruction, which is very similar to our ConditionalExpression.
+It has an [`if` instruction](https://www.w3.org/TR/wasm-core-1/#control-instructions%E2%91%A8), which is very similar to our ConditionalExpression.
 WebAssembly does not have a generic `goto` instruction and only supports an infinite loop (`loop` instruction) and break to a label (`br` and its shortcuts).
 The lack of the `goto` instruction ensures structured control flow, which fits nicely into the concept of expression-based code.
 
-See https://www.w3.org/TR/wasm-core-1/#control-instructions%E2%91%A8
 
 WebAssembly `br` instruction links to the target by its index.
 That works well for a binary format, but would not be a pleasure to use it in an API while building the expression.
@@ -139,7 +138,7 @@ public void M() {
 }
 ```
 
-In such a case, we have to use a full name of the Uri type: `System.Uri.EscapeDataString(Url)`.
+We would have to use the full name: `System.Uri.EscapeDataString(Url)`.
 Using full names everywhere would, however, make all our code longer and, additionally, it does not actually solve our problem.
 `System` corresponds to the namespace only until there is another symbol called `System`:
 
@@ -171,7 +170,7 @@ In practice, this could lead to reduced precision of the output or wrong output 
 most importantly, it is a violation of the promise that our library will always reference the exact symbols user has specified in the tree.
 
 Being explicit in every aspect is a way chosen by many code generators.
-An example might be the code generator for resource (`.resx`) files ([example file](https://github.com/dotnet/runtime/blob/3bb5f14/src/libraries/Common/tests/Resources/Strings.Designer.cs)) or DotVVM view compiler ([generator implementation](https://github.com/riganti/dotvvm/blob/61ee3fd/src/DotVVM.Framework/Compilation/DefaultViewCompilerCodeEmitter.cs#L702)).
+An example might be the code generator for resource (`.resx`) files (see an [example file](https://github.com/dotnet/runtime/blob/3bb5f14/src/libraries/Common/tests/Resources/Strings.Designer.cs)) or DotVVM view compiler ([generator implementation](https://github.com/riganti/dotvvm/blob/61ee3fd/src/DotVVM.Framework/Compilation/DefaultViewCompilerCodeEmitter.cs#L702)).
 However, the explicitness heavily afflicts readability of the produced code.
 We think that that transparency and "debuggability" is a crucial advantage of code generation compared to the other approaches, so we would like to get the best of both worlds by having a smart code generator.
 
@@ -323,10 +322,25 @@ Since we are building the API on top of ILSpy, MetadataContext is going to be a 
 
 In principle, the API workflow is going to look like:
 
-* Create MetadataContext: `context = MetadataContext.Create(references: listOfReferencedAssemblies)`
-* Explore referenced symbols: `context.GetNamespaceMembers(namespace)`, `context.GetMembers(type)` or similar
-* Add new type definitions: `context.AddType(typeDef)`
-* Build the result - generate the C# code: `context.EmitToString()` or `context.EmitToDirectory(...)`
+* Create MetadataContext:
+  ```csharp
+  context = MetadataContext.Create(
+      references: listOfReferencedAssemblies);
+  ```
+* Explore referenced symbols:
+  ```csharp
+  type = context.GetNamespaceMembers(namespace).First();
+  members = context.GetMembers(type);
+  ```
+* Add new type definitions:
+  ```csharp
+  context.AddType(typeDef)
+  ```
+* Build the result - generate the C# code:
+  ```csharp
+  var output = context.EmitToString();
+  context.EmitToDirectory(outputDirectory);
+  ```
 
 Likely, significant parts of the code working with the MetadataContext are only going to use it only for symbol exploration and not to add new types.
 So, it could make sense to split the context into a type that only allows exploration and type that also allows adding new types.
@@ -392,7 +406,7 @@ We can not inspect the handwritten code, and we even have to redeclare it.
 It may be quite a significant issue of code generation, and resolving it could be a direction for future extension of the project.
 One idea would be to parse the existing C# code to extract the declared symbols from it.
 However, that could be a significant performance cost.
-With version 9, C# should get the Source Generators feature, as we discussed [in the previous chapter](approaches.md#c-9-source-generators).
+With version 9, C# should get the Source Generators feature, as we discussed [in the previous chapter](./approaches.md#c-9-source-generators).
 The Source Generators run in the C# compiler, so we would use the metadata from the compilation.
 
 ## ILSpy Fallback

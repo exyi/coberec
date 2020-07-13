@@ -120,7 +120,7 @@ The macro is basically a function that gets its arguments as expression trees an
 To create an expression, we do not even have to use any API - Scala has a syntax to create them.
 String literal prefixed with `q` returns the expression that is written in the quotes; `q"1 + 2"` returns an addition expression of the two constants.
 As the usual string literals in Scala, the expression literal may be parametrized by other expressions and types.
-For example `q"($myExpr.asInstanceOf[Double] * 1.2).asInstanceOf[$expectedType]"` multiplies `myExpr` by 1.2 while performing the type conversions.
+For example `q"($myExpr * 1.2).asInstanceOf[$expectedType]"` multiplies `myExpr` by 1.2 while performing the type conversion.
 Note it is not the same as working with strings - we do not have to worry about parenthesis around `$myExpr`.
 
 The `q` literal makes writing macros very accessible, since the macro developers do not have to learn almost any new API.
@@ -209,13 +209,16 @@ It seems, however, that it should be possible to generate code that depends on t
 
 Let us show the code example from the [Source Generators announcement](https://devblogs.microsoft.com/dotnet/introducing-c-source-generators/):
 
+\clearpage
+
 ```csharp
 [Generator]
 public class HelloWorldGenerator : ISourceGenerator
 {
     public void Execute(SourceGeneratorContext context)
     {
-        // begin creating the source we'll inject into the users compilation
+        // begin creating the source we will
+        // inject into the users compilation
         var sourceBuilder = new StringBuilder(@"
 using System;
 namespace HelloWorldGenerated
@@ -225,16 +228,21 @@ public static class HelloWorld
     public static void SayHello()
     {
         Console.WriteLine(""Hello from generated code!"");
-        Console.WriteLine(""The following syntax trees existed in the compilation that created this program:"");
+        Console.WriteLine(
+            ""The following syntax trees existed"" +
+            ""in the compilation that created this program:"");
 ");
 
-        // using the context, get a list of syntax trees in the users compilation
+        // using the context, get a list of syntax trees
+        // in the users compilation
         var syntaxTrees = context.Compilation.SyntaxTrees;
 
-        // add the filepath of each tree to the class we're building
+        // add the path of each tree
         foreach (SyntaxTree tree in syntaxTrees)
         {
-            sourceBuilder.AppendLine($@"Console.WriteLine(@"" - {tree.FilePath}"");");
+            sourceBuilder.AppendLine(
+                $@"Console.WriteLine(
+                    @"" - {tree.FilePath}"");");
         }
 
         // finish creating the source to inject
@@ -244,7 +252,12 @@ public static class HelloWorld
 }");
 
         // inject the created source into the users compilation
-        context.AddSource("helloWorldGenerator", SourceText.From(sourceBuilder.ToString(), Encoding.UTF8));
+        context.AddSource("helloWorldGenerator",
+            SourceText.From(
+                sourceBuilder.ToString(),
+                Encoding.UTF8
+            )
+        );
     }
 }
 ```
@@ -348,7 +361,7 @@ As the author claims in a blog post
 
 > It is safe to call With methods in the same assembly where the class is defined: the calls get adapted to the real implementation automatically.
 
-TODO image dependency graph explanation
+![Illustration of the symbol references. Dashed lines are introduced in the rewriting process by Fody.](./IL_rewriting_diagram.svg)
 
 Another problem with IL Rewriting is that the .NET tooling is not well-prepared for it and some advanced development features might stop working.
 For example, Edit & Continue feature does not work with [Fody](https://github.com/Fody/Fody/tree/c31ea96b5be6ce66b992614dda2af2c0a9bb91d2#edit-and-continue) nor with [PostSharp](https://doc.postsharp.net/requirements#incompatibilities), a proprietary tool doing IL Rewriting.

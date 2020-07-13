@@ -21,11 +21,12 @@ type T {
 }
 ```
 
-The entire class is in the [src/Coberec.Tests/CSharp/testoutputs/CodeGeneratorTests.ThesisExample.cs](https://github.com/exyi/coberec/blob/master/src/Coberec.Tests/CSharp/testoutputs/CodeGeneratorTests.ThesisExample.cs) file.
+The entire class is in the [CodeGeneratorTests.ThesisExample.cs](https://github.com/exyi/coberec/blob/master/src/Coberec.Tests/CSharp/testoutputs/CodeGeneratorTests.ThesisExample.cs) file.
 The important features of the class are:
+
 * The properties `A` and `B` of types `int` and `ImmutableArray<string>`
 * A constructor `T(int a, ImmutableArray<string> b)`.
-* A constructor accepting more generic types `T(int a, IEnumerable<string> b)`.
+* A more general constructor `T(int a, IEnumerable<string> b)`.
 * Implemented Equals method, GetHashCode method and the `==` and `!=` operators. The types are equal when all properties are equal.
 * Implemented ToString method.
 * `With(...)` method that creates a new instance with modified properties. The arguments are all optional, so `x.With(a: 1)` sets `A` and `x.With(b: ...)` sets `B` and `x.With(a: 1, b: ...)` sets both.
@@ -35,7 +36,7 @@ The exception contains a ValidationErrors instance with information on which fie
 When there is more than one validation error, all should be present in the list.
 This is convenient in the case of the Expression class as it is often validated with many rules.
 
-The types also contain a `Create` static method which returns a `ValidationResult<T>`.
+The types also contain Create method that returns a `ValidationResult<T>`.
 Instead of throwing the exception, it always returns an object which contains either the created instance or the validation errors.
 In cases when we are not sure about the validity, the `Create` method might be more convenient.
 The `ValidationResult<T>` is a monad implementing `Select` and `SelectMany` methods which allow usage of the [C# query syntax](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/from-clause); similarly as shown on [Mark Seemann blog](https://blog.ploeh.dk/2020/06/29/syntactic-sugar-for-io/).
@@ -60,7 +61,8 @@ public readonly struct OptParam<T>
         this.HasValue = true;
     }
 
-    public static implicit operator OptParam<T>(T val) => new OptParam<T>(val);
+    public static implicit operator OptParam<T>(T val) =>
+        new OptParam<T>(val);
 }
 ```
 
@@ -81,7 +83,7 @@ public ValidationResult<T> With(
 We also have support for [GraphQL unions](https://graphql.org/learn/schema/#union-types) which are less straightforward to represent in C#.
 We are using inheritance to represent one option of many, but the union types also have helper methods to make creating and processing the unions easier.
 In the ExprCS API, Expression and TypeReferences are unions.
-A simpler example of a generated union may found in [src/Coberec.Tests/CSharp/testoutputs/CodeGeneratorTests.SimpleUnionType.cs](https://github.com/exyi/coberec/blob/master/src/Coberec.Tests/CSharp/testoutputs/CodeGeneratorTests.SimpleUnionType.cs).
+A simpler example of a generated union may found in the [CodeGeneratorTests.SimpleUnionType.cs](https://github.com/exyi/coberec/blob/master/src/Coberec.Tests/CSharp/testoutputs/CodeGeneratorTests.SimpleUnionType.cs) file.
 
 Apart from the basics like constructors, equality and ToString, we automatically implement some helpers.
 Each case of the union has a factory method on the type, for example, we can use `Expression.Constant(...)` instead of `new Expression.ConstantCase(...)`.

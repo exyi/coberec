@@ -82,7 +82,7 @@ cInstance.ReadProperty(
 )
 ```
 
-> See [Declaring Properties](declaring-properties.md) for a complete guide how to declare such properties (TODO)
+> See [Defining Properties](../metadata.md#defining-properties) for a complete guide how to declare such properties.
 
 
 In case you'd like to get a property from a referenced library and you can not load it from the lambda, you can use `MetadataContext` to obtain it's reference. You can use the `Coberec.ExprCS.MetadataContext.GetMemberProperty` get it from a type and name. And `Coberec.ExprCS.MetadataContext.FindType` to get the type reference.

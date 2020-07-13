@@ -71,7 +71,7 @@ cInstance.ReadProperty(
 )
 ```
 
-> See [Declaring Fields](declaring-fields.md) for a complete guide how to declare such properties (TODO)
+> See [Defining Fields](../metadata.md#defining-fields) for a complete guide how to declare such field 
 
 
 In case you'd like to get a field from a referenced library and you can not load it from the lambda, you can use `MetadataContext` to obtain it's reference. You can use the `Coberec.ExprCS.MetadataContext.GetMemberField` get it from a type and name. And `Coberec.ExprCS.MetadataContext.FindType` to get the type reference.

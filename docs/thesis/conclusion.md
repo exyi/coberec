@@ -11,8 +11,8 @@ On the other hand, it does not stress the expression translation too much - all 
 ## Future Work
 
 The library is certainly not feature-complete, there is still a number of C# features that can not be accessed by code generators using the Expression tree.
-We have a near-complete list of them in [our github project](https://github.com/exyi/coberec/issues).
-These features can be however accessed through the ILSpy Fallback API, so none of these issues should be a critical blocker.
+We have a near-complete list of them in [our GitHub project](https://github.com/exyi/coberec/issues).
+These features can be however accessed through the [ILSpy Fallback API](./design.md#ilspy-fallback), so none of these issues should be a critical blocker.
 
 We would like to adopt our library to work with the C# Source Generators, as we have mentioned.
 It will likely only mean that we will implement ILSpy type system for the metadata exposed from the C# compiler.

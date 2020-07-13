@@ -15,19 +15,26 @@ Even though the result is elementary, we will see the boilerplate that is needed
 
 // namespace MyApp.HelloWorld {
 var ns = NamespaceSignature.Parse("MyApp.HelloWorld");
+var @public = Accessibility.APublic;
 // public class Program {
-var programType = TypeSignature.Class("Program", ns, Accessibility.APublic);
+var programType = TypeSignature.Class("Program", ns, @public);
 // public static int Main() {
-var mainMethod = MethodSignature.Static("Main", programType, Accessibility.APublic, returnType: TypeSignature.Int32);
+var mainMethod = MethodSignature.Static(
+    "Main", programType, @public,
+    returnType: TypeSignature.Int32);
 
 // get the Console.WriteLine reference
-var writeLineRef = MethodReference.FromLambda(() => Console.WriteLine(""));
+var writeLineRef = MethodReference.FromLambda(
+    () => Console.WriteLine(""));
 
 // then we build the actual expression tree
 var body = Expression.Block(
     new [] {
         // we invoke the WriteLine method
-        Expression.StaticMethodCall(writeLineRef, Expression.Constant("Hello World!"))
+        Expression.StaticMethodCall(
+            writeLineRef,
+            Expression.Constant("Hello World!")
+        )
     },
     // and return 0
     result: Expression.Constant(0)
@@ -94,43 +101,43 @@ The table below shows how the Expression represents various C# code fragments.
 | `a ?? b` | `a.NullCoalesce(b)`
 | `a is null` | `a.IsNull()`
 | `default(T)` | `Expression.Default(typeT)`
-| `MyClass.Method(a)` | `Expression.StaticMethodCall(myMethodReference, a)`
-| `a.Method(b)` | `a.CallMethod(myMethodReference, b)`
-| `a.MyProperty` | `a.ReadProperty(myPropertyReference)`
-| `MyClass.MyProperty` | `Expression.ReadStaticProperty(myPropertyReference)`
-| `a.MyField` (read reference) | `a.AccessField(myFieldReference)`
-| `a.MyField` (read value) | `a.ReadField(myFieldReference)`
-| `a.MyField = b` | `a.AssignField(myPropertyReference, b)`
-| `new Abc(a)` | `Expression.NewObject(construtorReference, a)`
-| `new [] { a, b, c }` | `ExpressionFactory.MakeArray(a, b, c)`
-| `new T[x]` | `Expression.NewArray(elementType, x)`
-| `a[x]` (read reference) | `Expression.ArrayIndex(a, x)`
-| `{ A1; A2; ... return X }` (block) | `Expression.Block(A, result: X)`
-| `{ A1; A2; ... return X }` (block) | `Expression.Block(A, result: X)`
-| `new T?(x)` | `ExpressionFactory.Nullable_Create(x)`
-| `x.Value` (when `x: Nullable<T>`) | `ExpressionFactory.Nullable_Value(x)`
-| `"abc" + x` | `ExpressionFactory.String_Concat(Expression.Constant("abc"), x)`
-| `Type a = value; rest...` | `Expression.LetIn(ParameterExpression.Create(Type, "a"), value, rest)`
-| `myFunction(a)` (for functions) | `myFunction.Invoke(a)`
-| `a => a` (create function) | `Expression.Function(aParameter.Read(), aParameter)`
-| `(Func<int, int>)(a => a)` | `theLambda.FunctionConvert(TypeReference.FromType(typeof(Func<int, int>)))`
-| `a += b` | `a.Ref().ReferenceCompoundAssign("+", b)`
-| `a.Property += b` | `a.PropertyCompoundAssign(property, "+", b)`
-| `a.field += b` | `a.FieldCompoundAssign(field, "+", b)`
+| `MyClass.Method(a)` | `Expression​.​StaticMethodCall(​myMethodReference​, a)`
+| `a.Method(b)` | `a.CallMethod(​myMethodReference, b)`
+| `a.MyProperty` | `a.ReadProperty(​myPropertyReference)`
+| `MyClass.MyProperty` | `Expression.ReadStaticProperty(​myPropertyReference)`
+| `a.MyField` (read reference) | `a.AccessField(​myFieldReference)`
+| `a.MyField` (read value) | `a.ReadField(​myFieldReference)`
+| `a.MyField = b` | `a.AssignField(​myPropertyReference, b)`
+| `new Abc(a)` | `Expression.​NewObject(​construtorReference, a)`
+| `new [] { a, b, c }` | `ExpressionFactory.​MakeArray(​a, b, c)`
+| `new T[x]` | `Expression.​NewArray(​elementType, x)`
+| `a[x]` (read reference) | `Expression.​ArrayIndex(​a, x)`
+| `{ A1; A2; ... return X }` (block) | `Expression.​Block(​A, result: X)`
+| `{ A1; A2; ... return X }` (block) | `Expression.​Block(​A, result: X)`
+| `new T?(x)` | `ExpressionFactory.​Nullable_Create(​x)`
+| `x.Value` (when `x: Nullable<T>`) | `ExpressionFactory.​Nullable_Value(​x)`
+| `"abc" + x` | `ExpressionFactory.​String_Concat(​Expression.Constant(​"abc"), x)`
+| `Type a = value; rest...` | `Expression.​LetIn(​ParameterExpression.​Create(​Type, "a"), value, rest)`
+| `myFunction(a)` (for functions) | `myFunction.​Invoke(a)`
+| `a => a` (create function) | `Expression.​Function(​aParameter.Read(), aParameter)`
+| `(Func<int, int>)(a => a)` | `theLambda.​FunctionConvert(​TypeReference.FromType(​typeof(​Func<int, int>​)))`
+| `a += b` | `a.Ref().​ReferenceCompoundAssign(​"+", b)`
+| `a.Property += b` | `a.​PropertyCompoundAssign(​property, "+", b)`
+| `a.field += b` | `a.​FieldCompoundAssign(​field, "+", b)`
 
 > By far, not all C# constructs are in the table.
 > It is possible to express some using these basic components.
 > Unfortunately, some constructs can not be expressed this API.
-> In such case, users may fall back to using the ILSpy tree directly, as we have shown in the [ILSpy Fallback](./design.md#ilspy-fallback) chapter.
+> In such case, users may fall back to using the ILSpy tree directly, as we have shown in the [ILSpy Fallback chapter](./design.md#ilspy-fallback).
 
-More detailed documentation is available in the attachment or [on the web](https://github.com/exyi/coberec/blob/master/docs/csharp-features/cheatsheet.md).
+More detailed documentation is available as an attachment or [on the web](https://github.com/exyi/coberec/blob/master/docs/csharp-features/cheatsheet.md).
 
 ## Metadata Definitions
 
 The second aspect of C# code is the types, methods, properties and fields.
 We have designed a broad API for defining symbols in the rich .NET type system.
 
-Namespaces are easy to declare, we can just call `NamespaceSignature.Parse("MyNamespace")`.
+To declare a namespace, we call `NamespaceSignature.​Parse(​"MyNamespace")`.
 
 ### Types
 
@@ -176,7 +183,7 @@ var classImplementingInterface =
             .AddImplements(myInterface.Specialize());
 ```
 
-To add contents to the TypeDef, we may use the `.AddMember(memberDefinition)` method.
+To add contents to the TypeDef, we may use the AddMember method.
 
 ### Methods
 
@@ -184,34 +191,52 @@ For brevity, we will have a variable with declaring type and public accessibilit
 
 ```csharp
 var @public = Accessibility.APublic;
-var declType = TypeSignature.Class("MyClass", NamespaceSignature.Parse("MyNamespace"), @public, isAbstract: true);
+var declType = TypeSignature.Class(
+    "MyClass",
+    NamespaceSignature.Parse("MyNamespace"),
+    @public,
+    isAbstract: true);
 ```
 
 | C# | Coberec.ExprCS
 |-----|-----|
-| `public void M()` | `MethodSignature.Instance("M", declType, @public, returnType: TypeSignature.Void)`
-| `public static void M()` | `MethodSignature.Static("M", declType, @public, returnType: TypeSignature.Void)`
-| `public abstract void M()` | `MethodSignature.Abstract("M", declType, @public, returnType: TypeSignature.Void)`
-| `public virtual void M()` | `MethodSignature.Virtual("M", declType, @public, returnType: TypeSignature.Void)`
-| `public override void M()` | `MethodSignature.Override(declType, overridenMethod)`
-| `public override string ToString()` | `MethodSignature.Override(declaringType, MethodSignature.Object_ToString)`
+| `public void M()` | `MethodSignature.Instance(​"M", declType, @public, returnType: TypeSignature.Void)`
+| `public static void M()` | `MethodSignature.Static(​"M", declType, @public, returnType: TypeSignature.Void)`
+| `public abstract void M()` | `MethodSignature.Abstract(​"M", declType, @public, returnType: TypeSignature.Void)`
+| `public virtual void M()` | `MethodSignature.Virtual(​"M", declType, @public, returnType: TypeSignature.Void)`
+| `public override void M()` | `MethodSignature.Override(​declType, overridenMethod)`
+| `public override string ToString()` | `MethodSignature.Override(​declaringType, MethodSignature.​Object_ToString​)`
 
 All method may have parameters and generic type parameters:
 
 ```csharp
-// public void MethodWithParams(string p1, ref double byReferenceParameter, int withDefaultValue = 0)
+// public void MethodWithParams(
+//    string p1,
+//    ref double byReferenceParameter,
+//    int withDefaultValue = 0)
 var parameters = new [] {
     new MethodParameter(TypeSignature.String, "p1"),
-    new MethodParameter(TypeReference.ByReferenceType(TypeSignature.Double), "byReferenceParameter"),
-    new MethodParameter(TypeSignature.Int32, "withDefaultValue").WithDefault(0)
+    new MethodParameter(
+        TypeReference.ByReferenceType(TypeSignature.Double),
+        "byReferenceParameter"),
+    new MethodParameter(
+        TypeSignature.Int32,
+        "withDefaultValue")
+        .WithDefault(0)
 };
 var methodWithParameters =
-    MethodSignature.Instance("MethodWithParams", declType, @public, returnType: TypeSignature.Void, parameters);
+    MethodSignature.Instance(
+        "MethodWithParams", declType, @public,
+        returnType: TypeSignature.Void,
+        parameters);
 
 // public T GenericMethod<T>()
 var paramT = GenericParameter.Create("T");
 var genericMethod =
-    MethodSignature.Static("GenericMethod", declType, @public, returnType: paramT, new [] { paramT });
+    MethodSignature.Static(
+        "GenericMethod", declType, @public,
+        returnType: paramT,
+        new [] { paramT });
 ```
 
 After we declare the method signature, we will need to add a body and create a MethodDef.
@@ -242,7 +267,8 @@ In the following example, we call another instance method while passing it all p
 ```csharp
 var definition = MethodDef.CreateWithArray(
     methodWithParameters,
-    args => args[0].Read().CallMethod(anotherInstanceMethod, args.Skip(1))
+    args => args[0].Read()
+        .CallMethod(anotherInstanceMethod, args.Skip(1))
 )
 ```
 
@@ -269,7 +295,7 @@ Declaring fields is relatively simple, fields are mostly a pair of the name and 
 | `public static int F` | `FieldSignature.Static("F", declType, @public, TypeSignature.Int32, isReadonly: false)` |
 
 Field definition does not have any other info about the type, except for a documentation comment.
-It is created simply by calling the constructor: `new FieldDef(signature)`
+It is created simply by calling the FieldDef constructor.
 
 ### Properties
 
@@ -279,13 +305,13 @@ Property signatures and definitions are created from the two methods, but we hav
 
 | C# | Coberec.ExprCS
 |-----|-----|
-| `public int P { get { } }` | `PropertySignature.Instance("P", declType, TypeSignature.Int32, getter: @public, setter: null)` |
-| `public int P { set { } }` | `PropertySignature.Instance("P", declType, TypeSignature.Int32, getter: null, setter: @public)` |
-| `public int P { get { } private set { } }` | `PropertySignature.Instance("P", declType, TypeSignature.Int32, getter: @public, setter: Accessibility.APrivate)` |
-| `public static int P { get { } }` | `PropertySignature.Static("P", declType, TypeSignature.Int32, getter: @public, setter: null)` |
-| `public static int P { get { } set { } }` | `PropertySignature.Static("P", declType, TypeSignature.Int32, getter: @public, setter: @public)` |
-| `public abstract int P { get { } }` | `PropertySignature.Abstract("P", declType, TypeSignature.Int32, getter: @public)` |
-| `public override int P { ... }` | `PropertySignature.Override(declType, overriddenPropertySignature)` |
+| `public int P { get { } }` | `PropertySignature.​Instance(​"P", declType, TypeSignature.​Int32, getter: @public, setter: null)` |
+| `public int P { set { } }` | `PropertySignature.​Instance​(​"P", declType, TypeSignature.​Int32, getter: null, setter: @public)` |
+| `public int P { get { } private set { } }` | `PropertySignature.​Instance(​"P", declType, TypeSignature.​Int32, getter: @public, setter: Accessibility.APrivate)` |
+| `public static int P { get { } }` | `PropertySignature.​Static(​"P", declType, TypeSignature.​Int32, getter: @public, setter: null)` |
+| `public static int P { get { } set { } }` | `PropertySignature.​Static(​"P", declType, TypeSignature.​Int32, getter: @public, setter: @public)` |
+| `public abstract int P { get { } }` | `PropertySignature.​Abstract(​"P", declType, TypeSignature.​Int32, getter: @public)` |
+| `public override int P { ... }` | `PropertySignature.​Override(​declType, overriddenPropertySignature​)` |
 
 Many properties in C# programs are the [automatically defined properties](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/auto-implemented-properties).
 We have a helper that defines it - it defines the backing field and the property and returns them in a tuple.
@@ -294,10 +320,10 @@ For getter-only properties, the field is used to assign a value in the construct
 
 | C# | Coberec.ExprCS
 |-----|-----|
-| `public int P { get; }` | `PropertyBuilders.CreateAutoProperty(declType, "P1", TypeSignature.Int32)` |
-| `protected int P { get; }` | `PropertyBuilders.CreateAutoProperty(declType, "P2", TypeSignature.Int32, accessibility: Accessibility.AProtected)` |
-| `public int P { get; set; }` | `PropertyBuilders.CreateAutoProperty(declType, "P3", TypeSignature.Int32, isReadOnly: false)` |
-| `public static int { get; }` | `PropertyBuilders.CreateAutoProperty(declType, "P4", TypeSignature.Int32, isStatic: true)` |
+| `public int P { get; }` | `PropertyBuilders.​CreateAutoProperty(​declType, "P1", TypeSignature.​Int32)` |
+| `protected int P { get; }` | `PropertyBuilders.​CreateAutoProperty(​declType, "P2", TypeSignature.​Int32, accessibility: Accessibility.​AProtected)` |
+| `public int P { get; set; }` | `PropertyBuilders.​CreateAutoProperty(​declType, "P3", TypeSignature.Int32, isReadOnly: false)` |
+| `public static int { get; }` | `PropertyBuilders.​CreateAutoProperty(​declType, "P4", TypeSignature.​Int32, isStatic: true)` |
 
 ### Documentation Comments
 
@@ -306,14 +332,18 @@ In C#, documentation comments must be valid XML, so the documentation comments i
 We can either set the field while we create the definition, or use the `With(doccomment: ...)` method.
 
 ```csharp
-var type = TypeSignature.Class("MyType", ns, Accessibility.APublic);
+var type =
+    TypeSignature.Class("MyType", ns, Accessibility.APublic);
 var td =
-    TypeDef.Empty(type)
-    .With(doccomment: new XmlComment("<summary> My type </summary>"));
+    TypeDef.Empty(type).With(doccomment:
+        new XmlComment("<summary> My type </summary>"));
 
-var fieldSgn = FieldSignature.Instance("Field", type, Accessibility.AInternal, TypeSignature.Int32);
+var fieldSgn = FieldSignature.Instance(
+    "Field", type, Accessibility.AInternal, TypeSignature.Int32);
 td = td.AddMember(
-    new FieldDef(fieldSgn, new XmlComment("<summary> My field </summary>"))
+    new FieldDef(
+        fieldSgn,
+        new XmlComment("<summary> My field </summary>"))
 );
 ```
 

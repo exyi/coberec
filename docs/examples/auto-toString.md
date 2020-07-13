@@ -17,7 +17,7 @@ class MyClass {
 
 The properties will be given - we'll get a `TypeDef` and just add the `ToString` method to it. By the way, this is simplified implementation of automatic `ToString`s from Coberec.GraphQL.
 
-We'll be implement a method `TypeDef ImplementToString(TypeDef declaringType)`, you can have a look at the full [implementation in our test suite](TODO). This will be the skeleton:
+We'll be implement a method `TypeDef ImplementToString(TypeDef declaringType)`, you can have a look at the full [implementation in our test suite](https://github.com/exyi/coberec/blob/master/src/Coberec.ExprCS.Tests/Docs/Examples.cs). This will be the skeleton:
 
 ```csharp
 
@@ -26,14 +26,15 @@ private TypeDef ImplementToString(TypeDef declaringType)
     var toStringSgn = MethodSignature.Override(declaringType.Signature, MethodSignature.Object_ToString);
 
     var toStringDef = MethodDef.Create(toStringSgn, @this => {
-        // TODO: the body
+        // the body, see below
     });
 
     return declaringType.AddMember(toStringDef);
 }
 ```
 
-First, we'll need a list of all property signatures we are interested in. For this example, we'll just take all properties that are not static. Also note that we are not including inherited properties:
+First, we'll need a list of all property signatures we are interested in. For this example, we'll just take all properties that are not static.
+Also note that we are not including inherited properties:
 
 ```csharp
 var properties =

@@ -11,8 +11,8 @@ The schema is in these three files:
 * `expression.gql` - contains the declaration of the Expression type and all the expression types
 * `composition.gql` - contains the symbol definitions; the types that compose metadata with expressions
 
-The GraphQL definitions are translated into partial C# classes by the Coberec.CLI.
-Additional helper methods are declared on these classes (these are in the `src/Coberec.ExprCS/ModelExtensions` directory)
+The GraphQL files are translated into partial C# classes by the Coberec.CLI.
+Additional helper methods are declared on these classes (these are in the src/​Coberec.​ExprCS/​Model​Extensions directory)
 
 The API user creates the type definitions and registers them into the MetadataContext.
 At this point, not much is done; the type is only registered and stays in a "Waiting for commit" stage until the user requests the output code.
@@ -40,7 +40,7 @@ The translation from ExprCS metadata classes into ILSpy type system is handled b
 
 ## Expression Translation
 
-The ExprCS expression are converted into ILSpy internal abstract tree called [ILAst](https://github.com/icsharpcode/ILSpy/blob/faea7ee90d636fe8d2bc6a2f7f7b00dada9f01b2/doc/ILAst.txt).
+The ExprCS expression are converted into ILSpy internal abstract tree called [ILAst](https://github.com/icsharpcode/ILSpy/blob/master/doc/ILAst.txt).
 The CodeTranslator class performs this transformation.
 
 The ILAst (`ILInstruction` nodes in code) is a tree made mainly of IL instructions.
@@ -60,7 +60,7 @@ It contains:
 * result value - one ILInstruction, or nothing
 * type of the result value, since ILInstruction does not contain that information
 
-Some translations are fairly obvious and simple; for example, the following method translates the NotExpression:
+Some translations are fairly obvious and simple; for example, the TranslateNot method translates the NotExpression:
 
 ```csharp
 StatementBlock TranslateNot(NotExpression item)
@@ -163,6 +163,7 @@ The generated code is sometimes quite complex, so most bugs we discovered there 
 We also use the CheckTestOutput library for this project, but we do not have as many of them.
 However, the simplicity of GraphQL allows us to generate random schemas using [FsCheck](https://github.com/fscheck/FsCheck).
 Large random GraphQL types are good for uncovering edge cases in the symbol renaming logic and problems with reference cycles.
+To run into the problematic cases faster, we seed FsCheck with the [Big List of Naughty Strings](https://github.com/minimaxir/big-list-of-naughty-strings/).
 
 > We do have a lot of small tests for isolated cases, but we are still missing tests for more complex method bodies.
 > The GraphQL Schema only generates quite simple methods, although there is a lot of symbols.

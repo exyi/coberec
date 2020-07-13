@@ -16,7 +16,7 @@ In order to use a type or a type member in the code, we must get the descriptor 
     * ...other kinds of members have similar methods
 * We can also create the signatures and references from the System.Reflection classes:
     * `Coberec.ExprCS.TypeSignature.FromType`: System.Type -> type signature
-    * TODO: other types
+    <!-- * TODO: other types -->
 
 
 ## References vs Signatures

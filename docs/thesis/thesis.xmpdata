@@ -1,7 +1,7 @@
 % Metadata to be stored in PDF, see documentation of the pdfx package for more details.
 
-\Author{Václav Šraier}
-\Title{Transparent Restarts of Stateless Linux Services}
-\Keywords{transparent restart\sep systemd\sep libzedr\sep zero-downtime restart}
-\Subject{Services running on servers have to be updated once in a while with security patches and new features. Full-service restarts provide a simple way to update the running code, but they usually lead to costly downtime. That can, however, be avoided by preserving network connections and internal state across restarts. There is currently no general way how to do that easily. We introduce an easy-to-use library for Linux which handles transparent restarts for stateless services with minimal code requirements. We demonstrate that support from the system's service manager can significantly improve correctness. We provide an implementation of such integration into systemd, popular Linux service manager and init system.}
+\Author{Stanislav Lukeš}
+\Title{API for C# code generation}
+\Keywords{code generation\sep C#}
+\Subject{TODO copy abstract}
 \Publisher{Charles University}

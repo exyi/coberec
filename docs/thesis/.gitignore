@@ -1,2 +1,16 @@
 htmlbuild
 vsqbuild
+abstract-core.tex
+abstract-cs-core.tex
+abstract-cs.pdf
+abstract.pdf
+*.out
+*.aux
+*.md.tex
+thesis.pdf
+*.log
+pdfa.xmpi
+thesis.bbl
+thesis.toc
+thesis.blg
+IL_rewriting_diagram.pdf

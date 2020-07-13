@@ -64,7 +64,7 @@ Expression.StaticMethodCall(
 )
 ```
 
-> See [Declaring Methods](declaring-methods.md) for a complete guide how to declare such methods (TODO)
+> See [Defining Methods](../metadata.md#defining-methods) for a complete guide how to declare such methods.
 
 
 In case you'd like to call a method from a referenced library and you can not load it from the lambda, you can use `MetadataContext` to obtain it's reference. You can use the `Coberec.ExprCS.MetadataContext.GetMemberMethods` to list methods on a type and `Coberec.ExprCS.MetadataContext.FindType` to get the type reference.

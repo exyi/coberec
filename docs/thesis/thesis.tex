@@ -88,10 +88,10 @@
 %%% Basic information on the thesis
 
 % Thesis title in English (exactly as in the formal assignment)
-\def\ThesisTitle{Transparent Restarts of Stateless Linux Services}
+\def\ThesisTitle{API for C\# code generation}
 
 % Author of the thesis
-\def\ThesisAuthor{Václav Šraier}
+\def\ThesisAuthor{Stanislav Lukeš}
 
 % Year when the thesis is submitted
 \def\YearSubmitted{2020}
@@ -99,16 +99,16 @@
 % Name of the department or institute, where the work was officially assigned
 % (according to the Organizational Structure of MFF UK in English,
 % or a full name of a department outside MFF)
-\def\Department{Department of Distributed and Dependable Systems}
+\def\Department{Department of Applied Mathematics}
 
 % Is it a department (katedra), or an institute (ústav)?
 \def\DeptType{Department}
 
 % Thesis supervisor: name, surname and titles
-\def\Supervisor{Mgr. Michal Koutný}
+\def\Supervisor{Mgr. Jan Hubička, Ph.D.}
 
 % Supervisor's department (again according to Organizational structure of MFF)
-\def\SupervisorsDepartment{SUSE LINUX, s. r. o.}
+\def\SupervisorsDepartment{Department of Applied Mathematics}
 
 % Study programme and specialization
 \def\StudyProgramme{Computer Science}
@@ -122,12 +122,12 @@
 
 % Abstract (recommended length around 80-200 words; this is not a copy of your thesis assignment!)
 \def\Abstract{%
-Services running on servers have to be updated once in a while with security patches and new features. Full-service restarts provide a simple way to update the running code, but they usually lead to costly downtime. That can, however, be avoided by preserving network connections and internal state across restarts. There is currently no general way how to do that easily. We introduce an easy-to-use library for Linux which handles transparent restarts for stateless services with minimal code requirements. We demonstrate that support from the system's service manager can significantly improve correctness. We provide an implementation of such integration into systemd, popular Linux service manager and init system.
+\input{abstract-core.tex}
 }
 
 % 3 to 5 keywords (recommended), each enclosed in curly braces
 \def\Keywords{%
-{transparent restart} {systemd} {libzedr} {zero-downtime restart}
+{code generation} {C\#}
 }
 
 %% The hyperref package for clickable links in PDF and also for storing
