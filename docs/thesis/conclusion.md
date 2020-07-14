@@ -6,7 +6,7 @@ Thus, we can be quite sure that the library actually works and that the API is n
 The GraphQL Schema compiler creates a significant amount of symbols that may collide with each other.
 It itself also does not contain any logic to prevent the collisions, it depends solely on the logic provided by the ExprCS abstraction.
 We also have quite an extensive test suite for the name collisions, so this part of the project seems to be quite dependable.
-On the other hand, it does not stress the expression translation too much - all generated methods are fairly simple.
+On the other hand, it does not stress the expression translation too much -- all generated methods are fairly simple.
 
 ## Future Work
 
@@ -21,5 +21,5 @@ It could be interesting to add support for translating our Expression into Linq 
 There are real use cases where having a single code generator for both would be an advantage.
 For example, in DotVVM web framework, web pages are translated into a C# form at runtime.
 It would be good to add support for build-time compilation while keeping the support runtime translation.
-Both have their advantages - build-time compilation would be more transparent and have lower startup, while runtime code generation is easier to setup and allows to rebuild without application restart.
+Both have their advantages -- build-time compilation would be more transparent and have lower startup, while runtime code generation is easier to setup and allows to rebuild without application restart.
 

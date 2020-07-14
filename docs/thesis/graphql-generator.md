@@ -43,9 +43,9 @@ The `ValidationResult<T>` is a monad implementing `Select` and `SelectMany` meth
 
 In C#, default argument values are quite limited.
 The default may only be of a primitive type, string or `default(T)` (null for classes, "zeros" for structs).
-This a complication for the `With` method - we would like to have the current property value as the default; the intended signature would be `With(int a = this.A, ImmutableArray<string> b = this.B)`, but this is not possible in C#.
+This a complication for the `With` method -- we would like to have the current property value as the default; the intended signature would be `With(int a = this.A, ImmutableArray<string> b = this.B)`, but this is not possible in C#.
 As a workaround, we have introduced a `OptParam<T>` type.
-It recognizes two states - either it has a value of type T, or it has no value; somewhat like the Option or Maybe known from other languages.
+It recognizes two states -- either it has a value of type T, or it has no value; somewhat like the Option or Maybe known from other languages.
 Moreover, it has an implicit conversion from T, so it is constructed automatically when the parameter is used.
 This is the simplified implementation:
 

@@ -4,7 +4,7 @@
 | File name | Description |
 |---------------|-----------------------|
 | `src/` | Source code of the Coberec library |
-| `deps/` | Cloned dependencies of Coberec - ILSpy, GraphQL parser and the Big List of Naughty Strings |
+| `deps/` | Cloned dependencies of Coberec -- ILSpy, GraphQL parser and the Big List of Naughty Strings |
 | `docs/` and `README.md` | Project documentation in Markdown format |
 
 The project may be also found on GitHub: \url{https://github.com/exyi/coberec}.

@@ -7,9 +7,10 @@ In this chapter, it remains to describe how we implement the translation to C#.
 
 As we have mentioned in the previous chapter, the model is declared in the GraphQL Schema.
 The schema is in these three files:
-* `metadata.gql` - contains the symbol signatures and references (like MethodSignature and MethodReference)
-* `expression.gql` - contains the declaration of the Expression type and all the expression types
-* `composition.gql` - contains the symbol definitions; the types that compose metadata with expressions
+
+* `metadata.gql` -- contains the symbol signatures and references (like MethodSignature and MethodReference)
+* `expression.gql` -- contains the declaration of the Expression type and all the expression types
+* `composition.gql` -- contains the symbol definitions; the types that compose metadata with expressions
 
 The GraphQL files are translated into partial C# classes by the Coberec.CLI.
 Additional helper methods are declared on these classes (these are in the src/​Coberec.​ExprCS/​Model​Extensions directory)
@@ -18,7 +19,7 @@ The API user creates the type definitions and registers them into the MetadataCo
 At this point, not much is done; the type is only registered and stays in a "Waiting for commit" stage until the user requests the output code.
 When the code is requested, we invoke CommitWaitingTypes method.
 At this point, the types and their content will be converted into ILSpy's internal representation.
-When the translation is performed, most of the tree will be type-checked - checked that the referenced symbols exist and have the expected properties.
+When the translation is performed, most of the tree will be type-checked -- checked that the referenced symbols exist and have the expected properties.
 
 ## Metadata Translation
 
@@ -26,6 +27,7 @@ The reason why type definitions are translated and checked in bulk in the Commit
 If the types were translated and registered one after another, the backward references would be invalid and cause the registration to fail.
 
 The commit process is performed by the CommitWaitingTypes and has these steps:
+
 * Types are ordered topologically in the order of inheritance.
   The base types are part of the core type definition, so all base types and implemented interfaces must be declared beforehand.
 * Type names are assigned and the types declared without their members.
@@ -46,9 +48,9 @@ The CodeTranslator class performs this transformation.
 The ILAst (`ILInstruction` nodes in code) is a tree made mainly of IL instructions.
 It is specific with semantic information (types, methods and other symbols).
 ILSpy then uses this tree for transformations on the code, before it's converted into a C# syntax tree.
-The semantics of ILAst are closer to IL than C#, but not in every aspect - for example, it contains a node for `async`/`await` and for `yield return`, which are purely C# concepts.
-The tree is not designed to be easy to build - it performs almost no validation on construction, the API generally not very intuitive to use, and most mistakes result in a strange behaviour.
-Another major complication is that it does not have information about the result type of a given expression - this is because the type information is unclear only from the IL.
+The semantics of ILAst are closer to IL than C#, but not in every aspect -- for example, it contains a node for `async`/`await` and for `yield return`, which are purely C# concepts.
+The tree is not designed to be easy to build -- it performs almost no validation on construction, the API generally not very intuitive to use, and most mistakes result in a strange behaviour.
+Another major complication is that it does not have information about the result type of a given expression -- this is because the type information is unclear only from the IL.
 
 The advantage of using ILAst for code generation is that the tree does not describe syntax at all.
 That means that `using` statements, implicit/explicit conversions, choosing the right syntax to call a specific method overload are handled for us by ILSpy logic.
@@ -56,8 +58,9 @@ That means that `using` statements, implicit/explicit conversions, choosing the 
 The CodeTranslator recursively maps the ExprCS expressions into a StatementBlock block structure.
 StatementBlock is a thin wrapper around the ILSpy ILInstruction node.
 It contains:
-* list of the nodes that are the effect of that expression - list of ILInstruction or Block.
-* result value - one ILInstruction, or nothing
+
+* list of the nodes that are the effect of that expression -- list of ILInstruction or Block.
+* result value -- one ILInstruction, or nothing
 * type of the result value, since ILInstruction does not contain that information
 
 Some translations are fairly obvious and simple; for example, the TranslateNot method translates the NotExpression:
@@ -116,7 +119,7 @@ For example, changing a static method to an instance method must be done togethe
 However, there is a limit on what we can do during the initialization; we can only work with the information provided in the symbol signatures.
 For example, we can not validate that a reference conversion is valid as we do not have enough information.
 The type reference does not contain any information about base types, so we can not know if the cast is permitted.
-However, we can still perform some checks on a best effort basis - for example, a sealed type can not be converted into a different sealed type.
+However, we can still perform some checks on a best effort basis -- for example, a sealed type can not be converted into a different sealed type.
 
 Often, the expression will be allowed by the validation in constructors, but the translation will fail.
 We did our best to throw a meaningful error message even in these cases.
@@ -125,8 +128,8 @@ The error message will usually contain the stringified expression that caused th
 All expressions and metadata types have a ToString method that produces a string representation.
 Not only does it help with error messages, debuggers will invoke the ToString and show it as a variable tooltip.
 Also, for printf-style debugging (or, Console.WriteLine in .NET), the ToString is very useful.
-We try to keep the representation reasonably concise while being clear about types which is a compromise.
-For example, constants are formatted as `{value}:{type}` - `100:int` for integers.
+We try to keep the representation reasonably concise while being clear about types.
+That is a compromise -- for example, constants are formatted as `{value}:{type}` (`100:int` for integers).
 Often the details are not necessary, but since the string representation is mostly going to be used for debugging the problematic cases, it seems better to be explicit.
 
 There is still a number of things that can be done to improve error messages and the string representation of the expressions.

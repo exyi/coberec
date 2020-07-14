@@ -40,6 +40,8 @@ citMap = {
     "https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/attributes/caller-information": "CallerInfo",
     "https://github.com/fscheck/FsCheck": "FSCheck",
     "https://github.com/minimaxir/big-list-of-naughty-strings/": "BLNS",
+    "https://dlang.org/articles/mixin.html": "Dmixin",
+    "https://github.com/mono/linker/blob/master/docs/illink-tasks.md": "ILLinker"
 }
 
 def get_git_root() -> str:

@@ -53,10 +53,10 @@ var csharp = cx.EmitToString();
 ```
 
 First, we need to create the signatures of the symbols we plan to declare, and we need to create a MethodReference to the `Console.WriteLine` method.
-For convenience, we can create the reference from a C# lambda function - otherwise, we could create it from a MethodInfo (from Reflection) or find the method in the MetadataContext.
+For convenience, we can create the reference from a C# lambda function -- otherwise, we could create it from a MethodInfo (from Reflection) or find the method in the MetadataContext.
 The method body is fairly simple, we only call the method and return 0, so we create a block with the two expressions.
 
-To format it into a string, we need a [MetadataContext](./design.md#metadata-context) - the class that holds information about all symbols in the referenced assemblies and the symbols we have declared.
+To format it into a string, we need a [MetadataContext](./design.md#metadata-context) -- the class that holds information about all symbols in the referenced assemblies and the symbols we have declared.
 We do not need any references beyond the standard library, so we do not have to specify any parameters; otherwise, we could pass an array of references into the Create method.
 After all, we call the `EmitToString` method, which finally invokes the entire machinery including ILSpy and produces the code:
 
@@ -149,22 +149,24 @@ var ns = NamespaceSignature.Parse("MyNamespace");
 var @public = Accessibility.APublic;
 ```
 
-| C# | Coberec.ExprCS
+| C# | Coberec.ExprCS |
 |-----|-----|
-| `internal class C` | `TypeSignature.Class("C", ns, Accessibility.AInternal)`
-| `public class C` | `TypeSignature.Class("C", ns, @public)`
-| `public abstract class C` | `TypeSignature.Class("C", ns, @public, isAbstract: true)`
-| `public sealed class C` | `TypeSignature.SealedClass("C", ns, @public)`
-| `public static class C` | `TypeSignature.StaticClass("C", ns, @public)`
-| `public struct C` | `TypeSignature.Struct("C", ns, @public)`
-| `public interface C` | `TypeSignature.Interface("C", ns, @public)`
+| `internal class C` | `TypeSignature.Class("C", ns, Accessibility.AInternal)` |
+| `public class C` | `TypeSignature.Class("C", ns, @public)` |
+| `public abstract class C` | `TypeSignature.Class("C", ns, @public, isAbstract: true)` |
+| `public sealed class C` | `TypeSignature.SealedClass("C", ns, @public)` |
+| `public static class C` | `TypeSignature.StaticClass("C", ns, @public)` |
+| `public struct C` | `TypeSignature.Struct("C", ns, @public)` |
+| `public interface C` | `TypeSignature.Interface("C", ns, @public)` |
 
 All of these helper methods have an additional argument for a list of generic type parameter.
 A class `public class GenericClass<T>` may be declared as follows.
 
 ```csharp
 var paramT = GenericParameter.Create("T");
-var genericClass = TypeSignature.Class("GenericClass", ns, @public, genericParameters: new [] { paramT })
+var genericClass = TypeSignature.Class(
+    "GenericClass", ns, @public,
+    genericParameters: new [] { paramT })
 ```
 
 Interface implementations and base types are not specified in the signature, but the `TypeDef`.
@@ -261,7 +263,7 @@ We have added a helper method MethodDef.Override that copies the return type, ar
 
 Since it would be a bit noisy to declare the parameters twice, we have a set of helper methods that make the method declarations less cumbersome.
 The method `MethodDef.CreateWithArray` gets a signature, creates the ParameterExpression list and calls a lambda to create the body expression.
-In instance (not static) methods, the first argument is `this` - the object on which we call the method.
+In instance (not static) methods, the first argument is `this` -- the object on which we call the method.
 In the following example, we call another instance method while passing it all parameters as we got them:
 
 ```csharp
@@ -299,7 +301,7 @@ It is created simply by calling the FieldDef constructor.
 
 ### Properties
 
-.NET property is basically a pair of methods - the getter and the setter.
+.NET property is basically a pair of methods -- the getter and the setter.
 Both of these are optional, properties without a setter are quite common while the ones without a getter are rare.
 Property signatures and definitions are created from the two methods, but we have a helper method prepared, that declares the method and property at the same time.
 
@@ -314,7 +316,7 @@ Property signatures and definitions are created from the two methods, but we hav
 | `public override int P { ... }` | `PropertySignature.​Override(​declType, overriddenPropertySignature​)` |
 
 Many properties in C# programs are the [automatically defined properties](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/auto-implemented-properties).
-We have a helper that defines it - it defines the backing field and the property and returns them in a tuple.
+We have a helper that defines it -- it defines the backing field and the property and returns them in a tuple.
 Both have to be added to the TypeDef.
 For getter-only properties, the field is used to assign a value in the constructor.
 

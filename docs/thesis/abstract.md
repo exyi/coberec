@@ -1,5 +1,5 @@
 We present a library for writing C# code generators.
-It is designed to handle the edge cases that arise when code is automatically generated in a programming language designed more for humans than for computer programs.
+It is designed to handle edge cases that arise when the generator targets a programming language designed more for humans than for computer programs.
 The library automatically avoids all kinds of name collisions while keeping the generated code clean of too much explicitness.
 Code generation is a common approach to reduce the amount of repetitive typing programmers have to do.
 However, many code generators run into the edge cases fairly quickly, making the approach seem unreliable.

@@ -8,7 +8,7 @@ the boilerplate code is often troublesome to maintain -
 for example, multiple symbols might have to be renamed instead of a single one.
 
 > We will use the term **symbol** as a generic term for a method, function, variable, property, type, etc.
-> See [Wikipedia - Symbol](https://en.wikipedia.org/wiki/Symbol_%28programming%29)
+> See [Wikipedia -- Symbol](https://en.wikipedia.org/wiki/Symbol_%28programming%29)
 
 Since boilerplate code is a very common software affliction, people have invented many cures to it.
 However, as it goes in software engineering, there is no silver bullet and thus a lot of room for further development.
@@ -23,8 +23,8 @@ For example, it is suitable for API clients, but it would be hard to apply it to
 > The build process is executed by a build system and one of the build steps may be code generation.
 
 In this thesis, we will focus on code generators that execute during the build.
-Our project is an abstraction for code generation, it works for C#, and targets especially the more complex generators.
-Nevertheless, it is very useful to briefly investigate alternative approaches as well.
+Our project is a library for code generation, it works for C#, and targets especially the more complex generators.
+Nevertheless, it is very useful to briefly investigate alternative techniques as well.
 
 ## Reducing Boilerplate
 
@@ -36,7 +36,7 @@ Many programming languages support some kind of compile-time metaprogramming to 
 The capabilities differ greatly and we will explore them briefly in a [following chapter](./approaches.md).
 Compared to code generation, the meta-programming system usually is quite limited in capabilities, but offers much better integration with hand-written code.
 The meta-programs are executed by the compiler and usually have at least some information about the existing symbols.
-At the time of writing, C# does not have any meta-programming system, but there is a prototype of [Source Generators](https://devblogs.microsoft.com/dotnet/introducing-c-source-generators/) - a plugin API in the compiler.
+At the time of writing, C# does not have any meta-programming system, but there is a prototype of [Source Generators](https://devblogs.microsoft.com/dotnet/introducing-c-source-generators/) -- a plugin API in the compiler.
 
 A similar approach is to perform the meta-programming at runtime.
 Platforms like .NET and JVM offer a rich reflection API that allows any program to explore existing types and their members.
@@ -45,7 +45,7 @@ This approach is chosen by many .NET libraries to do serialization ([Newtonsoft.
 The limitation is, that we can not declare any new API during runtime, because the compiler would have to know about the symbols at compile time to allow the programmer to use them.
 This limitation however does not exist in dynamically typed languages, which makes the technique even more powerful (and less safe to use).
 
-## Code Generation Abstraction
+## The Code Generation Library
 
 In basics, code generation is done very easily by printing out code fragments.
 This approach works very well in simple cases, when the output space is fairly limited.

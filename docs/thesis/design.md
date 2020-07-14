@@ -24,7 +24,7 @@ For example, we do not distinguish between `if` statement or `if` expression (th
 
 C# distinguishes between expressions and statements, expressions always return a value (i.e. cannot return `void`) while statements do not.
 To simplify the concept, we will represent every code fragment as a generalized expression.
-Our expressions do not have to return anything - we allow returning `void` and we will allow variable declarations and inline blocks in the expressions.
+Our expressions do not have to return anything -- we allow returning `void` and we will allow variable declarations and inline blocks in the expressions.
 From that perspective, our code model would be similar to F#, Scala or other expression-based languages.
 
 ## Blocks and Variables
@@ -104,6 +104,7 @@ type BreakExpression
 
 As of version 7.0, C# allows us to work with references to variables and fields.
 Having a field, we can:
+
 * read the value of the field
 * write a value into the field
 * create a reference pointing to the field
@@ -119,7 +120,7 @@ To read a field, we need to combine the FieldAccessExpression with DereferenceEx
 > However, for ease of use, we provide extension methods like `AssignField` that create the whole subexpression.
 
 We may store the references in variables, pass them as arguments and return them from methods.
-We cannot, however, store them in a field - C# does not allow references inside of objects; references can not be stored on the garbage collected heap.
+We cannot, however, store them in a field -- C# does not allow references inside of objects; references can not be stored on the garbage collected heap.
 That also means that reference variables can not be captured in a closure of a local function nor a lambda function.
 
 ## ILSpy as a Backend
@@ -129,7 +130,7 @@ To illustrate that, consider a few examples.
 Let us assume that we want to call the `Uri.EscapeDataString` method.
 In our expression tree, it will be represented by a MethodCallExpression pointing to the descriptor of the static method.
 Under standard circumstances, we invoke the method by the code `Uri.EscapeDataString(argument)`.
-However, that is not the case, if there is another symbol called `Uri` in scope - for example a property:
+However, that is not the case, if there is another symbol called `Uri` in scope -- for example a property:
 
 ```csharp
 public string Uri { get; }
@@ -152,7 +153,7 @@ public void M() {
 
 We can be even more explicit and prefix the fully qualified name with `global::` to instruct the C# compiler that it should look for global symbols (i.e. namespaces).
 
-There are many more similar cases - another example might be an implicit conversion.
+There are many more similar cases -- another example might be an implicit conversion.
 We could think that we do not have to emit any code when we want to use an implicit conversion, as the compiler will perform it automatically.
 However, this is not always the case, specifically due to method overloading.
 Let us say we have a class with an implicit conversion to `double`:
@@ -176,11 +177,11 @@ We think that that transparency and "debuggability" is a crucial advantage of co
 
 Implementing such a smart code generator would be very demanding, so we are not aware of anyone doing that in C# for code generation.
 However, the [ILSpy project](https://github.com/icsharpcode/ILSpy) shares the same problem, and it already has a very reliable C# emitter.
-ILSpy is a decompiler for .NET assemblies - a program that converts .NET intermediate language (IL) into C#.
+ILSpy is a decompiler for .NET assemblies -- a program that converts .NET intermediate language (IL) into C#.
 IL has exact symbol references and no space for implicitness, similar to our expression tree.
-The ILSpy authors take correctness and precision very seriously - in the end, we were only able to find two bugs, and one of them was already fixed in a newer version.
+The ILSpy authors take correctness and precision very seriously -- in the end, we were only able to find two bugs, and one of them was already fixed in a newer version.
 
-In the first step of the decompilation, ILSpy parses IL into an internal abstract tree - [the ILAst tree](https://github.com/icsharpcode/ILSpy/blob/faea7ee90d636fe8d2bc6a2f7f7b00dada9f01b2/doc/ILAst.txt).
+In the first step of the decompilation, ILSpy parses IL into an internal abstract tree -- [the ILAst tree](https://github.com/icsharpcode/ILSpy/blob/faea7ee90d636fe8d2bc6a2f7f7b00dada9f01b2/doc/ILAst.txt).
 After that, many transformations run on the tree and then it is translated into a C# syntax tree.
 Few other transformation run on the C# syntax tree and then it is formatted into a text form.
 
@@ -202,7 +203,7 @@ However, ILSpy type system is quite extensible, so it is possible to create new 
 > Loading types using this library does not have the problem with version collisions, like loading it with Reflection has.
 
 We started with using the ILSpy type system directly in our expression trees, but it has several deficiencies.
-In ILSpy, all the symbols are known in advance - there are not any new symbols emerging after the assemblies are loaded.
+In ILSpy, all the symbols are known in advance -- there are not any new symbols emerging after the assemblies are loaded.
 That is not the case in our project, where the entire point is to declare new symbols and then create code from them.
 Types in ILSpy system contain references to all other related symbols like the type members and the declaring type.
 That is convenient when we inspect the types, but complicates the construction of new types.
@@ -226,14 +227,14 @@ Immutability will be a promise that whenever a function gets information about a
 
 We need to allow adding new symbols even when there are cyclic references (like recursive methods and recursive types).
 This means that the information about a type can not contain its members, and the information about a method can not contain the body.
-We will split the responsibilities - type or method **definition** will contain all information about its contents and a **signature**, that will only contain the most basic information.
+We will split the responsibilities -- type or method **definition** will contain all information about its contents and a **signature**, that will only contain the most basic information.
 
 To define a type definition, the user will need all members of the type already defined.
-On the other hand, creating a signature is going to be simple - they will just need to know the full name and basic information like parameters, accessibility, etc..
+On the other hand, creating a signature is going to be simple -- they will just need to know the full name and basic information like parameters, accessibility, etc..
 To reference a symbol from the expression (such as to call a method), only the signature will be needed.
 So, symbols can be referenced before they are defined with all of their contents.
 Moreover, validating usage should be sound, since all properties of the type, method, field or property signature are going to be immutable.
-Obviously, we will not be able to perform validation based on the contents of the type - for example, there is not going to be a way to check that a referenced field exists on the type.
+Obviously, we will not be able to perform validation based on the contents of the type -- for example, there is not going to be a way to check that a referenced field exists on the type.
 
 Type signatures contain information about its full name, accessibility, kind of the type (interface, struct, class, ...), if it is abstract or sealed and the generic type parameters.
 Type members contain a signature of the declaring type, name of the member and other basic information (arguments, result type, if it is static, virtual or abstract).
@@ -242,13 +243,13 @@ Type members contain a signature of the declaring type, name of the member and o
 
 ### Symbol References
 
-.NET has support for generics - types and methods may be parametrized by a type argument.
+.NET has support for generics -- types and methods may be parametrized by a type argument.
 Since we want to support the concept, every time we will be referencing a symbol from the expression, we will provide a list of type arguments for that symbol.
 
 It is important to make a distinction between a symbol signature and a symbol reference.
-**Signature** is a generic version of the symbol - as it is declared in the code; the type parameters are unassigned.
-**Reference** is a specialized version of the symbol - the type parameters have their arguments filled in.
-When declaring symbols, we use the signatures - we only know the definition of the type parameter.
+**Signature** is a generic version of the symbol -- as it is declared in the code; the type parameters are unassigned.
+**Reference** is a specialized version of the symbol -- the type parameters have their arguments filled in.
+When declaring symbols, we use the signatures -- we only know the definition of the type parameter.
 On the other hand, in code, we almost always need to know the type including its type argument.
 It would not make any sense to create an instance of `List<?>` without knowing the type parameter, for example.
 
@@ -266,26 +267,26 @@ However, it significantly reduces noises of the user code, so we find it helpful
 
 ## Functions and Delegates
 
-C# has support for functions declared inside of methods - either as [lambda functions](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/statements-expressions-operators/lambda-expressions) or [local functions](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/local-functions).
-The concept of delegates allows us to work with a function as with any object - i.e. store them in variables, fields, parameters and return them from methods.
+C# has support for functions declared inside of methods -- either as [lambda functions](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/statements-expressions-operators/lambda-expressions) or [local functions](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/local-functions).
+The concept of delegates allows us to work with a function as with any object -- i.e. store them in variables, fields, parameters and return them from methods.
 Both local function and lambda function can capture variables from the scope where they are declared.
 
 Since local function is almost equivalent to a lambda assigned to a local variable, we have decided to simplify the concept and only support lambda function.
 When the lambda function is immediately assigned to a variable, we will translate it into a C# local function, which arguably looks nicer.
 However, to declare a function variable in C#, we would need a delegate matching the function signature.
-Finding a matching delegate is usually not a problem - unless our function has `ref` parameters or very many arguments, we can usually use `Action<...>` or `Func<...>` delegates from the standard library.
+Finding a matching delegate is usually not a problem -- unless our function has `ref` parameters or very many arguments, we can usually use `Action<...>` or `Func<...>` delegates from the standard library.
 
 The lack of a matching delegates would make it impossible to declare local functions taking parameters by reference.
 That could be quite limiting.
-However, since we own and design the type system, we could add a special function type - an inline delegate.
-This is nothing new under the sun - most functional programming languages have a "function type".
+However, since we own and design the type system, we could add a special function type -- an inline delegate.
+This is nothing new under the sun -- most functional programming languages have a "function type".
 
 There is one more problem with delegates that we can solve using our function types.
 Delegates are basically special objects with an Invoke method matching the signature of the delegate, so our type signature is not going to contain the actual arguments and return type.
-Not only we would not be able to validate the arguments of an invocation - we would not be able to determine result type of the invocation expression.
+Not only we would not be able to validate the arguments of an invocation -- we would not be able to determine result type of the invocation expression.
 For all other expressions, we can do that, and most of the validation logic depends on the `Expression.Type()` method (see TODO link Type method).
 
-Including the delegate arguments and return type in the type signature is not even possible - delegates that return themselves (`delegate A A()`) are perfectly valid in C#.
+Including the delegate arguments and return type in the type signature is not even possible -- delegates that return themselves (`delegate A A()`) are perfectly valid in C#.
 Since our types are immutable, it would not be possible to construct such a delegate.
 More importantly, we could not even load assemblies with such types into our type system.
 
@@ -316,7 +317,7 @@ We will introduce a MetadataContext class that will have the following responsib
 1. Load symbols from the referenced assemblies.
 2. Allow the user to add new types.
 3. Allow the user to explore the registered and referenced symbols.
-4. Emit the added types into C# code - either a single string or multiple files.
+4. Emit the added types into C# code -- either a single string or multiple files.
 
 Since we are building the API on top of ILSpy, MetadataContext is going to be a wrapper of the ILSpy ICompilation object, which has a similar role of holding all the type information together.
 
@@ -336,7 +337,7 @@ In principle, the API workflow is going to look like:
   ```csharp
   context.AddType(typeDef)
   ```
-* Build the result - generate the C# code:
+* Build the result -- generate the C# code:
   ```csharp
   var output = context.EmitToString();
   context.EmitToDirectory(outputDirectory);
@@ -352,10 +353,10 @@ We choose against this division of responsibilities; this way, it is simpler and
 
 We have already discussed that naming of the generated symbols is a significant problem for code generators.
 Most existing code generators handle it somehow heuristically, and it is quite easy to come up with an input that forces it to produce invalid code.
-It is a topic for a different discussion on how big of a problem this is - it depends strongly on the specific use-case.
+It is a topic for a different discussion on how big of a problem this is -- it depends strongly on the specific use-case.
 However, our abstraction mostly solves this problem once for all.
 
-We let the API user register symbols with any names - even those completely invalid in C#.
+We let the API user register symbols with any names -- even those completely invalid in C#.
 When we get to the point of generating C# code, we have to transform the registered metadata into ILSpy type system.
 It is in this step that we do the symbol naming.
 
@@ -367,7 +368,7 @@ From principle, we refuse to name types as .NET special methods like `Finalize`,
 Even when the type does not contain the method, it would be impossible to add it later.
 
 When naming members, we try to prioritize them based on the damage done by giving them a different name.
-The absolute priority is a overridden method or property - these must have the same name as they have in the base type.
+The absolute priority is a overridden method or property -- these must have the same name as they have in the base type.
 Fortunately, C# does not support multiple class inheritance, so we can not have a name collision.
 Interface implementations are not as critical; we can rename the public method and add an [explicit interface implementation](https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/interfaces/explicit-interface-implementation).
 Then we try to prioritize public members over private or internal ones.
@@ -388,7 +389,7 @@ If we want to use external libraries, we must explicitly include them in the pro
 When creating a new MetadataContext, we can use the `references` parameter with a list of paths to referenced libraries.
 
 Sometimes it is useful to generate code into an existing project that already contains some code.
-It is not possible to add an assembly reference to the same project we are just building - for that case, we will need an External Symbol API.
+It is not possible to add an assembly reference to the same project we are just building -- for that case, we will need an External Symbol API.
 That will allow us to declare the types we expect to be in the project and register them in the MetadataContext.
 
 Since we are already going to have the broad API for defining types, the simplest option is to reuse it.
@@ -397,7 +398,7 @@ When set to true, the added type will not be included in the output, but the emi
 
 > The API will require us to specify even the bodies of the declared methods, the same as it does for standard definitions.
 > It does not make much sense, but it is easier this way.
-> Providing an empty method body is very easy for the user - create a DefaultExpression of the result type.
+> Providing an empty method body is very easy for the user -- create a DefaultExpression of the result type.
 
 This simple addition breaks the fundamental barrier that we could not call the handwritten code from the generated code.
 However, unlike in macro or reflection-based approaches, this connection is still very far from easy-to-use.
@@ -416,13 +417,13 @@ We hope that we will be able to fill in the essential missing bits, but it will 
 For this reason, we are going to provide a simple fallback API that allows users to build the ILAst directly or do any post-processing to the ILSpy type system entities.
 
 We are going to introduce a RegisterTypeMod method on the MetadataContext that will register a function to a specified type signature.
-The function will run on the created type object - a VirtualType.
-The function is allowed to do anything - add new symbols, modify the existing ones, remove or hide symbols, etc.
+The function will run on the created type object -- a VirtualType.
+The function is allowed to do anything -- add new symbols, modify the existing ones, remove or hide symbols, etc.
 However, there is the risk of breaking the automatic symbol renaming by adding more symbols that were not expected.
 It is thus recommended to add dummy symbols and then replace them.
 
 Another option is to use a special ILSpyMethodBody expression as a method body.
-It contains a function that returns an ILFunction - an ILAst node that represents the whole function.
+It contains a function that returns an ILFunction -- an ILAst node that represents the whole function.
 This option is lighter compared to the RegisterTypeMod and also less risky in terms of symbol renaming.
 
 
