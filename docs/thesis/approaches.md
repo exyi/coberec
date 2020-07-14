@@ -296,7 +296,7 @@ Usually, the transformation only do the following:
   For example, [Fody.Caseless](https://github.com/Fody/Caseless) makes all string comparisons case insensitive.
   Alternatively, [LoggerIsEnabled.Fody](https://github.com/wazowsk1/LoggerIsEnabled.Fody) adds a condition around logging statements.
 * Replaces empty method bodies.
-  For example [With.Fody](https://github.com/mikhailshilkov/With.Fody) automatically implements a With methods for immutable objects.
+  For example [With.Fody](https://mikhail.io/2016/05/tweaking-immutable-objects-with-csharp-and-fody/) automatically implements a With methods for immutable objects.
 
 All the mentioned examples are from the .NET ecosystem and use a common abstraction [Fody](https://github.com/Fody/Fody).
 As the Fody authors claim in the project description, it greatly reduces the effort needed to integrate the rewriting step into .NET build.
@@ -322,7 +322,7 @@ The problem is that the project compilation runs before the rewriting step.
 If we are adding symbols after the project is compiled, the project itself must not reference them.
 Alternatively, there must be a dummy symbol that the C# compiler may use, and then the IL rewriter will redirect it to the new symbol.
 
-The already mentioned [With.Fody](https://github.com/mikhailshilkov/With.Fody) library has this exact issue.
+The already mentioned [With.Fody](https://mikhail.io/2016/05/tweaking-immutable-objects-with-csharp-and-fody/) library has this exact issue.
 It implements a `With` method to create a modified clone of an immutable object.
 Given an object:
 
@@ -357,7 +357,7 @@ public MyClass With(string value)
 This by itself would work well, but only if the project was a class library that itself never calls the `With` method.
 Nevertheless, there is a way -- we introduce the dummy symbol.
 We will add a generic `With<T>(T value)` method to the class, which the C# compiler will use in that project.
-As the author claims in a blog post
+As the author claims in [the blog post](https://mikhail.io/2016/05/tweaking-immutable-objects-with-csharp-and-fody/):
 
 > It is safe to call With methods in the same assembly where the class is defined: the calls get adapted to the real implementation automatically.
 

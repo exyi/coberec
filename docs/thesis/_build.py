@@ -12,7 +12,8 @@ citMap = {
     "https://en.wikipedia.org/wiki/Symbol_%28programming%29": "wiki:Symbol",
     "https://docs.microsoft.com/en-us/dotnet/framework/reflection-and-codedom/reflection": "SystemReflection",
     "https://devblogs.microsoft.com/dotnet/introducing-c-source-generators/": "CsharpSourceGen",
-    "https://github.com/kevin-montrose/Jil#optimizing-member-access-order": "JilMemberAccess",
+    "https://github.com/kevin-montrose/Jil#optimizing-member-access-order": "Jil",
+    "https://github.com/kevin-montrose/Jil": "Jil",
     "https://docs.microsoft.com/en-us/dotnet/api/system.linq.expressions.expression?view=netframework-4.7.2": "SystemLinqExpressions",
     "https://docs.microsoft.com/en-us/dotnet/api/system.reflection.emit.assemblybuilder?view=netcore-3.1": "AssemblyBuilder",
     "https://fsharp.github.io/FSharp.Data/library/JsonProvider.html": "FSharpJson",
@@ -41,14 +42,45 @@ citMap = {
     "https://github.com/fscheck/FsCheck": "FSCheck",
     "https://github.com/minimaxir/big-list-of-naughty-strings/": "BLNS",
     "https://dlang.org/articles/mixin.html": "Dmixin",
-    "https://github.com/mono/linker/blob/master/docs/illink-tasks.md": "ILLinker"
+    "https://github.com/mono/linker/blob/master/docs/illink-tasks.md": "ILLinker",
+    "https://github.com/JamesNK/Newtonsoft.Json": "NJson",
+    "https://docs.microsoft.com/en-us/aspnet/core/fundamentals/dependency-injection?view=aspnetcore-3.1": "AspNetDI",
+    "https://github.com/StackExchange/Dapper": "Dapper",
+    "https://github.com/dotnet/efcore": "EFCore",
+    "https://github.com/khellang/Scrutor": "Scrutor",
+    "https://automapper.org/": "AutoMapper",
+    "https://github.com/scalalandio/chimney": "Chimney",
+    "https://automapper.org/":"AutoMapper",
+    "https://github.com/Fody/Equals":"FodyEquals",
+    "https://github.com/Fody/PropertyChanged":"FodyPropertyChanged",
+    "https://github.com/csnemes/tracer":"FodyTracer",
+    "https://github.com/Fody/MethodTimer":"FodyMethodTimer",
+    "https://github.com/Fody/Caseless":"FodyCaseless",
+    "https://github.com/wazowsk1/LoggerIsEnabled.Fody":"FodyLoggerIsEnabled",
+    "https://github.com/Fody/Fody":"Fody",
+    "https://mikhail.io/2016/05/tweaking-immutable-objects-with-csharp-and-fody/":"FodyWithBlog",
+    "https://github.com/icsharpcode/ILSpy": "ILSpy"
 }
+
+footnoteLinkBlacklist = [
+    "https://github.com/exyi/coberec/blob/master/src/Coberec.Tests/CSharp/testoutputs/CodeGeneratorTests.ThesisExample.cs",
+    "https://github.com/exyi/coberec/blob/master/docs/graphql-gen.md",
+    "https://github.com/exyi/coberec/blob/master/src/Coberec.Tests/CSharp/testoutputs/CodeGeneratorTests.SimpleUnionType.cs"
+]
 
 def get_git_root() -> str:
     return subprocess.check_output("git rev-parse --show-toplevel".split(" ")).decode('utf8')[:-1]
 
 def convert_external_links_to_footnotes(text) -> str:
-    return re.sub(r"([^!])\[(.*?)\]\(([^#].*?)\)", r"\1[\2](\3)^[[\3](\3)]", text)
+    def match(x):
+        if x.group(3) in footnoteLinkBlacklist:
+            return x.group(0)
+        return f"{x.group(1)}[{x.group(2)}]({x.group(3)})^[[{x.group(3)}]({x.group(3)})]"
+    return re.sub(
+        r"([^!])\[(.*?)\]\(([^#].*?)\)",
+        match,
+        text
+    )
 
 def convert_internal_links(text: str) -> str:
     def matchFn(m):
@@ -122,6 +154,7 @@ for f in os.listdir():
         text = convert_internal_links(text)
         text = remove_next_links(text)
         text = convert_svg_links(text)
+        text = convert_external_links_to_footnotes(text)
         subprocess.run(f"pandoc --top-level-division=chapter -f markdown+smart -t latex -o {f}.tex", shell=True, input=text, encoding='utf8')
 
 

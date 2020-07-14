@@ -3,7 +3,7 @@
 To demonstrate that the concept works, we have reimplemented a C# code generator using the ExprCS abstraction.
 It translates a domain model written in GraphQL Schema language into immutable classes.
 The model in GraphQL is very concise while the generator produces quite rich classes with equality, ToString implementation and methods for easier modification of the immutable objects.
-The point of this chapter is not to explain its usage in depts, as there is an [online documentation](https://github.com/exyi/coberec/blob/master/docs/graphql-gen.md) with that information.
+The point of this chapter is not to explain its usage in depth, as there is more detailed [documentation](https://github.com/exyi/coberec/blob/master/docs/graphql-gen.md) on the GraphQL Schema compiler.
 
 
 Since we use this code generator to create parts of the Expression and metadata API, we will briefly explain how it works.

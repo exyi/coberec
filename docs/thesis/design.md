@@ -171,7 +171,7 @@ In practice, this could lead to reduced precision of the output or wrong output 
 most importantly, it is a violation of the promise that our library will always reference the exact symbols user has specified in the tree.
 
 Being explicit in every aspect is a way chosen by many code generators.
-An example might be the code generator for resource (`.resx`) files (see an [example file](https://github.com/dotnet/runtime/blob/3bb5f14/src/libraries/Common/tests/Resources/Strings.Designer.cs)) or DotVVM view compiler ([generator implementation](https://github.com/riganti/dotvvm/blob/61ee3fd/src/DotVVM.Framework/Compilation/DefaultViewCompilerCodeEmitter.cs#L702)).
+An example might be the code generator for resource (`.resx`) files (see an [example file](https://github.com/dotnet/runtime/blob/3bb5f14/src/libraries/Common/tests/Resources/Strings.Designer.cs) or DotVVM view compiler ([generator implementation](https://github.com/riganti/dotvvm/blob/61ee3fd/src/DotVVM.Framework/Compilation/DefaultViewCompilerCodeEmitter.cs#L702)).
 However, the explicitness heavily afflicts readability of the produced code.
 We think that that transparency and "debuggability" is a crucial advantage of code generation compared to the other approaches, so we would like to get the best of both worlds by having a smart code generator.
 
@@ -181,7 +181,7 @@ ILSpy is a decompiler for .NET assemblies -- a program that converts .NET interm
 IL has exact symbol references and no space for implicitness, similar to our expression tree.
 The ILSpy authors take correctness and precision very seriously -- in the end, we were only able to find two bugs, and one of them was already fixed in a newer version.
 
-In the first step of the decompilation, ILSpy parses IL into an internal abstract tree -- [the ILAst tree](https://github.com/icsharpcode/ILSpy/blob/faea7ee90d636fe8d2bc6a2f7f7b00dada9f01b2/doc/ILAst.txt).
+In the first step of the decompilation, ILSpy parses IL into an internal abstract tree -- [the ILAst tree](https://github.com/icsharpcode/ILSpy/blob/master/doc/ILAst.txt).
 After that, many transformations run on the tree and then it is translated into a C# syntax tree.
 Few other transformation run on the C# syntax tree and then it is formatted into a text form.
 
