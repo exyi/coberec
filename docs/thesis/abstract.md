@@ -1,7 +1,6 @@
-We present a library for writing C# code generators.
-The library is designed to handle edge cases that arise when the generator targets a programming language designed more for humans than for computer programs.
+Code generators often generate invalid code for some inputs.
+Issues such as name collisions reduce the reliability of code generation.
+Programmers are forced to handle these cases manually, which may break build pipelines and lower productivity.
+This work presents a library to simplify building reliable C# code generators.
 The library automatically avoids all kinds of name collisions while keeping the generated code clean of too much explicitness.
-Code generation is a common approach to reduce the amount of repetitive typing programmers have to do.
-However, many code generators run into the edge cases fairly quickly, making the approach seem unreliable.
-Handling it, on the other hand, may significantly complicate the code generator, or clutter the created program.
-While our API is not as easy to use as simple templating engines are, we claim to have the solution to the issue of unreliability.
+While our API is not as easy to use as templating engines are, we claim to have the solution to the issue of unreliability.
