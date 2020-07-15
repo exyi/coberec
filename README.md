@@ -188,7 +188,7 @@ git submodule add git@github.com:exyi/coberec.git
 git submodule update --init --recursive
 ```
 
-You can run `dotnet test` the the coberec directory, to see if the downloaded version works. To reference ExprCS library, just add `<ProjectReference Include="../coberec/src/Coberec.ExprCS/Coberec.ExprCS.csproj" />` to your MsBuild file (`csproj`, `fsproj`, ...)
+You can run `dotnet test` the coberec directory, to see if the downloaded version works. To reference ExprCS library, just add `<ProjectReference Include="../coberec/src/Coberec.ExprCS/Coberec.ExprCS.csproj" />` to your MsBuild file (`csproj`, `fsproj`, ...)
 
 ### Complete ExprCS documentation
 

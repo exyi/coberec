@@ -9,22 +9,22 @@ Moreover, we will see many good ideas that we can reuse in our work.
 ## .NET Reflection
 
 .NET has an [API for runtime type introspection](https://docs.microsoft.com/en-us/dotnet/framework/reflection-and-codedom/reflection).
-Not only does it support listing the type members and their metadata, but we can also invoke them.
+It supports listing the type members and in addition provides means to invoke them.
 Many .NET libraries rely on custom attributes or naming conventions to automatically discover types, invoke methods or list object properties.
 
-The usual application is automatic dependency injection.
+A common use case is automatic dependency injection.
 An example might be the [Scrutor library](https://github.com/khellang/Scrutor), which automatically registers types into the ASP.NET Core service collection.
 It scans the specified assembly for classes implementing particular interfaces, based on the type name or a similar pattern.
 The discovered classes are registered into the service collection, which in turn automatically creates instances of them.
-The services may have dependencies -- it may request other services in its constructor parameters.
+The services may have dependencies -- they may request other services in its constructor parameters.
 The dependency injection framework automatically resolves the dependencies; again, by using reflection.
 
-All of this reduces boilerplate code that would be only initializing the service classes, and it is straightforward to use.
-Of course, there are costs:
+These tools helps to reduce the boilerplate that only initializes the service classes and is straightforward to use.
+There are, however, several costs involved:
 
 * **Transparency**:
-  We cannot just look at the code to see why it does something unexpected.
-  It is also hard to debug, since it is not our code that is being executed.
+  We cannot simply look at the code to see why it does something unexpected.
+  And the code being executed is hard to debug because it is too generic and not part of the project.
 * **Startup Performance**:
   Reflection force runtime to load all metadata for types which impose additional startup costs.
 * **Throughput Performance**:
@@ -33,26 +33,25 @@ Of course, there are costs:
 
 ## Linq.Expressions + Reflection.Emit
 
-In .NET, not only it is possible to use existing types and methods using reflection, but we can also create new methods and new implementations of interfaces.
 In addition to using existing types and methods via reflection, .NET also permits creation of new methods and new implementations of interfaces.
 This technique is often used to improve performance of code using reflection.
 Probably all serializers use it to achieve reasonable performance.
 
-> As a side note, it is also possible to inspect the bytecode of existing methods.
+<!-- > As a side note, it is also possible to inspect the bytecode of existing methods.
 > The Jil JSON serializer uses it to determine the order of fields in memory, as it is a little bit faster to access them in this order.
-> See [Jil: Optimizing Member Access Order](https://github.com/kevin-montrose/Jil#optimizing-member-access-order) for more details.
+> See [Jil: Optimizing Member Access Order](https://github.com/kevin-montrose/Jil#optimizing-member-access-order) for more details. -->
 
-We do not have to emit IL instructions manually, which would be quite cumbersome.
-.NET provides an excellent abstraction called Linq Expressions.
+We can manually create instruction of of the [.NET Intermediate Language, the *IL*](https://en.wikipedia.org/wiki/Common_Intermediate_Language), but that is quite cumbersome.
+However, .NET provides an excellent abstraction called [Linq Expressions](https://docs.microsoft.com/en-us/dotnet/api/system.linq.expressions.expression?view=netframework-4.7.2).
 It is an abstract tree semantically similar to C#, so the API is very accessible to C# developers.
 
-> See the [`System.Linq.Expressions.Expression` documentation](https://docs.microsoft.com/en-us/dotnet/api/system.linq.expressions.expression?view=netframework-4.7.2) for more details on the Expression API.
+To define new types, implement interfaces and override virtual methods, we can use *Reflection Emit*, a part of reflection allows creation of new symbols.
+[Documentation of AssemblyBuilder class](https://docs.microsoft.com/en-us/dotnet/api/system.reflection.emit.assemblybuilder?view=netcore-3.1) is a good starting point to understand the API.
+Reflection Emit is sometimes used to automatically declare service decorators for tracing, logging and similar tasks.
 
-When combined with Reflection Emit, we can even define new types, implement interfaces and override virtual methods.
-This is sometimes used to automatically declare service decorators for tracing, logging and similar tasks.
-
-Refit, a library that makes writing API clients easier, uses Reflection Emit in a bit unusual way.
-The user only declares an interface annotated with an URL and Refit automatically implements it with a class that makes the requests.
+[Refit, a library that makes writing API clients easier](https://github.com/reactiveui/refit), uses Reflection Emit in an interesting way.
+The user only declares an interface annotated with an URL and Refit automatically implements it with a class that makes the HTTP requests.
+The following example will run an HTTP GET request to `/users/NAME` when we call `GetUser("NAME")`.
 
 ```csharp
 public interface IGitHubApi
@@ -62,45 +61,51 @@ public interface IGitHubApi
 }
 ```
 
-This example will run an HTTP GET request to `/users/NAME` when we call `GetUser("NAME")`.
-We still have to define the methods and the input and output types (the `User` in this case), but otherwise the boilerplate is reduced to the bare minimum.
-
-> See the [System.Reflection.Emit.AssemblyBuilder documentation](https://docs.microsoft.com/en-us/dotnet/api/system.reflection.emit.assemblybuilder?view=netcore-3.1) for more information about creating new types.
+It is still necessary to define the methods and the input and output types -- the `User` in this case.
+Otherwise, the boilerplate is reduced to the bare minimum.
 
 Runtime code generation generally increases throughput while the startup time may rise significantly.
-Furthermore, it is quite unfriendly to runtimes which do not use JIT -- such as .NET on mobile devices or WebAssembly.
-This limitation is not a big concern for the .NET community, but is may shift in the future, if WebAssembly-based computing gains traction.
+Furthermore, it is not very compatible with runtimes which do not use JIT -- such as .NET on mobile devices or WebAssembly.
+This limitation is not a big concern for the .NET community, but is may change in the future, if WebAssembly-based computing gains traction.
 
 Similarly, relying heavily on reflection and runtime code generation afflicts trimming of unused code performed by [.NET IL linker](https://github.com/mono/linker/blob/master/docs/illink-tasks.md).
-The linker is not impossible to use, but the need to register all types referenced by the reflection makes the usage less streamlined and less efficient.
+The linker can still be used, but the need to register all types referenced by the reflection makes the usage less streamlined and less efficient.
 
 As we will show in the [Design chapter](./design.md), Linq Expressions from the .NET framework had a very significant influence on the design of our API.
-Even though we do not generate bytecode at runtime but C# code before compilation, our expression tree looks very similar.
+Even though we do not generate IL at runtime but C# code before compilation, our expression tree looks very similar.
 
 ## F# Type Providers
 
+<!-- TODO
+
+Asi misto " --- the provider is a plugin" spis dokoncit vetu "which are
+generated by a compiler plugin called provider. This plugin is
+implemented in F# and can use the configuration options in an abitrary
+way" -->
+
 At the time of writing this thesis, C# does not have any mechanism for making compiler plugins or macros.
-However, F#, another .NET language, has a support for type providers.
+However, F#, another .NET language, has a support for *type providers*.
 Type providers allow users to use types parametrized by configuration options -- the provider is a plugin that generates the type during compilation.
 The plugin is implemented in F# and is free to use the options in an arbitrary way.
 There are some limitations, but almost any type may be produced.
 Unlike macros in many other languages, this mechanism may generate new API, not only expressions or statements.
 Type providers are used to create types based on
-[an example JSON file](https://fsharp.github.io/FSharp.Data/library/JsonProvider.html),
+[a JSON sample file](https://fsharp.github.io/FSharp.Data/library/JsonProvider.html),
 [OpenAPI schema](https://github.com/fsprojects/OpenAPITypeProvider),
 [database schema](https://fsprojects.github.io/SQLProvider/)
 or even [result schema of SQL queries](https://github.com/demetrixbio/FSharp.Data.Npgsql).
 
-There are two options for writing a type provider.
-It may be **erasing**, then the type will not exist in the resulting assembly.
+There are two ways to implement a type provider.
+It may be *erasing*, then the type will not exist in the resulting assembly.
 The F# compiler will inline all method invocations on the type.
 The created type may only be used in F# as other compilers do not understand the type provider.
-Alternatively, the type provider may be **generative** -- it creates a real .NET type.
+Alternatively, the type provider may be *generative* -- it creates a real .NET type.
 In that case, we may use the type from C# or any other .NET language -- it is only a matter of referencing the F# project.
 Unfortunately for the C# developers, not many type providers are generative, so this scenario is not used in practice too much.
 
-The F# type providers are a neat technology that inspires similar features in other languages, but the F# compiler API is unfortunately quite cumbersome.
-The type providers are very intuitive for the end users, but we do not see a way to replicate the ease of use in C#.
+F# type providers are a neat technology that inspired similar features in other languages.
+The type providers are very intuitive for the end users, but we do not see a way to replicate the ease of use in C# without modifying the compiler.
+On the other hand, implementing a type provider is unfortunately quite cumbersome as the API is not well documented.
 
 ## Scala Macros
 
@@ -119,29 +124,28 @@ Both libraries reduce the boilerplate code, while Chimney does not have a runtim
 
 The Scala macros are written in standard Scala code that runs during compilation.
 The macro is basically a function that gets its arguments as expression trees and returns another expression tree.
-To create an expression, we do not even have to use any API -- Scala has a syntax to create them.
-String literal prefixed with `q` returns the expression that is in the quotes; `q"1 + 2"` returns an addition expression of the two constants.
+To create an expression, we do not even have to use any API -- Scala has syntax to produce expressions.
+String literal prefixed with `q` returns the expression that is in the quotes (e.g. `q"1 + 2"` returns an addition expression of the two constants).
 As the usual string literals in Scala, the expression literal may be parametrized by other expressions and types.
-For example `q"($myExpr * 1.2).asInstanceOf[$expectedType]"` multiplies `myExpr` by 1.2 while performing the type conversion.
+For example, `q"($myExpr * 1.2).asInstanceOf[$expectedType]"` multiplies `myExpr` by 1.2 while performing the type conversion.
 Note that it is not the same as working with strings -- we do not have to worry about parenthesis around `$myExpr`.
 
 The `q` literal makes writing macros very accessible, since the macro developers do not have to learn almost any new API.
-Also, the macro language is not limited in any way as we may see in many other languages -- any Scala code is allowed.
+Also, unlike in many other languages, the macro language is not limited and any Scala code is allowed.
 
 ## D `mixin`
 
-D is another statically typed compiled language.
-It supports static evaluation -- the D compiler can interpret almost any code during compilation.
+D is a statically typed compiled language with support for static evaluation -- the D compiler can interpret almost any code during compilation.
 By itself, static evaluation may only seem like an optimization.
-However, in D, we can use it to generate blocks of code and include it anywhere in modules, class declarations, function bodies, etc.
+However, in D, it can be used to generate blocks of code and include it anywhere in modules, class declarations, function bodies, etc.
 
-We do it by using the [`mixin` keyword](https://dlang.org/articles/mixin.html) -- it looks like a function, and it works like `eval` from Javascript.
-Since D is not an interpreted language, `eval` would make little sense, so `mixin` only works at compile time.
+This is doable using the [`mixin` keyword](https://dlang.org/articles/mixin.html) -- it looks like a function, and it works like `eval` from Javascript.
+It has same syntax as function call and works similarly to the `eval` function from Javascript.
+Since D is compiled language, `mixin` only works at compile time.
 The compiler statically evaluates the argument and replaces `mixin` with the string value.
 As a simple demonstration of the concept, this is a mixin Hello World:
 
 ```dlang
-
 void main()
 {
     import std.stdio;
@@ -159,8 +163,7 @@ Note how we are referencing the `writeln` function in `hello`, but it is importe
 In such simple example, it looks like a subtle difference, but the `mixin` may use anything from the local scope, and there may be accidental collisions of identifiers.
 
 Since the code generator is just a function returning a string, there is almost no way it could be more straightforward.
-It can not integrate with the calling code so tightly as we have seen in Scala.
-Yet, combined with D compile-time reflection, it can still offer much tighter integration than a separate code generation process.
+While it can not integrate with the calling code so tightly as in Scala, combined with D compile-time reflection, it can still offer much tighter integration than a separate code generation process.
 
 ## Dynamic Languages
 
@@ -169,8 +172,8 @@ However, dynamically typed platforms have a lot to say to the problem of a boile
 
 The advantage of most dynamically typed platforms is that there is no problem to create a new type at runtime.
 In Javascript, the `{}` expression creates an empty object and assigning to `obj.myField` creates a new field if it does not exist already.
-We can also assign a field using the `obj["myField"] = value` notation, and any expression may be used instead of `"myField"`.
-Unlike in C#, where we always have to declare the types in code, we just create any objects at runtime.
+It is possible to assign a field using `obj["myField"] = value` notation, and any expression may be used instead of `"myField"`.
+Unlike in C#, where it is necessary to declare the types in code, we just create any objects at runtime.
 This means that there is no need to declare an expected type when we want to deserialize an object from JSON.
 
 Using a [Proxy object](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy), we can even intercept fundamental operations on an object, like a field access.
@@ -185,9 +188,9 @@ On the other hand, the code size is critical for the client-side applications, s
 > For brevity, let us just focus on Javascript in this section.
 
 The obvious disadvantage is the lack of guidance before running the program -- there are no types to guide the compiler or an IDE.
-Moreover, we also lack of runtime validation of the objects.
-If the server sent a string instead of a number in the JSON object, we will be unlikely to notice until we use that specific value.
-On the contrary, such misbehaviour will crash during deserialization on a strongly typed platform like .NET.
+Moreover, the objects lack runtime validation.
+For example, if the server sent a string instead of a number in the JSON object, we will be unlikely to notice until the specific value is used.
+On the contrary, such misbehaviour will lead to a crash during deserialization on a strongly typed platform like .NET.
 
 > Interesting compromise could be to generate a TypeScript type definitions from a schema (such as GraphQL or OpenAPI).
 > At runtime we would use the dynamic API clients, or at least dynamic object created from JSON deserialization.
@@ -198,6 +201,9 @@ It supports almost anything we can do with the Javascript Proxy objects.
 Yet, in our experience, it not used very widely, since C# programmers do not want to lose their type safety.
 However, many libraries, including one of the most popular JSON (de)serializer, Newtonsoft.Json, supports it -- we can simply declare `dynamic myObject = JObject.Parse(myJson)` and use it as we would in JavaScript (see the [documentation for more details](https://www.newtonsoft.com/json/help/html/QueryJsonDynamic.htm))
 
+Note that other dynamically typed languages provide similar concepts.
+For brevity we however discuss in detail only Javascript and C#.
+
 ## C# 9 Source Generators
 
 C# is going to have an API for integrating source code generators into the compiler.
@@ -206,7 +212,7 @@ Note that at the time of writing this work, C# source generators are still in pr
 
 The API is quite straightforward -- the plugin simply adds new source files to the C# compilation object.
 The difference from a separate code generation process is that the source generator has access to the metadata about the other compiled types.
-We will have to wait to see what will turn up in the .NET ecosystem; all of this is still in the future.
+It remains to be seen what will turn up in the .NET ecosystem.
 It seems, however, that it should be possible to generate code that depends on the metadata of other types -- possibly replacing serializers, dependency injection frameworks and many more libraries that are currently reflection-based.
 
 Let us show the code example from the [Source Generators announcement](https://devblogs.microsoft.com/dotnet/introducing-c-source-generators/):
@@ -264,7 +270,7 @@ public static class HelloWorld
 }
 ```
 
-We can see that the generated code is just a string -- there is no attempt to provide an API for building the code.
+The generated code is just a string -- there is no attempt to provide an API for building the code.
 That is probably a good thing, since the API may be done by different projects (like our work) and it simplifies the core C# API that will have to be maintained for a long time.
 At the time of writing, our project has no support for the Roslyn symbol model, but it seems like we should add support when C# code generators become stable.
 
@@ -273,7 +279,7 @@ At the time of writing, our project has no support for the Roslyn symbol model, 
 > The filename is simply included in the string, so it will break if any file contains a quotation mark (`"`), and the compilation will fail.
 
 It will be very interesting to observe how will this feature affect the .NET community.
-While now, code generation is a bit shunned by many project for its unreliability and clumsiness, we can already see a massive interest in Source Generators on social media.
+While now, code generation is avoided by many project for its unreliability and clumsiness, we can already see a massive interest in Source Generators on social media.
 
 Unfortunately, it is probably not going to be possible to migrate existing libraries to benefit from code generation.
 Most reflection-based libraries are configured at runtime by initializing it with an "options object".
@@ -391,19 +397,19 @@ Reflection -->
 
 ## Summary
 
-We have discussed many different ways programmers use to avoid writing boilerplate code.
+We have discussed many approached used by programers to avoid writing boilerplate code.
 With this background we might be able to tell how does code generation compare to alternatives.
 
-**Transparency** -- The generated code can be simply read and debugged when it misbehaves.
-It is true that this point really depends on output quality of the generator and complexity of the generated program.
-However, we think this is the main advantage, so we focus on the output code quality with our library and the GraphQL Schema compiler.
+**Transparency** -- The generated code can be easily read and debugged.
+Naturally this depends on the output quality of the generator and complexity of the generated program.
+However, we believe this is the main advantage, so we focus on the quality of code generated by our library and the GraphQL Schema compiler.
 The alternatives usually do not come even close the transparency we can offer with source generation.
-Even with D `mixin` and presumably C# 9 Source Generators, we can not directly open the generated source file and place a debugger breakpoint in it.
+Even with D `mixin` and presumably C# 9 Source Generators, one can not directly open the generated source file and place a debugger breakpoint in it.
 
 **Runtime Performance** -- Source generation does not need any runtime initialization and we can generate fairly specialized and optimized code for the specific task.
 Both startup time and throughput performance is probably going to be decent.
 This is not an exclusive advantage, macros, IL rewriting are on par with code generation, since these also generates code.
-However, in some cases the the speed may be afflicted by the increase in code size.
+However, in some cases the speed may be afflicted by the increase in code size.
 
 **API Creation** -- Code generation is nearly the only discussed approach that can introduce new API symbols.
 While dynamic languages can introduce new symbols at runtime, it does not offer type safety and IDEs can not guide the user through autocompletion.

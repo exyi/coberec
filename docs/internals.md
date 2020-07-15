@@ -20,7 +20,7 @@ It is at this point, that most of the tree will be type checked (that the refere
 ### Metadata translation
 
 The reason why type definitions are translated and checked in bulk in the `CommitWaitingTypes` is that the types may be referencing each other.
-If the the types were translated and registered one after another, the backward references would be invalid and the registration to fail.
+If the types were translated and registered one after another, the backward references would be invalid and the registration to fail.
 
 The commit process performed by the `CommitWaitingTypes`  has these steps:
 * Types are ordered topologically in order of inheritance. The base types are part of the core type definition, so all base types and implemented interfaces must be declared beforehand.

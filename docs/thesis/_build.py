@@ -10,6 +10,7 @@ citMap = {
 
     "https://en.wikipedia.org/wiki/Boilerplate_code": "wiki:Boilerplate",
     "https://en.wikipedia.org/wiki/Symbol_%28programming%29": "wiki:Symbol",
+    "https://en.wikipedia.org/wiki/Common_Intermediate_Language": "wiki:CIL",
     "https://docs.microsoft.com/en-us/dotnet/framework/reflection-and-codedom/reflection": "SystemReflection",
     "https://devblogs.microsoft.com/dotnet/introducing-c-source-generators/": "CsharpSourceGen",
     "https://github.com/kevin-montrose/Jil#optimizing-member-access-order": "Jil",
@@ -59,7 +60,8 @@ citMap = {
     "https://github.com/wazowsk1/LoggerIsEnabled.Fody":"FodyLoggerIsEnabled",
     "https://github.com/Fody/Fody":"Fody",
     "https://mikhail.io/2016/05/tweaking-immutable-objects-with-csharp-and-fody/":"FodyWithBlog",
-    "https://github.com/icsharpcode/ILSpy": "ILSpy"
+    "https://github.com/icsharpcode/ILSpy": "ILSpy",
+    "https://github.com/reactiveui/refit": "Refit",
 }
 
 footnoteLinkBlacklist = [
