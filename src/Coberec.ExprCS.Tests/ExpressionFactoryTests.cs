@@ -6,7 +6,7 @@ namespace Coberec.ExprCS.Tests
 {
     public class ExpressionFactoryTests
     {
-        OutputChecker check = new OutputChecker("testoutput");
+        OutputChecker check = new OutputChecker("testoutput", sanitizeGuids: true);
         MetadataContext cx = MetadataContext.Create();
         [Fact]
         public void ArrayInitializer()

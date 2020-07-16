@@ -447,8 +447,8 @@ union U = A | B
         }
 
         // [Property(MaxTest = 2000, EndSize = 10_000)]
-        [Property(EndSize = 20_000)]
-        // [Property]
+        // [Property(EndSize = 20_000)]
+        [Property]
         // [Property(Replay = "(802755643,296687915)")]
         public void GenerateArbitrarySchema(DataSchema schema)
         {

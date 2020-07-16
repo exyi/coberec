@@ -465,7 +465,7 @@ namespace Coberec.ExprCS
             let location = AssemblyLoadContext.Default.LoadFromAssemblyName(r).Location
             where !string.IsNullOrEmpty(location)
             let lUrl = new Uri(location)
-            select lUrl.AbsolutePath;
+            select Uri.UnescapeDataString(lUrl.AbsolutePath);
 
         private static Lazy<PEFile[]> ReferencedModules = new Lazy<PEFile[]>(() => GetReferencedPaths().Distinct().Select(a => new PEFile(a, System.Reflection.PortableExecutable.PEStreamOptions.PrefetchMetadata)).ToArray());
     }
