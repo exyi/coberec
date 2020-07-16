@@ -1,9 +1,9 @@
 [submodule "deps/ILSpy"]
 	path = deps/ILSpy
-	url = git@github.com:exyi/ILSpy.git
+	url = https://github.com/exyi/ILSpy.git
 [submodule "deps/big-list-of-naughty-strings"]
 	path = deps/big-list-of-naughty-strings
-	url = git@github.com:minimaxir/big-list-of-naughty-strings.git
+	url = https://github.com/minimaxir/big-list-of-naughty-strings.git
 [submodule "deps/parser"]
 	path = deps/parser
-	url = git@github.com:graphql-dotnet/parser.git
+	url = https://github.com/graphql-dotnet/parser.git
