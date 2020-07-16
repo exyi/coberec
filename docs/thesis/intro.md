@@ -40,7 +40,7 @@ The limitation is, that we can not declare any new API during runtime, because t
 However, this limitation does not exist in dynamically typed languages, which makes the technique even more powerful (and less safe to use). -->
 
 
-## The Code Generation Library
+## The Coberec Code Generation Library
 
 Code generation is done simple by printing out code fragments.
 This approach works very well in simple cases, when the output space is fairly limited.
@@ -54,7 +54,10 @@ In C#, everything could be referenced by a full name to avoid this problem.
 In general, being overly explicit prevents issues, but it afflicts readability of the generated code.
 
 The goal of our project is to provide an abstraction for source code generators that will help to solve these issues.
-The user of the API will provide a semantic model of the desired code and our library will translate it to a matching C# code.
+The user of the API will provide a semantic model of the desired code and the *Coberec* library will translate it to a matching C# code.
+
+Coberec is based on [ILSpy](https://github.com/icsharpcode/ILSpy), an open source C# decompiler.
+ILSpy provides a reliable backend for emitting C#, and we have built an API on top of it.
 
 As always, the abstraction comes with a cost.
 We will sacrifice ease of use, since the API will force the user to be overly explicit about which type is used, which method is invoked, etc.
@@ -63,6 +66,6 @@ We will also sacrifice execution speed, as the library will perform checks and t
 This thesis is organized as follows.
 In section 2 we discuss existing solutions and practices to reduce boilerplate code.
 In section 3 we describe the design of our code generation library.
-Then, we describe how is our library used and how it is implemented.
+Then, we describe how is the library used and how it is implemented.
 
 Next: [Approaches to Reducing Boilerplate Code](./approaches.md)

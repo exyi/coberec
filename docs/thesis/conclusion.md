@@ -14,7 +14,7 @@ The library is certainly not feature-complete, there is still a number of C# fea
 We have a near-complete list of them in [our GitHub project](https://github.com/exyi/coberec/issues).
 These features can be however accessed through the [ILSpy Fallback API](./design.md#ilspy-fallback), so none of these issues should be a critical blocker.
 
-We would like to adopt our library to work with the C# Source Generators, as we have mentioned.
+We would like to adopt Coberec to work with the C# Source Generators, as we have mentioned.
 It will likely only mean that we will implement ILSpy type system for the metadata exposed from the C# compiler.
 
 It could be interesting to add support for translating our Expression into Linq Expressions to allow runtime code generation using the same API as build-time generation.

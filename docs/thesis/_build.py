@@ -11,6 +11,7 @@ citMap = {
     "https://en.wikipedia.org/wiki/Boilerplate_code": "wiki:Boilerplate",
     "https://en.wikipedia.org/wiki/Symbol_%28programming%29": "wiki:Symbol",
     "https://en.wikipedia.org/wiki/Common_Intermediate_Language": "wiki:CIL",
+    "https://en.wikipedia.org/wiki/Single-responsibility_principle": "wiki:SRP",
     "https://docs.microsoft.com/en-us/dotnet/framework/reflection-and-codedom/reflection": "SystemReflection",
     "https://devblogs.microsoft.com/dotnet/introducing-c-source-generators/": "CsharpSourceGen",
     "https://github.com/kevin-montrose/Jil#optimizing-member-access-order": "Jil",
@@ -22,7 +23,7 @@ citMap = {
     "https://fsprojects.github.io/SQLProvider/": "FSharpSql",
     "https://github.com/demetrixbio/FSharp.Data.Npgsql": "FSharpDataNpgsql",
     "https://www.scalatest.org/user_guide/using_assertions": "ScalaTestAssert",
-    "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy": "JSProxy",
+    "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy": "YDKJS_ES",
     "https://medium.com/dailyjs/how-to-use-javascript-proxies-for-fun-and-profit-365579d4a9f8": "JSProxyHacks",
     "https://www.newtonsoft.com/json/help/html/QueryJsonDynamic.htm": "NJsonDynamic",
     "https://github.com/Fody/Fody/tree/c31ea96b5be6ce66b992614dda2af2c0a9bb91d2#edit-and-continue": "FodyEditAndContinue",
@@ -67,7 +68,12 @@ citMap = {
 footnoteLinkBlacklist = [
     "https://github.com/exyi/coberec/blob/master/src/Coberec.Tests/CSharp/testoutputs/CodeGeneratorTests.ThesisExample.cs",
     "https://github.com/exyi/coberec/blob/master/docs/graphql-gen.md",
-    "https://github.com/exyi/coberec/blob/master/src/Coberec.Tests/CSharp/testoutputs/CodeGeneratorTests.SimpleUnionType.cs"
+    "https://github.com/exyi/coberec/blob/master/src/Coberec.Tests/CSharp/testoutputs/CodeGeneratorTests.SimpleUnionType.cs",
+    "https://exyi.cz/coberec_doxygen/de/d05/classCoberec_1_1ExprCS_1_1TypeSignature.html",
+    "https://exyi.cz/coberec_doxygen/d7/d36/classCoberec_1_1ExprCS_1_1MethodSignature.html",
+    "https://exyi.cz/coberec_doxygen/d2/d18/classCoberec_1_1ExprCS_1_1FieldSignature.html",
+    "https://exyi.cz/coberec_doxygen/d8/dd1/classCoberec_1_1ExprCS_1_1PropertySignature.html",
+    "https://exyi.cz/coberec_doxygen/da/d1b/classCoberec_1_1ExprCS_1_1Expression.html#aa3966c00e7b5358f7ca116c23a3f0e98",
 ]
 
 def get_git_root() -> str:

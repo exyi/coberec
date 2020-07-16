@@ -1,37 +1,42 @@
 # Design
 
-In this chapter, we will go through the design decisions made during the project development, explore alternatives and also some potential for future development.
+In this chapter, we will go through the design decisions made during the project development and explore some alternatives.
 
 ## `System.Linq.Expressions` Influence
 
-We have had a good experience with the `System.Linq.Expressions` interface provided in .NET, which can be used to build methods at runtime.
-The API is a very reliable abstraction for emitting IL instructions at runtime.
-In combination with `System.Reflection.Emit`, it is possible to emit a .NET assembly with it, but this Reflection Emit is not easy to use and reliability is also a problem.
-Since the API depends on Reflection, the referenced symbols of output assembly must be loaded into the code generator, which may collide with existing dependencies, afflicting reliability.
-Also, while it is a pleasure to use Linq Expressions, we do not think that about Reflection.Emit, that it quite cumbersome.
+We consider the [Linq Expressions API](https://docs.microsoft.com/en-us/dotnet/api/system.linq.expressions.expression?view=netframework-4.7.2) a very reliable API for emitting the intermediate language at runtime.
+We designed our API to be similar and thus easy to use for developers who are already familiar with Linq Expressions.
+
+In combination with Reflection Emit, it is possible to emit a .NET assembly with it.
+However, we find Reflection Emit harder to use and it has several additional problems.
+In particular, the API depends on Reflection, so the referenced symbols of output assembly must be loaded into the code generator.
+These references may collide with dependencies of the generator and cause reliability issues.
 
 The original project idea was to reimplement the Linq Expressions API for code generation.
 However, we must not depend on Reflection to avoid the issues with dependencies, so we have to use a different model of .NET metadata.
-Our design of the code model is thus also expression-based, and the API will be very familiar to a Linq Expressions user.
-There are going to be differences, though.
+
+We originally intended to reimplement the Linq Expression API for code generation.
+However, to avoid the dependency on .NET reflection a new method of representing metadata [had to be created](./design.md#metadata).
 
 ### Expression Based Model
 
 Major similarity to Linq Expressions is that every code fragment is an expression; there are no statements.
-That does not mean that the generated code will always be a single expression; the expressions will get expanded into a reasonable C# form.
-When everything is an expression, writing generic helpers gets less complicated, as we do not have to worry about the kind of the arguments.
 For example, we do not distinguish between `if` statement or `if` expression (the `a ? b : c` ternary operator in C#), we just need a single ConditionalExpression.
+The Coberec library will expand the expressions into a sensible C# form, the generated code will not be necessarily a single expression.
 
 C# distinguishes between expressions and statements, expressions always return a value (i.e. cannot return `void`) while statements do not.
-To simplify the concept, we will represent every code fragment as a generalized expression.
+To simplify the concept, we represent every code fragment as a generalized expression.
 Our expressions do not have to return anything -- we allow returning `void` and we will allow variable declarations and inline blocks in the expressions.
-From that perspective, our code model would be similar to F#, Scala or other expression-based languages.
+From that perspective, our code model is similar to F#, Scala or other expression-based languages.
 
 ## Blocks and Variables
 
-We will represent blocks and variable definitions a bit differently than Linq Expressions do, to more closely follow the single responsibility principle and thus make the types simpler.
-Linq Expressions use one node type ([BlockExpression](https://docs.microsoft.com/en-us/dotnet/api/system.linq.expressions.blockexpression?view=netcore-3.1)) to both declare variables and chain expressions.
-We will separate the two responsibilities into BlockExpression and LetInExpression.
+We represent blocks and variable definitions a bit differently than Linq Expressions do, to more closely follow the [single responsibility principle](https://en.wikipedia.org/wiki/Single-responsibility_principle) and thus make the types simpler.
+Linq Expressions use one node type ([BlockExpression](https://docs.microsoft.com/en-us/dotnet/api/system.linq.expressions.blockexpression?view=netcore-3.1)) to declare both variables and chain expressions.
+We have separated the two responsibilities into BlockExpression and LetInExpression.
+
+The block expression executes a list of expressions ignoring their results and then returns the `result`.
+The `result` may be `default(void)` expression, if we do not want to return anything:
 
 ```gql
 type BlockExpression {
@@ -40,8 +45,8 @@ type BlockExpression {
 }
 ```
 
-The block expression executes a list of expressions ignoring their results and then returns the `result`.
-The `result` may be `default(void)` expression, if we do not want to return anything.
+The name of the "variable declaration" is inspired by the `let variable = value in target` syntax from F#, since the expression has the same semantics.
+First, the variable is initialized by the `value` and then `target` is evaluated with the new variable in scope.
 
 ```gql
 type LetInExpression {
@@ -51,20 +56,17 @@ type LetInExpression {
 }
 ```
 
-The name is inspired by the `let variable = value in target` syntax from F#, since this expression has the same semantics.
-First, the variable is initialized by the `value` and then `target` is evaluated with the new variable in scope.
-
 ## Control Flow
 
 Same as in Linq Expressions, we have a ConditionalExpression representing an `if` statement or the `a ? b : c` ternary operator.
 Other control flow statements (loops and jumps) are a bit more different to C# in our expression-based model.
 
 Linq Expressions support jumps with `goto` and labels.
-The behaviour is a bit weird, however.
+The behaviour is a bit unintuitive, however.
 Jumping into the middle of an expression does not make sense since that could evaluate only a part of the expression, and the other parts would have an undefined result.
 For example, we would jump to an expression in a method call.
-The single method argument would get evaluated, and then we could not continue with invoking the method, since the other arguments would not be computed.
-For this reason, Linq Expressions do not support jumps to arbitrary locations, but the limitations are unclear.
+The single method argument would get evaluated, but the method can not be invoked, since the other arguments would not be computed.
+For this reason, Linq Expressions do not support jumps to arbitrary locations, but the limitations are hard to understand.
 
 WebAssembly is another expression-based system which handles control flow in a slightly different way.
 It has an [`if` instruction](https://www.w3.org/TR/wasm-core-1/#control-instructions%E2%91%A8), which is very similar to our ConditionalExpression.
@@ -74,8 +76,8 @@ The lack of the `goto` instruction ensures structured control flow, which fits n
 
 WebAssembly `br` instruction links to the target by its index.
 That works well for a binary format, but would not be a pleasure to use it in an API while building the expression.
-Apart from BreakExpression, we will also introduce BreakableExpression, which is a possible target of the `break`.
-It is going to be referenced by a unique ID (inside of the LabelTarget type).
+Apart from BreakExpression, we also introduce BreakableExpression, which is a possible target of the `break`.
+It is referenced by a unique ID (inside of the LabelTarget type).
 
 ```gql
 type BreakableExpression {
@@ -85,7 +87,7 @@ type BreakableExpression {
 ```
 
 We also allow the BreakableExpression to return a value.
-This value will either come from the inner `expression` or must be passed as `value` to the BreakExpression that interrupts the execution:
+This value either comes from the inner `expression` or must be passed as `value` to the BreakExpression that interrupts the execution:
 
 ```gql
 type BreakExpression
@@ -102,34 +104,39 @@ type BreakExpression
 
 ## References
 
-As of version 7.0, C# allows us to work with references to variables and fields.
-Having a field, we can:
+As of version 7.0, C# allows working with references to variables and fields.
+Having a field, it is possible:
 
-* read the value of the field
-* write a value into the field
-* create a reference pointing to the field
+* to read the value of the field;
+* to write a value into the field;
+* to create a reference pointing to the field,
 
-When we have a reference to a field, we can both write it and read into the reference.
-This means that we only have to support creating references to fields and variables instead of having three different expression types for read, write and reference.
+Having a reference to a field, it is possible to both write to and read from the reference.
+This means that it is only necessary to support creation of references to fields and variables instead of having three different expression types for read, write and reference.
 
 We will only have a single FieldAccessExpression that returns a reference to the field.
 Similarly, instead of a variable assignment, we will have a VariableReferenceExpression that creates a reference to a variable or a parameter.
-To read a field, we need to combine the FieldAccessExpression with DereferenceExpression; to write it, we need to combine it with ReferenceAssignExpression.
+
+To read a value from a field, we need to combine the FieldAccessExpression with DereferenceExpression.
+To write a value into a field, we need to combine it with ReferenceAssignExpression.
 
 > This keeps the core model simpler.
 > However, for ease of use, we provide extension methods like `AssignField` that create the whole subexpression.
 
-We may store the references in variables, pass them as arguments and return them from methods.
-We cannot, however, store them in a field -- C# does not allow references inside of objects; references can not be stored on the garbage collected heap.
+It is possible to store the references in variables, pass them as arguments and return them from methods.
+However it is not allowed to store them in a field -- C# does not allow references inside of objects; references can not be stored on the garbage collected heap.
 That also means that reference variables can not be captured in a closure of a local function nor a lambda function.
 
 ## ILSpy as a Backend
 
+We use [ILSpy](https://github.com/icsharpcode/ILSpy) as a code generation backend.
+ILSpy is a C# decompiler witch can serve as a reliable abstraction of several edge cases of the C# language.
 C# is a complex language with many edge cases, so emitting code that corresponds to the exact symbols specified by the expression is very tricky.
+
 To illustrate that, consider a few examples.
 Let us assume that we want to call the `Uri.EscapeDataString` method.
-In our expression tree, it will be represented by a MethodCallExpression pointing to the descriptor of the static method.
-Under standard circumstances, we invoke the method by the code `Uri.EscapeDataString(argument)`.
+In our expression tree, it is represented by a MethodCallExpression pointing to the descriptor of the static method.
+Normally, the method is invoked by the code `Uri.EscapeDataString(argument)`.
 However, that is not the case, if there is another symbol called `Uri` in scope -- for example a property:
 
 ```csharp
@@ -139,8 +146,18 @@ public void M() {
 }
 ```
 
-We would have to use the full name: `System.Uri.EscapeDataString(Url)`.
-Using full names everywhere would, however, make all our code longer and, additionally, it does not actually solve our problem.
+That code would not compile as C# would try to invoke the method on the property `Uri`.
+To resolve the issue, we would have to use the full name:
+
+```csharp
+public string Uri { get; }
+public void M() {
+    var x = System.Uri.EscapeDataString(Uri);
+}
+```
+
+However, using full names everywhere would make all generated code longer.
+Additionally, it does not actually solve our problem.
 `System` corresponds to the namespace only until there is another symbol called `System`:
 
 ```csharp
@@ -154,7 +171,7 @@ public void M() {
 We can be even more explicit and prefix the fully qualified name with `global::` to instruct the C# compiler that it should look for global symbols (i.e. namespaces).
 
 There are many more similar cases -- another example might be an implicit conversion.
-We could think that we do not have to emit any code when we want to use an implicit conversion, as the compiler will perform it automatically.
+One could think that no code has to be emitted when we want to use an implicit conversion, as the compiler will perform it automatically.
 However, this is not always the case, specifically due to method overloading.
 Let us say we have a class with an implicit conversion to `double`:
 
@@ -166,9 +183,9 @@ public class MyNumber {
 ```
 
 Then, we use `Console.WriteLine(object)` to print a `MyNumber` instance to stdout (which will call the `ToString` method).
-Conversion to `object`, the expected argument of `WriteLine` method is implicit, but if we do not write the conversion explicitly, the `Console.WriteLine(double)` overload will be called instead.
+Conversion to `object`, the expected argument of `WriteLine` method is implicit, but without an explicit conversion, the `Console.WriteLine(double)` overload will be called instead.
 In practice, this could lead to reduced precision of the output or wrong output format;
-most importantly, it is a violation of the promise that our library will always reference the exact symbols user has specified in the tree.
+most importantly, it is a violation of the promise that Coberec always references the exact symbols user has specified in the tree.
 
 Being explicit in every aspect is a way chosen by many code generators.
 An example might be the code generator for resource (`.resx`) files (see an [example file](https://github.com/dotnet/runtime/blob/3bb5f14/src/libraries/Common/tests/Resources/Strings.Designer.cs) or DotVVM view compiler ([generator implementation](https://github.com/riganti/dotvvm/blob/61ee3fd/src/DotVVM.Framework/Compilation/DefaultViewCompilerCodeEmitter.cs#L702)).
@@ -176,7 +193,7 @@ However, the explicitness heavily afflicts readability of the produced code.
 We think that that transparency and "debuggability" is a crucial advantage of code generation compared to the other approaches, so we would like to get the best of both worlds by having a smart code generator.
 
 Implementing such a smart code generator would be very demanding, so we are not aware of anyone doing that in C# for code generation.
-However, the [ILSpy project](https://github.com/icsharpcode/ILSpy) shares the same problem, and it already has a very reliable C# emitter.
+However, the ILSpy project shares the same problem, and it already has a very reliable C# emitter.
 ILSpy is a decompiler for .NET assemblies -- a program that converts .NET intermediate language (IL) into C#.
 IL has exact symbol references and no space for implicitness, similar to our expression tree.
 The ILSpy authors take correctness and precision very seriously -- in the end, we were only able to find two bugs, and one of them was already fixed in a newer version.
@@ -189,7 +206,7 @@ To avoid too noisy output and too complicated implementation, we will translate 
 
 ## Metadata
 
-Since we can not depend on System.Reflection, we need another way to represent references to symbols.
+Since we can not depend on the .NET reflection, we need another way to represent references to [symbols](https://en.wikipedia.org/wiki/Symbol_%28programming%29) -- types, methods, properties, etc.
 We also need to allow users to define new symbols, so our model must account for that.
 
 ### ILSpy Type System
@@ -200,7 +217,7 @@ However, ILSpy type system is quite extensible, so it is possible to create new 
 
 > Note that System.Reflection.Metadata is very different to the standard reflection in .NET framework.
 > It does not use the internal .NET mechanisms to load types, it has its own assembly reading implementation in C#.
-> Loading types using this library does not have the problem with version collisions, like loading it with Reflection has.
+> Loading types using this library does not have the problem with version collisions, like loading it with reflection has.
 
 We started with using the ILSpy type system directly in our expression trees, but it has several deficiencies.
 In ILSpy, all the symbols are known in advance -- there are not any new symbols emerging after the assemblies are loaded.
@@ -217,29 +234,29 @@ Having an immutable model of metadata would be very beneficial for this purpose.
 
 Also, by using ILSpy type system, we would lock ourselves to using ILSpy as a backend.
 At the time publishing of this work, there is no support for any other.
-However, it could make sense to add support for Reflection.Emit and Linq.Expression backend.
+However, it could make sense to add support for Reflection Emit and Linq Expression backend.
 That would provide a common API for generating code compile-time and code at runtime.
 
 ### Symbol Signatures
 
-We cannot simply copy the ILSpy system or Reflection and allow adding new symbols, since we want to have the metadata immutable.
-Immutability will be a promise that whenever a function gets information about a symbol, it will not change.
+We cannot simply copy the ILSpy system or reflection and allow adding new symbols, since we want to have the metadata immutable.
+Immutability is a promise that whenever a function gets information about a symbol, it will not change.
 
 We need to allow adding new symbols even when there are cyclic references (like recursive methods and recursive types).
 This means that the information about a type can not contain its members, and the information about a method can not contain the body.
-We will split the responsibilities -- type or method **definition** will contain all information about its contents and a **signature**, that will only contain the most basic information.
+We have split the responsibilities -- type or method **definition** contains contain all information about its contents and a **signature**, that only contains the most basic information.
 
 To define a type definition, the user will need all members of the type already defined.
-On the other hand, creating a signature is going to be simple -- they will just need to know the full name and basic information like parameters, accessibility, etc..
-To reference a symbol from the expression (such as to call a method), only the signature will be needed.
+On the other hand, creating a signature is simple -- they will just need to know the full name and basic information like parameters, accessibility, etc..
+To reference a symbol from the expression (such as to call a method), only the signature is needed.
 So, symbols can be referenced before they are defined with all of their contents.
-Moreover, validating usage should be sound, since all properties of the type, method, field or property signature are going to be immutable.
-Obviously, we will not be able to perform validation based on the contents of the type -- for example, there is not going to be a way to check that a referenced field exists on the type.
+Moreover, validating usage should be sound, since all properties of the type, method, field or property signature are immutable.
+Obviously, is not possible to perform validation based on the contents of the type -- for example, there is not a way to check that a referenced field exists on the type.
 
 Type signatures contain information about its full name, accessibility, kind of the type (interface, struct, class, ...), if it is abstract or sealed and the generic type parameters.
 Type members contain a signature of the declaring type, name of the member and other basic information (arguments, result type, if it is static, virtual or abstract).
 
-> For more details, see the documentation of TypeSignature, MethodSignature, FieldSignature and PropertySignature (TODO link)
+> For more details, see the definition of [TypeSignature](https://exyi.cz/coberec_doxygen/de/d05/classCoberec_1_1ExprCS_1_1TypeSignature.html), [MethodSignature](https://exyi.cz/coberec_doxygen/d7/d36/classCoberec_1_1ExprCS_1_1MethodSignature.html), [FieldSignature](https://exyi.cz/coberec_doxygen/d2/d18/classCoberec_1_1ExprCS_1_1FieldSignature.html) and [PropertySignature](https://exyi.cz/coberec_doxygen/d8/dd1/classCoberec_1_1ExprCS_1_1PropertySignature.html).
 
 ### Symbol References
 
@@ -272,7 +289,7 @@ The concept of delegates allows us to work with a function as with any object --
 Both local function and lambda function can capture variables from the scope where they are declared.
 
 Since local function is almost equivalent to a lambda assigned to a local variable, we have decided to simplify the concept and only support lambda function.
-When the lambda function is immediately assigned to a variable, we will translate it into a C# local function, which arguably looks nicer.
+When the lambda function is immediately assigned to a variable, Coberec will translate it into a C# local function, which arguably looks nicer.
 However, to declare a function variable in C#, we would need a delegate matching the function signature.
 Finding a matching delegate is usually not a problem -- unless our function has `ref` parameters or very many arguments, we can usually use `Action<...>` or `Func<...>` delegates from the standard library.
 
@@ -284,7 +301,7 @@ This is nothing new under the sun -- most functional programming languages have 
 There is one more problem with delegates that we can solve using our function types.
 Delegates are basically special objects with an Invoke method matching the signature of the delegate, so our type signature is not going to contain the actual arguments and return type.
 Not only we would not be able to validate the arguments of an invocation -- we would not be able to determine result type of the invocation expression.
-For all other expressions, we can do that, and most of the validation logic depends on the `Expression.Type()` method (see TODO link Type method).
+For all other expressions, we can do that, and most of the validation logic depends on the [`Expression.Type()` method](https://exyi.cz/coberec_doxygen/da/d1b/classCoberec_1_1ExprCS_1_1Expression.html#aa3966c00e7b5358f7ca116c23a3f0e98).
 
 Including the delegate arguments and return type in the type signature is not even possible -- delegates that return themselves (`delegate A A()`) are perfectly valid in C#.
 Since our types are immutable, it would not be possible to construct such a delegate.
@@ -298,8 +315,8 @@ type FunctionType {
 ```
 
 Our function type simply contains parameters and the return type.
-We will only allow invocations when the target is an expression of FunctionType.
-Every FunctionExpression will return the FunctionType and to convert between delegates and function, we are going to provide FunctionConversionExpression.
+We only allow invocations when the target is an expression of FunctionType.
+Every FunctionExpression returns the FunctionType and to convert between delegates and function, we are providing FunctionConversionExpression.
 
 > Apparently, it is not possible to return itself from the FunctionType as such type would have to return itself.
 > However, we can still return a delegate from the function.
@@ -319,9 +336,9 @@ We will introduce a MetadataContext class that will have the following responsib
 3. Allow the user to explore the registered and referenced symbols.
 4. Emit the added types into C# code -- either a single string or multiple files.
 
-Since we are building the API on top of ILSpy, MetadataContext is going to be a wrapper of the ILSpy ICompilation object, which has a similar role of holding all the type information together.
+Since the Coberec API is build on top of ILSpy, MetadataContext is a wrapper of the ILSpy ICompilation object, which has a similar role of holding all the type information together.
 
-In principle, the API workflow is going to look like:
+In principle, the API workflow looks like:
 
 * Create MetadataContext:
   ```csharp
@@ -389,14 +406,14 @@ If we want to use external libraries, we must explicitly include them in the pro
 When creating a new MetadataContext, we can use the `references` parameter with a list of paths to referenced libraries.
 
 Sometimes it is useful to generate code into an existing project that already contains some code.
-It is not possible to add an assembly reference to the same project we are just building -- for that case, we will need an External Symbol API.
+It is not possible to add an assembly reference to the same project we are just building -- for that case, we need an External Symbol API.
 That will allow us to declare the types we expect to be in the project and register them in the MetadataContext.
 
-Since we are already going to have the broad API for defining types, the simplest option is to reuse it.
+Since we already have the broad API for defining types, the simplest option is to reuse it.
 We will add an `isExternal` parameter to the MetadataContext.AddType method.
 When set to true, the added type will not be included in the output, but the emitter will know that it exists.
 
-> The API will require us to specify even the bodies of the declared methods, the same as it does for standard definitions.
+> The API requires us to specify even the bodies of the declared methods, the same as it does for standard definitions.
 > It does not make much sense, but it is easier this way.
 > Providing an empty method body is very easy for the user -- create a DefaultExpression of the result type.
 
@@ -416,8 +433,8 @@ C# has a rich set of language features, and it is not possible to express everyt
 We hope that we will be able to fill in the essential missing bits, but it will probably never be complete.
 For this reason, we are going to provide a simple fallback API that allows users to build the ILAst directly or do any post-processing to the ILSpy type system entities.
 
-We are going to introduce a RegisterTypeMod method on the MetadataContext that will register a function to a specified type signature.
-The function will run on the created type object -- a VirtualType.
+We have introduced a RegisterTypeMod method on the MetadataContext that registers a function to a specified type signature.
+The function will run on the created type object -- a VirtualType instance.
 The function is allowed to do anything -- add new symbols, modify the existing ones, remove or hide symbols, etc.
 However, there is the risk of breaking the automatic symbol renaming by adding more symbols that were not expected.
 It is thus recommended to add dummy symbols and then replace them.
