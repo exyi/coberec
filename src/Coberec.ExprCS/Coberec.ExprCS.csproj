@@ -26,7 +26,7 @@
 
   <Target Name="ILSpyUpdateAssemblyInfo" BeforeTargets="BeforeBuild" Inputs="Schema/*.gql" Outputs="Generated/*.cs">
     <PropertyGroup>
-      <UpdateAssemblyInfo>coberec --config Schema/config.json --invertNonNullable Schema/**.gql --outDir Generated --verbose</UpdateAssemblyInfo>
+      <UpdateAssemblyInfo>coberec --config Schema/config.json --invertNonNullable Schema/metadata.gql Schema/expression.gql Schema/composition.gql --outDir Generated --verbose</UpdateAssemblyInfo>
     </PropertyGroup>
     <Exec WorkingDirectory="." Command="$(UpdateAssemblyInfo)" Timeout="60000" />
     <ItemGroup>
