@@ -296,12 +296,12 @@ However, since we own and design the type system, we could add a special functio
 This is nothing new under the sun -- most functional programming languages have a "function type".
 
 There is one more problem with delegates that we can solve using our function types.
-Delegates are basically special objects with an Invoke method matching the signature of the delegate, so our type signature is not going to contain the actual arguments and return type.
+Delegates are basically special objects with Invoke method matching the signature of the delegate, so our type signature is not going to contain the actual arguments and return type.
 Not only we would not be able to validate the arguments of an invocation -- we would not be able to determine result type of the invocation expression.
 For all other expressions, we can do that, and most of the validation logic depends on the [`Expression.Type()` method](https://exyi.cz/coberec_doxygen/da/d1b/classCoberec_1_1ExprCS_1_1Expression.html#aa3966c00e7b5358f7ca116c23a3f0e98).
 
-Including the delegate arguments and return type in the type signature is not even possible -- delegates that return themselves (`delegate A A()`) are perfectly valid in C#.
-Since our types are immutable, it would not be possible to construct such a delegate.
+Including the delegate arguments and return type in the type signature is not possible -- delegates that return themselves (`delegate A A()`) are perfectly valid in C#.
+Since our types are immutable, cyclic references are forbidden, and it would not be possible to construct such a delegate.
 More importantly, we could not even load assemblies with such types into our type system.
 
 ```gql
@@ -398,7 +398,7 @@ Because all references to the renamed symbols are symbolic, and nothing in the e
 
 ## External References
 
-The ExprCS code emitter must know everything about the symbols that are used in the code.
+The ILSpy code emitter must know everything about the symbols that are being used in the code.
 If we want to use external libraries, we must explicitly include them in the project.
 When creating a new MetadataContext, we can use the `references` parameter with a list of paths to referenced libraries.
 
@@ -415,14 +415,14 @@ When set to true, the added type will not be included in the output, but the emi
 > Providing an empty method body is very easy for the user -- create a DefaultExpression of the result type.
 
 This simple addition breaks the fundamental barrier that we could not call the handwritten code from the generated code.
-However, unlike in macro or reflection-based approaches, this connection is still very far from easy-to-use.
+However, unlike in macros or reflection-based approaches, this connection is still far from being easy to use.
 We can not inspect the handwritten code, and we even have to redeclare it.
 
 It may be quite a significant issue of code generation, and resolving it could be a direction for future extension of the project.
 One idea would be to parse the existing C# code to extract the declared symbols from it.
 However, that could be a significant performance cost.
 With version 9, C# should get the Source Generators feature, as we discussed [in the previous chapter](./approaches.md#c-9-source-generators).
-The Source Generators run in the C# compiler, so we would use the metadata from the compilation.
+The Source Generators run in the C# compiler, so we could use the metadata from the compilation.
 
 ## ILSpy Fallback
 
@@ -430,9 +430,9 @@ C# has a rich set of language features, and it is not possible to express everyt
 We hope that we will be able to fill in the essential missing bits, but it will probably never be complete.
 For this reason, we provide a simple fallback API that allows users to build the ILAst directly or do any post-processing to the ILSpy type system entities.
 
-We have introduced a RegisterTypeMod method on the MetadataContext that registers a function to a specified type signature.
-The function will run on the created type object -- a VirtualType instance.
-The function is allowed to do anything -- add new symbols, modify the existing ones, remove or hide symbols, etc.
+We have introduced a RegisterTypeMod method on the MetadataContext.
+It registers a function to a specified type signature which will be executed after the specified type is created.
+The function will get a VirtualType instance and may do any modification -- add new members, modify the existing members, remove or hide them, etc.
 However, there is the risk of breaking the automatic symbol renaming by adding more symbols that were not expected.
 It is thus recommended to add dummy symbols and then replace them.
 
