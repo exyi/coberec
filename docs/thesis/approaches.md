@@ -197,12 +197,12 @@ On the contrary, such misbehaviour will lead to a crash during deserialization o
 > To achieve a relative type safety, the usages would be checked by TypeScript at build.
 
 Note that C# has a `dynamic` keyword, which allows programmers to use C# as a dynamically typed language.
-It supports almost anything we can do with the Javascript Proxy objects.
+It supports almost anything that Javascript Proxy objects can do.
 Yet, in our experience, it not used very widely, since C# programmers do not want to lose their type safety.
-However, many libraries, including one of the most popular JSON (de)serializer, Newtonsoft.Json, supports it -- we can simply declare `dynamic myObject = JObject.Parse(myJson)` and use it as we would in JavaScript (see the [documentation for more details](https://www.newtonsoft.com/json/help/html/QueryJsonDynamic.htm))
+However, many libraries, including one of the most popular JSON (de)serializer, Newtonsoft.Json, supports it -- we can simply declare `dynamic myObject = JObject.Parse(myJson)` and use the object as we would in JavaScript (see the [documentation for more details](https://www.newtonsoft.com/json/help/html/QueryJsonDynamic.htm))
 
 Note that other dynamically typed languages provide similar concepts.
-For brevity we however discuss in detail only Javascript and C#.
+For brevity, we discuss in detail only Javascript and C#.
 
 ## C# 9 Source Generators
 
@@ -363,7 +363,7 @@ public MyClass With(string value)
 ```
 
 This by itself would work well, but only if the project was a class library that itself never calls the `With` method.
-Nevertheless, there is a way -- we introduce the dummy symbol.
+Nevertheless, there is a way -- we introduce a dummy symbol.
 We will add a generic `With<T>(T value)` method to the class, which the C# compiler will use in that project.
 As the author claims in [the blog post](https://mikhail.io/2016/05/tweaking-immutable-objects-with-csharp-and-fody/):
 

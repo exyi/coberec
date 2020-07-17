@@ -67,7 +67,6 @@ citMap = {
 
 footnoteLinkBlacklist = [
     "https://github.com/exyi/coberec/blob/master/src/Coberec.Tests/CSharp/testoutputs/CodeGeneratorTests.ThesisExample.cs",
-    "https://github.com/exyi/coberec/blob/master/docs/graphql-gen.md",
     "https://github.com/exyi/coberec/blob/master/src/Coberec.Tests/CSharp/testoutputs/CodeGeneratorTests.SimpleUnionType.cs",
     "https://exyi.cz/coberec_doxygen/de/d05/classCoberec_1_1ExprCS_1_1TypeSignature.html",
     "https://exyi.cz/coberec_doxygen/d7/d36/classCoberec_1_1ExprCS_1_1MethodSignature.html",

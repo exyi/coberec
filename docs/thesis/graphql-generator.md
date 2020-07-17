@@ -1,6 +1,6 @@
 # C# from GraphQL Schema Generator
 
-To demonstrate the functionality of our code generation library, we have reimplemented a C# code generator using the ExprCS abstraction.
+To demonstrate the functionality of our code generation library, we have reimplemented a C# code generator using the Coberec library.
 It translates a domain model written in GraphQL Schema language into immutable classes.
 The model in GraphQL is very concise while the generator produces quite rich classes with equality, ToString implementation and methods for easier modification of the immutable objects.
 The point of this chapter is not to explain its usage in depth, as there is more detailed [documentation](https://github.com/exyi/coberec/blob/master/docs/graphql-gen.md) on the GraphQL Schema compiler.
@@ -9,9 +9,7 @@ Since we use this code generator to create parts of the Expression and metadata 
 The Expression and metadata are quite broad types, and we want them to be immutable, so we are using this code generator to reduce the amount of boilerplate we had to write.
 On top of the basic generated API, we still provide helper methods to make it easier to create the objects.
 
-To illustrate how the generated API looks, let us show simple GraphQL Schema examples and how they compile to C#.
-
-A simple type with properties `a` and `b`, the `b` is an array and must contain at least one element.
+To illustrate how the generated API looks, let us show simple GraphQL Schema examples and how they compile to C#. Fist, a simple type with properties `a` and `b`, the `b` is an array and must contain at least one element:
 
 ```gql
 type T {
@@ -26,22 +24,22 @@ The important features of the class are:
 * The properties `A` and `B` of types `int` and `ImmutableArray<string>`
 * A constructor `T(int a, ImmutableArray<string> b)`.
 * A more general constructor `T(int a, IEnumerable<string> b)`.
-* Implemented Equals method, GetHashCode method and the `==` and `!=` operators. The types are equal when all properties are equal.
+* Implemented Equals method, GetHashCode method and the `==` and `!=` operators. The types are equal when all properties of their are equal.
 * Implemented ToString method.
-* `With(...)` method that creates a new instance with modified properties. The arguments are all optional, so `x.With(a: 1)` sets `A` and `x.With(b: ...)` sets `B` and `x.With(a: 1, b: ...)` sets both.
+* `With(...)` method that creates a new instance with modified properties. The arguments are all optional, so `x.With(a: 1)` sets `A`, `x.With(b: ...)` sets `B`, and `x.With(a: 1, b: ...)` sets both.
 
 The type validates the constraints when it is created and throws a ValidationErrorException when it is invalid.
-The exception contains a ValidationErrors instance with information on which field was invalid with a proper error message.
+The exception contains a ValidationErrors instance with information on which fields were invalid with proper error messages.
 When there is more than one validation error, all should be present in the list.
 This is convenient in the case of the Expression class as it is often validated with many rules.
 
 The types also contain Create method that returns a `ValidationResult<T>`.
 Instead of throwing the exception, it always returns an object which contains either the created instance or the validation errors.
 In cases when we are not sure about the validity, the `Create` method might be more convenient.
-The `ValidationResult<T>` is a monad implementing `Select` and `SelectMany` methods which allow usage of the [C# query syntax](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/from-clause); similarly as shown on [Mark Seemann blog](https://blog.ploeh.dk/2020/06/29/syntactic-sugar-for-io/).
+The `ValidationResult<T>` is a monad implementing `Select` and `SelectMany` methods which allow usage of the [C# query syntax](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/from-clause); similarly as shown on [Mark Seemann's blog](https://blog.ploeh.dk/2020/06/29/syntactic-sugar-for-io/).
 
 In C#, default argument values are quite limited.
-The default may only be of a primitive type, string or `default(T)` (null for classes, "zeros" for structs).
+The default may only be a primitive type, string or `default(T)` (null for classes, "zeros" for structs).
 This a complication for the `With` method -- we would like to have the current property value as the default; the intended signature would be `With(int a = this.A, ImmutableArray<string> b = this.B)`, but this is not possible in C#.
 As a workaround, we have introduced a `OptParam<T>` type.
 It recognizes two states -- either it has a value of type T, or it has no value; somewhat like the Option or Maybe known from other languages.
@@ -66,7 +64,7 @@ public readonly struct OptParam<T>
 ```
 
 The `default(OptParam<T>)` has `HasValue = false` and the implicitly constructed instance has `HasValue = true`.
-The With method will have the following signature with both parameters optional.
+The With method will have the following signature with both parameters optional:
 
 ```csharp
 public ValidationResult<T> With(
@@ -80,8 +78,8 @@ public ValidationResult<T> With(
 > Furthermore, it would add an edge case where With and constructor behave differently, which could lead to unexpected behaviour.
 
 We also have support for [GraphQL unions](https://graphql.org/learn/schema/#union-types) which are less straightforward to represent in C#.
-We are using inheritance to represent one option of many, but the union types also have helper methods to make creating and processing the unions easier.
-In the ExprCS API, Expression and TypeReferences are unions.
+We are using inheritance to represent one option of many, but the union types also have helper methods to make creating and processing the instances easier.
+In the Coberec API, Expression and TypeReference are unions.
 A simpler example of a generated union may found in the [CodeGeneratorTests.SimpleUnionType.cs](https://github.com/exyi/coberec/blob/master/src/Coberec.Tests/CSharp/testoutputs/CodeGeneratorTests.SimpleUnionType.cs) file.
 
 Apart from the basics like constructors, equality and ToString, we automatically implement some helpers.
@@ -91,7 +89,7 @@ It takes a lambda function for each case of the union, invokes one of them and r
 The principle is similar to the C# switch expression, but Match enforces that all cases are covered.
 For non-exhaustive matching, we recommend using the [switch expression](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/operators/switch-expression).
 
-The GraphQL Schema compiler existed before the Expression API, which is the reason why the Expression API may be generated by from GraphQL.
+The GraphQL Schema compiler existed before the Expression API, which is the reason why the Expression API may be generated from GraphQL.
 Initially, the project was based purely on the ILSpy decompiler.
 By now, it is mostly migrated to the Expression API while some parts still use the ILSpy Fallback API.
 

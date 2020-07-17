@@ -5,15 +5,12 @@ In this chapter, we will go through the design decisions made during the project
 ## `System.Linq.Expressions` Influence
 
 We consider the [Linq Expressions API](https://docs.microsoft.com/en-us/dotnet/api/system.linq.expressions.expression?view=netframework-4.7.2) a very reliable API for emitting the intermediate language at runtime.
-We designed our API to be similar and thus easy to use for developers who are already familiar with Linq Expressions.
+We have designed our API to be similar and thus easy to use for developers who are already familiar with Linq Expressions.
 
-In combination with Reflection Emit, it is possible to emit a .NET assembly by this API.
+In combination with Reflection Emit, it is possible to create a .NET assembly using this API.
 However, we find Reflection Emit harder to use and it has several additional problems.
 In particular, the API depends on reflection, so the referenced symbols of the output assembly must be loaded into the code generator.
-These references may collide with dependencies of the generator and cause reliability issues.
-
-The original project idea was to reimplement the Linq Expressions API for code generation.
-However, we must not depend on reflection to avoid the issues with dependencies, so we have to use a different model of .NET metadata.
+These references may collide with dependencies of the generator itself and cause reliability issues.
 
 We originally intended to reimplement the Linq Expression API for code generation.
 However, to avoid the dependency on .NET reflection a new method of representing metadata [had to be created](./design.md#metadata).
@@ -21,8 +18,8 @@ However, to avoid the dependency on .NET reflection a new method of representing
 ## Expression Based Model
 
 Major similarity to Linq Expressions is that every code fragment is an expression; there are no statements.
-For example, we do not distinguish between `if` statement or `if` expression (the `a ? b : c` ternary operator in C#), we just need a single ConditionalExpression.
-The Coberec library will expand the expressions into a sensible C# form, the generated code will not be necessarily a single expression.
+For example, we do not distinguish between `if` statement or `if` expression (the `a ? b : c` ternary operator in C#), there is only a single ConditionalExpression.
+The Coberec library will expand the expressions into a sensible C# form; the generated code will not be necessarily a single expression.
 
 C# distinguishes between expressions and statements, expressions always return a value (i.e. cannot return `void`) while statements do not.
 To simplify the concept, we represent every code fragment as a generalized expression.
@@ -32,7 +29,7 @@ From that perspective, our code model is similar to F#, Scala or other expressio
 ## Blocks and Variables
 
 We represent blocks and variable definitions a bit differently than Linq Expressions do, to more closely follow the [single responsibility principle](https://en.wikipedia.org/wiki/Single-responsibility_principle) and thus make the types simpler.
-Linq Expressions use one node type ([BlockExpression](https://docs.microsoft.com/en-us/dotnet/api/system.linq.expressions.blockexpression?view=netcore-3.1)) to declare both variables and chain expressions.
+Linq Expressions use a single node type ([BlockExpression](https://docs.microsoft.com/en-us/dotnet/api/system.linq.expressions.blockexpression?view=netcore-3.1)) to declare variables and chain multiple expressions.
 We have separated the two responsibilities into BlockExpression and LetInExpression.
 
 The block expression executes a list of expressions ignoring their results and then returns the `result`.
@@ -410,7 +407,7 @@ It is not possible to add an assembly reference to the same project we are just 
 That will allow us to declare the types we expect to be in the project and register them in the MetadataContext.
 
 Since we already have the broad API for defining types, the simplest option is to reuse it.
-We will add an `isExternal` parameter to the MetadataContext.AddType method.
+We have added an `isExternal` parameter to the MetadataContext.AddType method.
 When set to true, the added type will not be included in the output, but the emitter will know that it exists.
 
 > The API requires us to specify even the bodies of the declared methods, the same as it does for standard definitions.
@@ -431,7 +428,7 @@ The Source Generators run in the C# compiler, so we would use the metadata from 
 
 C# has a rich set of language features, and it is not possible to express everything in our simplified expression model.
 We hope that we will be able to fill in the essential missing bits, but it will probably never be complete.
-For this reason, we are going to provide a simple fallback API that allows users to build the ILAst directly or do any post-processing to the ILSpy type system entities.
+For this reason, we provide a simple fallback API that allows users to build the ILAst directly or do any post-processing to the ILSpy type system entities.
 
 We have introduced a RegisterTypeMod method on the MetadataContext that registers a function to a specified type signature.
 The function will run on the created type object -- a VirtualType instance.

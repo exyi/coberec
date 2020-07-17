@@ -6,8 +6,8 @@ For more complete guides and examples, please see the [documentation](https://gi
 
 ## Hello World
 
-First, we will show a simple program, that creates a program that prints "Hello world!".
-Even though the result is elementary, we will see the boilerplate that is needed to initialize the source code generator.
+First, we will show a simple example, that creates the "Hello world!" program.
+Even though the result is elementary, the example shows the boilerplate that is needed to initialize the Coberec library.
 
 
 ```csharp
@@ -169,7 +169,7 @@ var genericClass = TypeSignature.Class(
     genericParameters: new [] { paramT })
 ```
 
-Interface implementations and base types are not specified in the signature, but the `TypeDef`.
+Interface implementations and base types are not specified in the signature, but in the `TypeDef`.
 The following example shows how to declare a derived class and an interface.
 
 ```csharp
@@ -330,7 +330,7 @@ For getter-only properties, the field is used to assign a value in the construct
 ### Documentation Comments
 
 All member definitions have a `doccomment` field.
-In C#, documentation comments must be valid XML, so the documentation comments in the metadata must conform.
+In C#, documentation comments must be valid XML.
 We can either set the field while we create the definition, or use the `With(doccomment: ...)` method.
 
 ```csharp
