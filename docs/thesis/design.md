@@ -7,18 +7,18 @@ In this chapter, we will go through the design decisions made during the project
 We consider the [Linq Expressions API](https://docs.microsoft.com/en-us/dotnet/api/system.linq.expressions.expression?view=netframework-4.7.2) a very reliable API for emitting the intermediate language at runtime.
 We designed our API to be similar and thus easy to use for developers who are already familiar with Linq Expressions.
 
-In combination with Reflection Emit, it is possible to emit a .NET assembly with it.
+In combination with Reflection Emit, it is possible to emit a .NET assembly by this API.
 However, we find Reflection Emit harder to use and it has several additional problems.
-In particular, the API depends on Reflection, so the referenced symbols of output assembly must be loaded into the code generator.
+In particular, the API depends on reflection, so the referenced symbols of the output assembly must be loaded into the code generator.
 These references may collide with dependencies of the generator and cause reliability issues.
 
 The original project idea was to reimplement the Linq Expressions API for code generation.
-However, we must not depend on Reflection to avoid the issues with dependencies, so we have to use a different model of .NET metadata.
+However, we must not depend on reflection to avoid the issues with dependencies, so we have to use a different model of .NET metadata.
 
 We originally intended to reimplement the Linq Expression API for code generation.
 However, to avoid the dependency on .NET reflection a new method of representing metadata [had to be created](./design.md#metadata).
 
-### Expression Based Model
+## Expression Based Model
 
 Major similarity to Linq Expressions is that every code fragment is an expression; there are no statements.
 For example, we do not distinguish between `if` statement or `if` expression (the `a ? b : c` ternary operator in C#), we just need a single ConditionalExpression.
@@ -46,7 +46,7 @@ type BlockExpression {
 ```
 
 The name of the "variable declaration" is inspired by the `let variable = value in target` syntax from F#, since the expression has the same semantics.
-First, the variable is initialized by the `value` and then `target` is evaluated with the new variable in scope.
+First, the variable is initialized by the `value` and then `target` expression is evaluated with the new variable in scope.
 
 ```gql
 type LetInExpression {
@@ -278,7 +278,7 @@ However, it significantly reduces noises of the user code, so we find it helpful
 > Note that a type parameter may end up filled by another type parameter.
 > When we are declaring a generic type or method, we will be using its generic parameters (instances of GenericParameter) in the symbol references.
 > We can then use the generic parameters in the arguments of other types.
-> The difference between a signature and a reference is similar to the difference between `typeof(List<>)` and `typeof(List<TParam>)` in .NET Reflection.
+> The difference between a signature and a reference is similar to the difference between `typeof(List<>)` and `typeof(List<TParam>)` in .NET reflection.
 > In the second case (similar to reference), the List is not specialized by another parameter `TParam`, not its own parameter `T`.
 
 

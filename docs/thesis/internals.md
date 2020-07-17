@@ -157,7 +157,7 @@ If the source generator produces the same output, the test passes.
 Otherwise, it prints out a diff, and the test fails.
 In the likely case that the output is different but still correct, we can simply stage the new output version in git which accepts the new version.
 
-We have a custom model of metadata, and we offer a function to convert Reflection symbols into our symbols.
+We have a custom model of metadata, and we offer a function to convert reflection symbols into our symbols.
 Since there were several bugs in these helpers, we have implemented tests that check every symbol in the standard library.
 However, they are disabled by default as there were stability issues with different .NET framework versions, and the tests require significant time to run.
 

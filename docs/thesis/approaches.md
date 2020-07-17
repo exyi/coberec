@@ -26,7 +26,7 @@ There are, however, several costs involved:
   We cannot simply look at the code to see why it does something unexpected.
   And the code being executed is hard to debug because it is too generic and not part of the project.
 * **Startup Performance**:
-  Reflection force runtime to load all metadata for types which impose additional startup costs.
+  Reflection forces runtime to load all metadata for types which impose additional startup costs.
 * **Throughput Performance**:
   Invoking methods via reflection is significantly slower than a standard invocation.
   For example, using reflection for serializing an object into JSON would be prohibitively expensive, while creating few instances of the services is probably fine.
@@ -278,13 +278,13 @@ At the time of writing, our project has no support for the Roslyn symbol model, 
 > The generated code prints a list of filenames in the current project.
 > The filename is simply included in the string, so it will break if any file contains a quotation mark (`"`), and the compilation will fail.
 
-It will be very interesting to observe how will this feature affect the .NET community.
-While now, code generation is avoided by many project for its unreliability and clumsiness, we can already see a massive interest in Source Generators on social media.
+It will be very interesting to observe how this feature will affect the .NET community.
+While code generation is currently avoided by many project for its unreliability and clumsiness, we can already see a massive interest in Source Generators on social media.
 
 Unfortunately, it is probably not going to be possible to migrate existing libraries to benefit from code generation.
 Most reflection-based libraries are configured at runtime by initializing it with an "options object".
 When the logic is dynamic, or the code is generated at runtime, this is reasonable -- creating the options in C# is more approachable than learning a specific configuration DSL.
-With compile-time code generation, it is not going to be possible to know what will come at the runtime.
+With compile-time code generation, it is not possible to know what will come at the runtime.
 So, either the generated code will have to be very generic to cover all the possible options, or we will see a revival of separate configuration files.
 
 ## IL Rewriting
@@ -292,8 +292,8 @@ So, either the generated code will have to be very generic to cover all the poss
 Rewriting of the intermediate language is a powerful technique used by many .NET projects.
 The point is to generate the boilerplate after the project is compiled.
 In principle, the transformation may do anything to the compiled binary.
-Although the power of IL rewriting is nearly unlimited, the transform should be reasonable to keep the code understandable.
-Usually, the transformation only do the following:
+Although the power of IL rewriting is nearly unlimited, the transformation should be reasonable to keep the code understandable.
+Usually, the transformation only does the following:
 
 * Overrides optional methods like ToString, GetHashCode and Equals.
   For example, [Fody.Equals](https://github.com/Fody/Equals) implements structural equality boilerplate.
@@ -323,7 +323,7 @@ In the Javascript ecosystem, it is usual to have multiple rewriting steps involv
 The concerns about older versions of the virtual machine and application size are much stronger on the web.
 Still, even in the .NET ecosystem, there is a .NET IL Linker project that does tree shaking to reduce the binary size.
 Such transformations are however a bit out of scope of this work.
-We are slowly getting into the area of compiler optimizations, which may sometimes also help to reduce boilerplate, but it is not the main point.
+We are slowly getting into the area of compiler optimizations, which may sometimes also help reducing boilerplate, but it is not the main point.
 
 The limitation of IL rewriting is that introducing new symbols is quite dubious.
 The problem is that the project compilation runs before the rewriting step.
@@ -369,7 +369,7 @@ As the author claims in [the blog post](https://mikhail.io/2016/05/tweaking-immu
 
 > It is safe to call With methods in the same assembly where the class is defined: the calls get adapted to the real implementation automatically.
 
-![Illustration of the symbol references. Dashed lines are introduced in the rewriting process by Fody.](./IL_rewriting_diagram.svg)
+![Illustration of the symbol references when using Fody.With. Dashed lines are introduced in the rewriting process by Fody.](./IL_rewriting_diagram.svg)
 
 <!-- TODO
 Ten obrazek k foly by asi sel zmensit aby pismenka byly srovnatelne
@@ -402,13 +402,13 @@ Reflection -->
 
 ## Summary
 
-We have discussed many approached used by programers to avoid writing boilerplate code.
+We have discussed many methods used by programers to avoid writing boilerplate code.
 With this background we can identify the following advantages of the code generation approach used by Coberec:
 
 **Transparency** -- The generated code can be easily read and debugged.
-Naturally this depends on the output quality of the generator and complexity of the generated program.
+Naturally, this point depends on the output quality of the generator and the complexity of the generated program.
 We consider this one of the main strengths, so we put a lot of focus on the quality of the generated code.
-The alternatives usually do not come even close the transparency we can offer with source generation.
+The alternatives usually do not come even close to the transparency we can offer with source generation.
 Even with D `mixin` and presumably C# 9 Source Generators, one can not directly open the generated source file in debugger.
 
 **Runtime Performance** -- Source generation does not need any runtime initialization and we can generate fairly specialized and optimized code for the specific task.
@@ -418,11 +418,11 @@ Macros and IL rewriting also achieve similar performance.
 <!-- TODO more specific that nearly -->
 **API Creation** -- Code generation is nearly the only discussed approach that can introduce new API symbols.
 While dynamic languages can introduce new symbols at runtime, they do not offer type safety and IDEs can not guide the user through autocompletion.
-However, it is exactly when we generate large APIs that we hit a range edge cases -- the symbols must get valid names, there must not be any collisions, we must reference other symbols correctly, etc.
+However, as soon as we start generating large APIs, we hit a range of edge cases -- the symbols must get valid names, there must not be any collisions, we must reference other symbols correctly, etc.
 
-**Portable Principle** -- In principle, we can generate code in any text-based programming language.
-In this work, we focus on C#, but we could have a similar project for any programming language.
-By contract, macros and reflection-based tricks are mostly focused on a single platform -- there is not a way to create similar API for C# and for, let us say, Python.
+**Portable Principle** -- In principle, we can generate any text-based programming language.
+In this work, we focus on C#, but we could have a similar project for any language.
+By contract, macros and reflection-based tricks are mostly focused on a single platform -- there is no way to create a similar API for C# and for, let us say, Python.
 However, writing a robust code generator is not as easy, so we only claim that the principle is portable.
 Most of the work done on a code generator is unfortunately not going to be portable.
 In theory, we could design a common abstraction, but there would be enormous amount of compromises to make.
@@ -436,6 +436,6 @@ It is most problematic for client-side web applications, where the size of the c
 Not only does it make it slower, it also complicates the process and makes it less reliable.
 
 **Reliability** -- Especially when we generate a large API, the number of edge cases the code generator may hit is vast.
-It is the issue we want to tackle by the Coberec library -- create an abstraction that will make it possible to write a reliable code generator.
+This is the issue we want to tackle by the Coberec library -- create an abstraction that will make it possible to write a reliable code generator.
 
 Next: [Design](./design.md)

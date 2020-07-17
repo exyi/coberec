@@ -7,11 +7,12 @@ While the programming practices are likely going to reduce the maintenance cost 
 the boilerplate code often has a high maintenance cost -
 for example, multiple [symbols (i.e. methods, properties or types)](https://en.wikipedia.org/wiki/Symbol_%28programming%29) might have to be renamed instead of a single one.
 
-Many cures have been invented to the issue with boilerplate code, as it is a common software affliction.
+Many cures have been invented to the issue with boilerplate code, as it is a common software problem.
 However, there is no silver bullet and thus a lot of room for further development.
 
 A generic approach is to automatically generate the code that is tedious to write manually.
-This involves implementing programs that emit the desired code, but often, even a simple script can save a significant amount of time.
+This involves implementing programs that emit the desired code.
+Often, even a simple script can save a significant amount of time.
 In more complex scenarios, when the code is generated from complex set of metadata such as OpenAPI specification, the code generators can get quite complex.
 Build-time code generation usually does not offer very good integration with the remaining code, since the generator does not have the knowledge of the existing symbols.
 For example, code generation is suitable for API clients, but it would be hard to apply for generating getters and setters for a class.
@@ -47,11 +48,11 @@ This approach works very well in simple cases, when the output space is fairly l
 For example, a program to pre-generate a list of prime numbers for a hash function could be just a few lines in any reasonable scripting language.
 
 As the space of possible outputs rises, a lot of complications may appear.
-When the symbol names are variable, we have to sanitize them, since our target language likely does not allow any string to be an identifier.
-Then, we have to make sure that there are no name collisions after the sanitization.
-When referencing existing symbols we have to be extra careful to really reference the expected symbol, and not a different one with the same name.
+For example, the code generator will need to sanitize symbol names, since in most languages not all strings can be used as an identifier.
+Then, the generator has to make sure that there are no name collisions after the sanitization.
+When referencing existing symbols it has to be extra careful to really reference the expected symbol, and not a different one with the same name.
 In C#, everything could be referenced by a full name to avoid this problem.
-In general, being overly explicit prevents issues, but it afflicts readability of the generated code.
+In general, being overly explicit prevents issues, but it hampers readability of the generated code.
 
 The goal of our project is to provide an abstraction for source code generators that will help to solve these issues.
 The user of the API will provide a semantic model of the desired code and the *Coberec* library will translate it to a matching C# code.

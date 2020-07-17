@@ -11,7 +11,7 @@ Even though the result is elementary, we will see the boilerplate that is needed
 
 
 ```csharp
-// First, we declare the symbol signatures:
+// First, declare symbol signatures:
 
 // namespace MyApp.HelloWorld {
 var ns = NamespaceSignature.Parse("MyApp.HelloWorld");
@@ -27,10 +27,10 @@ var mainMethod = MethodSignature.Static(
 var writeLineRef = MethodReference.FromLambda(
     () => Console.WriteLine(""));
 
-// then we build the actual expression tree
+// then, build the actual expression tree
 var body = Expression.Block(
     new [] {
-        // we invoke the WriteLine method
+        // invoke the WriteLine method
         Expression.StaticMethodCall(
             writeLineRef,
             Expression.Constant("Hello World!")
@@ -40,7 +40,7 @@ var body = Expression.Block(
     result: Expression.Constant(0)
 );
 
-// after all, we just add the method with the body into the type
+// after all, just add the method with the body into the type
 var type = TypeDef.Empty(programType).AddMember(
     MethodDef.Create(mainMethod, body)
 );
@@ -52,8 +52,8 @@ cx.AddType(type);
 var csharp = cx.EmitToString();
 ```
 
-First, we need to create the signatures of the symbols we plan to declare, and we need to create a MethodReference to the `Console.WriteLine` method.
-For convenience, we can create the reference from a C# lambda function -- otherwise, we could create it from a MethodInfo (from Reflection) or find the method in the MetadataContext.
+First, it is necessary to create the signatures of the symbols we plan to declare, and we need to create a MethodReference to the `Console.WriteLine` method.
+For convenience, we can create the reference from a C# lambda function -- otherwise, we could create it from a MethodInfo (from reflection) or find the method in the MetadataContext.
 The method body is fairly simple, we only call the method and return 0, so we create a block with the two expressions.
 
 To format it into a string, we need a [MetadataContext](./design.md#metadata-context) -- the class that holds information about all symbols in the referenced assemblies and the symbols we have declared.
@@ -135,7 +135,7 @@ More detailed documentation is available as an attachment or [on the web](https:
 ## Metadata Definitions
 
 The second aspect of C# code is the types, methods, properties and fields.
-We have designed a broad API for defining symbols in the rich .NET type system.
+We have a broad API for defining symbols in the rich .NET type system.
 
 To declare a namespace, we call `NamespaceSignature.​Parse(​"MyNamespace")`.
 
