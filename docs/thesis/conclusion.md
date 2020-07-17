@@ -5,16 +5,16 @@ It offers an [expression based API for modeling the resulting code](./API-overvi
 
 The tool is aiming at generating *COrrect, REadable and BEautiful Code*, with priority on the correctness -- thus the name Coberec.
 The C# code emitter is based on the ILSpy decompiler, which makes sure that it produces readable code that always represents what was specified in the API.
-C# is a complex language, and it would be tough to accomplish the goals without using ILSpy's backend.
+C# is a complex language, and it would be tough to accomplish our goals without using ILSpy's backend.
 
 We demonstrated use of the code generation library by implementing the [GraphQL Schema compiler](./graphql-generator.md).
 This compiler is used in the project itself and thus well tested.
-We can be quite sure that the library actually works and that the API is not painful to use.
+We are confident that the library works well and that the API is not painful to use.
 
 The GraphQL Schema compiler creates a significant number of symbols that may collide with each other.
 It itself also does not contain any logic to prevent the collisions, it depends solely on the logic provided by the [abstraction](./design.md#symbol-renaming).
 We also have quite an extensive test suite for the name collisions, so this part of the project seems to be quite dependable.
-On the other hand, it does not stress the expression translation too much -- all generated methods are fairly simple.
+On the other hand, the GraphQL compiler does not stress the expression translation too much -- all generated methods are fairly simple.
 
 ## Future Work
 
