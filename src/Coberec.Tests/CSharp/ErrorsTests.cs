@@ -10,7 +10,7 @@ namespace Coberec.Tests.CSharp
 {
     public class ErrorsTests
     {
-        CheckTestOutput.CheckTestOutput check = new CheckTestOutput.CheckTestOutput("testoutputs");
+        OutputChecker check = new OutputChecker("testoutputs");
         public static EmitSettings DefaultSettings = CodeGeneratorTests.DefaultSettings.With(fallbackToStringType: false);
 
         public string GetCompilationErrors(string code, EmitSettings settings = null)

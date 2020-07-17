@@ -10,7 +10,7 @@ namespace Coberec.Tests
 {
     public class SampleTests
     {
-        CheckTestOutput.CheckTestOutput check = new CheckTestOutput.CheckTestOutput("testoutputs");
+        OutputChecker check = new OutputChecker("testoutputs");
         [Fact]
         public void ObjectSerialization()
         {

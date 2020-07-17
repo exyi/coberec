@@ -23,7 +23,7 @@ namespace Coberec.Tests.CSharp
 {
     public class CodeGeneratorTests
     {
-        CheckTestOutput.CheckTestOutput check = new CheckTestOutput.CheckTestOutput("testoutputs");
+        OutputChecker check = new OutputChecker("testoutputs");
         public CodeGeneratorTests()
         {
             Arb.Register(typeof(TestGens.MyArbs));
