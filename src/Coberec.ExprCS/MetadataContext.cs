@@ -410,8 +410,8 @@ namespace Coberec.ExprCS
         {
             CommitWaitingTypes();
             var s = new DecompilerSettings(LanguageVersion.Latest);
-            s.CSharpFormattingOptions.AutoPropertyFormatting = PropertyFormatting.ForceOneLine;
-            s.CSharpFormattingOptions.PropertyBraceStyle = BraceStyle.DoNotChange;
+            s.CSharpFormattingOptions.AutoPropertyFormatting = PropertyFormatting.SingleLine;
+            s.CSharpFormattingOptions.PropertyBraceStyle = BraceStyle.EndOfLine;
 
             var emitter = new CSharpEmitter(this.hackedCompilation, s, this.Settings.EmitPartialClasses);
             emitter.DocumentationProvider = new FakeDocsProvider();

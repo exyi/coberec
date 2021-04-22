@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Memory" Version="4.5.3" />
+    <PackageReference Include="System.Memory" Version="4.5.4" />
     <PackageReference Include="XUnit.Assert" Version="2.4.1" />
     <ProjectReference Include="../Coberec.CoreLib/Coberec.CoreLib.csproj" />
     <ProjectReference Include="..\..\deps\ILSpy\ICSharpCode.Decompiler\ICSharpCode.Decompiler.csproj" />

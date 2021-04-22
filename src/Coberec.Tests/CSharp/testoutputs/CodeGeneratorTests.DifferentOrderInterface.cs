@@ -1,6 +1,6 @@
-using Coberec.CoreLib;
 using System;
 using System.Collections.Immutable;
+using Coberec.CoreLib;
 
 namespace GeneratedProject.ModelNamespace
 {
@@ -27,10 +27,7 @@ namespace GeneratedProject.ModelNamespace
 
 		public FmtToken Format()
 		{
-			return FmtToken.Concat(ImmutableArray.Create((object)"a {}"), new string[1]
-			{
-				""
-			});
+			return FmtToken.Concat(ImmutableArray.Create((object)"a {}"), new string[1] { "" });
 		}
 
 		object ITraversableObject.GetValue(int propIndex)

@@ -2,9 +2,7 @@ namespace MyNamespace
 {
 	public interface Base
 	{
-		bool P1 {
-			get;
-		}
+		bool P1 { get; }
 
 		object M1();
 

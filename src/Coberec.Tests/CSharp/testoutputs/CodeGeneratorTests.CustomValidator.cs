@@ -1,14 +1,12 @@
-using Coberec.CoreLib;
 using System;
 using System.Collections.Immutable;
+using Coberec.CoreLib;
 
 namespace GeneratedProject.ModelNamespace
 {
 	public sealed class CustomValidatorTest : ITokenFormatable, ITraversableObject, IEquatable<CustomValidatorTest>
 	{
-		public string F1 {
-			get;
-		}
+		public string F1 { get; }
 
 		ImmutableArray<string> ITraversableObject.Properties => ImmutableArray.Create("f1");
 
@@ -49,12 +47,7 @@ namespace GeneratedProject.ModelNamespace
 
 		public FmtToken Format()
 		{
-			return FmtToken.Concat(ImmutableArray.Create((object)"CustomValidatorTest {f1 = ", (object)F1, (object)"}"), new string[3]
-			{
-				"",
-				"f1",
-				""
-			});
+			return FmtToken.Concat(ImmutableArray.Create((object)"CustomValidatorTest {f1 = ", (object)F1, (object)"}"), new string[3] { "", "f1", "" });
 		}
 
 		object ITraversableObject.GetValue(int propIndex)

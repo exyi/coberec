@@ -110,6 +110,8 @@ namespace Coberec.CSharpGen.TypeSystem
 
         public Nullability NullableContext => Nullability.Oblivious; // TODO: nullability
 
+        public bool IsRecord { get; set; } // TODO: records
+
         public IType AcceptVisitor(TypeVisitor visitor)
         {
             return visitor.VisitTypeDefinition(this);

@@ -11,11 +11,7 @@ namespace NS
 	{
 		public static bool[] M()
 		{
-			return new bool[2]
-			{
-				true,
-				false
-			};
+			return new bool[2] { true, false };
 		}
 	}
 }

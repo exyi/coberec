@@ -1,36 +1,26 @@
-using Coberec.CoreLib;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using Coberec.CoreLib;
 
 namespace GeneratedProject.ModelNamespace
 {
 	public interface Interface1
 	{
-		ImmutableArray<string> Field543 {
-			get;
-		}
+		ImmutableArray<string> Field543 { get; }
 
-		ImmutableArray<int> SomeName {
-			get;
-		}
+		ImmutableArray<int> SomeName { get; }
 
 		ValidationResult<Interface1> With(ImmutableArray<string> field543, ImmutableArray<int> someName);
 	}
 	public sealed class Test123 : Interface1, ITokenFormatable, ITraversableObject, IEquatable<Test123>
 	{
-		public ImmutableArray<string> Field543 {
-			get;
-		}
+		public ImmutableArray<string> Field543 { get; }
 
-		public ImmutableArray<int> SomeName {
-			get;
-		}
+		public ImmutableArray<int> SomeName { get; }
 
-		public int? AbcSS {
-			get;
-		}
+		public int? AbcSS { get; }
 
 		ImmutableArray<string> ITraversableObject.Properties => ImmutableArray.Create("Field543", "someName", "abcSS");
 
@@ -92,16 +82,7 @@ namespace GeneratedProject.ModelNamespace
 				", abcSS = ",
 				AbcSS,
 				"}"
-			}), new string[7]
-			{
-				"",
-				"Field543",
-				"",
-				"someName",
-				"",
-				"abcSS",
-				""
-			});
+			}), new string[7] { "", "Field543", "", "someName", "", "abcSS", "" });
 		}
 
 		object ITraversableObject.GetValue(int propIndex)

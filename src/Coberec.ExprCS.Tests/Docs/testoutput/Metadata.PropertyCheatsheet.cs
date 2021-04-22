@@ -32,9 +32,7 @@ namespace MyNamespace
 			}
 		}
 
-		public abstract int AbstractG {
-			get;
-		}
+		public abstract int AbstractG { get; }
 	}
 }
 

@@ -1,13 +1,11 @@
-using Coberec.CoreLib;
 using System;
+using Coberec.CoreLib;
 
 namespace GeneratedProject.ModelNamespace
 {
 	public sealed class Equals2 : IEquatable<Equals2>
 	{
-		public string Value {
-			get;
-		}
+		public string Value { get; }
 
 		private Equals2(NoNeedForValidationSentinel _, string value)
 		{

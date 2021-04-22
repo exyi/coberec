@@ -464,7 +464,7 @@ namespace Coberec.ExprCS.CodeTranslation
             var target = this.TranslateExpression(e.Target);
             var value = this.TranslateExpression(e.Value);
 
-            var (args_r, args) = StatementBlock.CombineInstr(target, value);
+            var (args_r, args) = StatementBlock.CombineInstr(true, target, value);
 
             var type = Assert.IsType<TS.ByReferenceType>(target.Type).ElementType;
 

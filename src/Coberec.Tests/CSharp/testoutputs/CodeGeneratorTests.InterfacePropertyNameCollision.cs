@@ -1,22 +1,18 @@
-using Coberec.CoreLib;
 using System;
 using System.Collections.Immutable;
+using Coberec.CoreLib;
 
 namespace GeneratedProject.ModelNamespace
 {
 	public interface B
 	{
-		string A {
-			get;
-		}
+		string A { get; }
 
 		ValidationResult<B> With(string a);
 	}
 	public sealed class A : B, ITokenFormatable, ITraversableObject, IEquatable<A>
 	{
-		public string A2 {
-			get;
-		}
+		public string A2 { get; }
 
 		string B.A => A2;
 
@@ -53,12 +49,7 @@ namespace GeneratedProject.ModelNamespace
 
 		public FmtToken Format()
 		{
-			return FmtToken.Concat(ImmutableArray.Create((object)"a {a = ", (object)A2, (object)"}"), new string[3]
-			{
-				"",
-				"a",
-				""
-			});
+			return FmtToken.Concat(ImmutableArray.Create((object)"a {a = ", (object)A2, (object)"}"), new string[3] { "", "a", "" });
 		}
 
 		object ITraversableObject.GetValue(int propIndex)

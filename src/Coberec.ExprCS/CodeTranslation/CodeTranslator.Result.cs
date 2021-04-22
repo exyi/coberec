@@ -135,9 +135,11 @@ namespace Coberec.ExprCS.CodeTranslation
             /// <summary> Concatenates the effects of the specified <paramref name="blocks" />. The result values are returned separate. </summary>
             public static (StatementBlock effect, ImmutableArray<ILInstruction> results) CombineInstr(IEnumerable<StatementBlock> blocks) => CombineInstr(blocks.ToArray());
             /// <summary> Concatenates the effects of the specified <paramref name="blocks" />. The result values are returned separate. </summary>
-            public static (StatementBlock effect, ImmutableArray<ILInstruction> results) CombineInstr(params StatementBlock[] blocks)
+            public static (StatementBlock effect, ImmutableArray<ILInstruction> results) CombineInstr(params StatementBlock[] blocks) =>
+                CombineInstr(false, blocks);
+            public static (StatementBlock effect, ImmutableArray<ILInstruction> results) CombineInstr(bool forceIntoVars, params StatementBlock[] blocks)
             {
-                bool hasEmptyBody = true;
+                bool hasEmptyBody = !forceIntoVars;
                 foreach (var b in blocks)
                 {
                     Assert.False(b.IsVoid);

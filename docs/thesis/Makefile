@@ -1,6 +1,7 @@
 export TEXINPUTS=tex//:
 
 all: abstract-cs-core.tex abstract-core.tex IL_rewriting_diagram.pdf thesis.pdf abstract.pdf abstract-cs.pdf
+.PHONY: abstract-cs.pdf abstract.pdf
 
 # LaTeX must be run multiple times to get references right
 thesis.pdf: thesis.tex $(wildcard *.tex) bibliography.bib thesis.xmpdata $(wildcard *md)
@@ -21,6 +22,7 @@ abstract-cs-core.tex:
 
 abstract.pdf: abstract.tex abstract.xmpdata
 	pdflatex $<
+
 
 abstract-cs.pdf: abstract-cs.tex abstract-cs.xmpdata
 	pdflatex $<

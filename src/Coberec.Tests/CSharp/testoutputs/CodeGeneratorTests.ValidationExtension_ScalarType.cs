@@ -1,13 +1,11 @@
-using Coberec.CoreLib;
 using System;
+using Coberec.CoreLib;
 
 namespace GeneratedProject.ModelNamespace
 {
 	public sealed partial class Scalar123 : IEquatable<Scalar123>
 	{
-		public string Value {
-			get;
-		}
+		public string Value { get; }
 
 		private Scalar123(NoNeedForValidationSentinel _, string value)
 		{

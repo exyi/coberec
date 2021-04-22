@@ -1,39 +1,25 @@
-using Coberec.CoreLib;
 using System;
 using System.Collections;
 using System.Collections.Immutable;
+using Coberec.CoreLib;
 
 namespace GeneratedProject.ModelNamespace
 {
 	public sealed class Composite123 : ITokenFormatable, ITraversableObject, IEquatable<Composite123>
 	{
-		public string StringF {
-			get;
-		}
+		public string StringF { get; }
 
-		public string NullableStringF {
-			get;
-		}
+		public string NullableStringF { get; }
 
-		public int? NullableIntF {
-			get;
-		}
+		public int? NullableIntF { get; }
 
-		public int? IntF {
-			get;
-		}
+		public int? IntF { get; }
 
-		public double FloatF {
-			get;
-		}
+		public double FloatF { get; }
 
-		public ImmutableArray<string>? NullListF {
-			get;
-		}
+		public ImmutableArray<string>? NullListF { get; }
 
-		public Composite123 ThisF {
-			get;
-		}
+		public Composite123 ThisF { get; }
 
 		ImmutableArray<string> ITraversableObject.Properties => ImmutableArray.Create<string>("StringF", "NullableStringF", "NullableIntF", "IntF", "FloatF", "NullListF", "ThisF");
 
@@ -93,21 +79,8 @@ namespace GeneratedProject.ModelNamespace
 				"}"
 			}), new string[15]
 			{
-				"",
-				"StringF",
-				"",
-				"NullableStringF",
-				"",
-				"NullableIntF",
-				"",
-				"IntF",
-				"",
-				"FloatF",
-				"",
-				"NullListF",
-				"",
-				"ThisF",
-				""
+				"", "StringF", "", "NullableStringF", "", "NullableIntF", "", "IntF", "", "FloatF",
+				"", "NullListF", "", "ThisF", ""
 			});
 		}
 

@@ -7,9 +7,7 @@ namespace MyNamespace
 		internal short Field;
 
 		/// <summary> My property </summary>
-		public string A {
-			get;
-		}
+		public string A { get; }
 	}
 }
 

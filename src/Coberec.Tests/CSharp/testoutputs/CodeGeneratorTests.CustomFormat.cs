@@ -1,14 +1,12 @@
-using Coberec.CoreLib;
 using System;
 using System.Collections.Immutable;
+using Coberec.CoreLib;
 
 namespace GeneratedProject.ModelNamespace
 {
 	public sealed class A : ITokenFormatable, ITraversableObject, IEquatable<A>
 	{
-		public string H {
-			get;
-		}
+		public string H { get; }
 
 		ImmutableArray<string> ITraversableObject.Properties => ImmutableArray.Create("h");
 

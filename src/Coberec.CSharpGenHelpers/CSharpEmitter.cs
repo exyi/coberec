@@ -47,6 +47,7 @@ using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.CSharp;
 using Coberec.CSharpGen.TypeSystem;
 using System.Threading.Tasks;
+using ICSharpCode.Decompiler.CSharp.ProjectDecompiler;
 
 namespace Coberec.CSharpGen.Emit
 {
@@ -67,8 +68,10 @@ namespace Coberec.CSharpGen.Emit
         List<IILTransform> ilTransforms = CSharpDecompiler.GetILTransforms()
             // .Where(t => t.GetType().FullName != "ICSharpCode.Decompiler.IL.Transforms.SplitVariables")
             // .Where(t => t.GetType().FullName != "ICSharpCode.Decompiler.IL.Transforms.ILInlining")
+            .Where(t => t.GetType().FullName != "ICSharpCode.Decompiler.IL.Transforms.DelegateConstruction")
             .Where(t => t.GetType().FullName != "ICSharpCode.Decompiler.IL.ControlFlow.YieldReturnDecompiler")
             .Where(t => t.GetType().FullName != "ICSharpCode.Decompiler.IL.Transforms.LocalFunctionDecompiler")
+            .Where(t => t.GetType().FullName != "ICSharpCode.Decompiler.IL.Transforms.TransformDisplayClassUsage")
             .ToList();
 
         List<IAstTransform> astTransforms = CSharpDecompiler.GetAstTransforms();
@@ -1021,7 +1024,7 @@ namespace Coberec.CSharpGen.Emit
                 if (localSettings.DecompileMemberBodies)
                 {
                     AddDefinesForConditionalAttributes(function, decompileRun);
-                    var statementBuilder = new StatementBuilder((IDecompilerTypeSystem)typeSystem, decompilationContext, function, localSettings, CancellationToken);
+                    var statementBuilder = new StatementBuilder((IDecompilerTypeSystem)typeSystem, decompilationContext, function, localSettings, decompileRun, CancellationToken);
                     body = statementBuilder.ConvertAsBlock(function.Body);
 
                     Comment prev = null;
@@ -1128,7 +1131,7 @@ namespace Coberec.CSharpGen.Emit
                             && initValue >= 0 && (decompilationContext.CurrentTypeDefinition.HasAttribute(KnownAttribute.Flags)
                                 || (initValue > 9 && (unchecked(initValue & (initValue - 1)) == 0 || unchecked(initValue & (initValue + 1)) == 0))))
                         {
-                            primitive.SetValue(initValue, $"0x{initValue:X}");
+                            primitive.Format = LiteralFormat.HexadecimalNumber;
                         }
                         enumDec.Attributes.AddRange(field.GetAttributes().Select(a => new AttributeSection(typeSystemAstBuilder.ConvertAttribute(a))));
                         enumDec.AddAnnotation(new MemberResolveResult(null, field));

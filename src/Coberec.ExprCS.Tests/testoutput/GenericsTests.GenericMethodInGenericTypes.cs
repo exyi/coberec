@@ -12,10 +12,7 @@ namespace MyNamespace
 			}
 		}
 
-		public T1 A {
-			get;
-			set;
-		}
+		public T1 A { get; set; }
 
 		public MyType<TResult> Map<TResult>(Func<T1, TResult> func)
 		{

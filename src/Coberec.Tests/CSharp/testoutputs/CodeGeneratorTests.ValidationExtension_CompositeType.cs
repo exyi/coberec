@@ -1,18 +1,14 @@
-using Coberec.CoreLib;
 using System;
 using System.Collections.Immutable;
+using Coberec.CoreLib;
 
 namespace GeneratedProject.ModelNamespace
 {
 	public sealed partial class Composite123 : ITokenFormatable, ITraversableObject, IEquatable<Composite123>
 	{
-		public string Field543 {
-			get;
-		}
+		public string Field543 { get; }
 
-		public int AbcSS {
-			get;
-		}
+		public int AbcSS { get; }
 
 		ImmutableArray<string> ITraversableObject.Properties => ImmutableArray.Create("Field543", "abcSS");
 
@@ -58,21 +54,7 @@ namespace GeneratedProject.ModelNamespace
 
 		public FmtToken Format()
 		{
-			return FmtToken.Concat(ImmutableArray.Create(new object[5]
-			{
-				"Composite123 {Field543 = ",
-				Field543,
-				", abcSS = ",
-				AbcSS,
-				"}"
-			}), new string[5]
-			{
-				"",
-				"Field543",
-				"",
-				"abcSS",
-				""
-			});
+			return FmtToken.Concat(ImmutableArray.Create(new object[5] { "Composite123 {Field543 = ", Field543, ", abcSS = ", AbcSS, "}" }), new string[5] { "", "Field543", "", "abcSS", "" });
 		}
 
 		object ITraversableObject.GetValue(int propIndex)

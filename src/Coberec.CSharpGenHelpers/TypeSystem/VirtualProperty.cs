@@ -105,6 +105,8 @@ namespace Coberec.CSharpGen.TypeSystem
 
         public bool IsHidden { get; }
 
+        public bool ReturnTypeIsRefReadOnly => false;
+
         public bool Equals(IMember obj, TypeVisitor typeNormalization) =>
             this.Name == obj.Name &&
             this.DeclaringType.AcceptVisitor(typeNormalization).Equals(

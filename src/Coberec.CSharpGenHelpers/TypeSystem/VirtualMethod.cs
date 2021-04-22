@@ -155,6 +155,8 @@ namespace Coberec.CSharpGen.TypeSystem
 
         public string Doccomment { get; }
 
+        public bool IsInitOnly => false;
+
         public ILFunction GetBody()
         {
             return BodyFactory?.Invoke();

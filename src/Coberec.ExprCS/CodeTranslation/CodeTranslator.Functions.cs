@@ -78,7 +78,7 @@ namespace Coberec.ExprCS.CodeTranslation
             var bodyC = this.BuildBContainer(bodyR);
 
             var fn = ILAstFactory.CreateFunction(method, bodyC, function.Args.Select(a => this.Parameters[a.Id]), functionKind: ILFunctionKind.LocalFunction);
-            fn.ReducedMethod = new TS.Implementation.LocalFunctionMethod(method, numberOfCompilerGeneratedParameters: 0, numberOfCompilerGeneratedTypeParameters: 0);
+            fn.ReducedMethod = new TS.Implementation.LocalFunctionMethod(method, variable.Name, false, numberOfCompilerGeneratedParameters: 0, numberOfCompilerGeneratedTypeParameters: 0);
 
             foreach (var p in function.Args)
                 this.Parameters.Remove(p.Id);
@@ -172,7 +172,8 @@ namespace Coberec.ExprCS.CodeTranslation
             var targetVar = ParameterExpression.Create(e.Value.Type(), "convertedFunction");
             var ilVar = new ILVariable(VariableKind.StackSlot, target.Type);
             // hack: we add the function to a temporary function so the lambda does not take ownership of it.
-            new ILFunction(null, 10000, new ICSharpCode.Decompiler.TypeSystem.GenericContext(), new BlockContainer(), ILFunctionKind.Delegate).Variables.Add(ilVar);
+            var fakeMethod = new VirtualMethod(this.GeneratedMethod.DeclaringTypeDefinition, TS.Accessibility.Private, "<>sdsdd", new VirtualParameter[0], ilVar.Type);
+            new ILFunction(fakeMethod, 10000, new ICSharpCode.Decompiler.TypeSystem.GenericContext(), new BlockContainer(), ILFunctionKind.Delegate).Variables.Add(ilVar);
             this.Parameters.Add(targetVar.Id, ilVar);
             var args = fromFnType.Params.EagerSelect(p => ParameterExpression.Create(p.Type, p.Name));
             var newFunction = TranslateFunction(new FunctionExpression(fromFnType.Params, args, targetVar.Read().FunctionConvert(fromFnType).Invoke(args.EagerSelect(a => a.Read()))));
