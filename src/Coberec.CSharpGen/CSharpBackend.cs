@@ -1,27 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Loader;
-using ICSharpCode.Decompiler.IL;
-using IL = ICSharpCode.Decompiler.IL;
-using ICSharpCode.Decompiler.Metadata;
 using ICSharpCode.Decompiler.TypeSystem;
-using ICSharpCode.Decompiler.TypeSystem.Implementation;
 using Coberec.CSharpGen.TypeSystem;
-using System.Diagnostics;
-using ICSharpCode.Decompiler.CSharp;
-using ICSharpCode.Decompiler;
 using Coberec.CSharpGen.Emit;
-using System.Linq.Expressions;
-using System.Reflection;
-using System.Globalization;
-using System.Text;
 using Coberec.MetaSchema;
 using System.Collections.Immutable;
-using ICSharpCode.Decompiler.CSharp.OutputVisitor;
 using Coberec.CoreLib;
-using System.Reflection.PortableExecutable;
-using E=Coberec.ExprCS;
+using Coberec.Utils;
+using E = Coberec.ExprCS;
 
 namespace Coberec.CSharpGen
 {

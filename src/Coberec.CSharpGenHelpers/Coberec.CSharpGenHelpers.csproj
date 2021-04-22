@@ -9,6 +9,7 @@
     <!-- <ProjectReference Include="../Coberec.CLI/Coberec.CLI.csproj" ReferenceOutputAssembly="false" PrivateAssets="All" /> -->
     <ProjectReference Include="../Coberec.CoreLib/Coberec.CoreLib.csproj" />
     <ProjectReference Include="../../deps/ILSpy/ICSharpCode.Decompiler/ICSharpCode.Decompiler.csproj" />
+    <ProjectReference Include="..\Coberec.CodeModel\Coberec.CodeModel.csproj" />
 
     <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
   </ItemGroup>

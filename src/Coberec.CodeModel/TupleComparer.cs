@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Coberec.CSharpGen
+namespace Coberec.Utils
 {
     public class TupleComparer<T1, T2> : IEqualityComparer<(T1, T2)>
     {

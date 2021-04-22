@@ -7,6 +7,7 @@ using ICSharpCode.Decompiler.IL;
 using ICSharpCode.Decompiler.TypeSystem;
 using ICSharpCode.Decompiler.Util;
 using Xunit;
+using Coberec.Utils;
 
 namespace Coberec.ExprCS.CodeTranslation
 {

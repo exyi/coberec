@@ -9,7 +9,7 @@ namespace Coberec.ExprCS
     {
         /// <summary> Converts the function to a matching delegate, if possible (returns null otherwise). </summary>
         /// <param name="cx">If specified, tries to find the matching delegate in this MetadataContext. If null, uses only standard delegates. </param>
-        public TypeReference TryGetDelegate(MetadataContext cx = null)
+        public TypeReference TryGetDelegate()
         {
             // TODO: weird delegates (ref parameters, ...), many many arguments
             if (this.ResultType == TypeSignature.Void)

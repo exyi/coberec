@@ -4,7 +4,6 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>preview</LangVersion>
 
-    <DefineConstants>$(DefineConstants);ExposeILSpy</DefineConstants>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CS1591;CS1573</NoWarn>
   </PropertyGroup>
@@ -16,9 +15,20 @@
     <ProjectReference Include="..\..\deps\ILSpy\ICSharpCode.Decompiler\ICSharpCode.Decompiler.csproj" />
 
     <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
-
-    <ProjectReference Include="..\Coberec.CSharpGenHelpers\Coberec.CSharpGenHelpers.csproj" />
-    <ProjectReference Include="..\Coberec.CodeModel\Coberec.CodeModel.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Generated/*.cs" />
+  </ItemGroup>
+
+  <Target Name="ILSpyUpdateAssemblyInfo" BeforeTargets="BeforeBuild" Inputs="Schema/*.gql" Outputs="Generated/*.cs">
+    <PropertyGroup>
+      <UpdateAssemblyInfo>coberec --config Schema/config.json --invertNonNullable Schema/metadata.gql Schema/expression.gql Schema/composition.gql --outDir Generated --verbose</UpdateAssemblyInfo>
+    </PropertyGroup>
+    <Exec WorkingDirectory="." Command="$(UpdateAssemblyInfo)" Timeout="60000" />
+    <ItemGroup>
+      <Compile Include="Generated/*.cs" />
+    </ItemGroup>
+  </Target>
 
 </Project>

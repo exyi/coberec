@@ -7,6 +7,7 @@ using ICSharpCode.Decompiler.IL;
 using ICSharpCode.Decompiler.Metadata;
 using ICSharpCode.Decompiler.TypeSystem;
 using ICSharpCode.Decompiler.TypeSystem.Implementation;
+using Coberec.Utils;
 
 namespace Coberec.CSharpGen.TypeSystem
 {

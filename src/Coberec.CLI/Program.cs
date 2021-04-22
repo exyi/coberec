@@ -12,6 +12,7 @@ using System.IO;
 using Newtonsoft.Json.Linq;
 using Coberec.CoreLib;
 using GLoader = Coberec.GraphqlLoader.GraphqlLoader;
+using Coberec.Utils;
 
 namespace Coberec.CLI
 {

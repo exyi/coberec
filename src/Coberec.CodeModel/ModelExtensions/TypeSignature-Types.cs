@@ -4,7 +4,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
 using Coberec.CoreLib;
-using Coberec.CSharpGen;
+using Coberec.Utils;
 using Xunit;
 
 namespace Coberec.ExprCS

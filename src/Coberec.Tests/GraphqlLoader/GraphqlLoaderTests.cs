@@ -10,6 +10,7 @@ using Coberec.Tests.TestGens;
 using Coberec.CSharpGen;
 using Xunit;
 using Seq=Microsoft.FSharp.Collections.SeqModule;
+using Coberec.Utils;
 
 namespace Coberec.Tests.GraphqlLoader
 {

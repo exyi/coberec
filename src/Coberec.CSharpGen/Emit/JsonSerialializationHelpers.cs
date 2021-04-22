@@ -7,6 +7,7 @@ using System.Reflection.Metadata;
 using Coberec.CSharpGen.TypeSystem;
 using ICSharpCode.Decompiler.TypeSystem;
 using ICSharpCode.Decompiler.TypeSystem.Implementation;
+using Coberec.Utils;
 
 namespace Coberec.CSharpGen.Emit
 {

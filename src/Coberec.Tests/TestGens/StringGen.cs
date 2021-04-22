@@ -9,7 +9,7 @@ using FsCheck;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Coberec.MetaSchema;
-using Coberec.CSharpGen;
+using Coberec.Utils;
 using IO = System.IO;
 
 namespace Coberec.Tests.TestGens

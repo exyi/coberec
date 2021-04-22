@@ -5,7 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using I=ICSharpCode.Decompiler.CSharp.Resolver;
 using TS=ICSharpCode.Decompiler.TypeSystem;
-using Coberec.CSharpGen.TypeSystem;
+using Coberec.Utils;
 using IL=ICSharpCode.Decompiler.IL;
 using Coberec.CoreLib;
 using Coberec.MetaSchema;

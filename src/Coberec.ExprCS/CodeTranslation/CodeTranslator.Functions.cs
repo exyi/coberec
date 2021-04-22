@@ -7,7 +7,7 @@ using Xunit;
 using ICSharpCode.Decompiler.TypeSystem;
 using Coberec.CSharpGen.TypeSystem;
 using System.Collections.Immutable;
-using Coberec.CSharpGen;
+using Coberec.Utils;
 
 namespace Coberec.ExprCS.CodeTranslation
 {

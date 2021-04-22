@@ -9,7 +9,7 @@ using ICSharpCode.Decompiler.TypeSystem;
 using ICSharpCode.Decompiler.TypeSystem.Implementation;
 using Coberec.CSharpGen.TypeSystem;
 using IL=ICSharpCode.Decompiler.IL;
-using Coberec.CoreLib;
+using Coberec.Utils;
 using E=Coberec.ExprCS;
 
 namespace Coberec.CSharpGen.Emit

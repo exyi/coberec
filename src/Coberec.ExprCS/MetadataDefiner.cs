@@ -7,28 +7,13 @@ using ICSharpCode.Decompiler.TypeSystem.Implementation;
 using TS=ICSharpCode.Decompiler.TypeSystem;
 using IL=ICSharpCode.Decompiler.IL;
 using Xunit;
-using Coberec.CSharpGen;
+using Coberec.Utils;
 
 namespace Coberec.ExprCS
 {
     /// <summary> Converts ExprCS metadata to ILSpy's typesystem classes. </summary>
     public static class MetadataDefiner
     {
-        public static FullTypeName GetFullTypeName(this TypeSignature t) =>
-            t.Parent.Match(
-                ns => new FullTypeName(new TopLevelTypeName(ns.ToString(), t.Name, t.TypeParameters.Length)),
-                parentType => GetFullTypeName(parentType).NestedType(t.Name, t.TypeParameters.Length)
-            );
-
-        public static TS.Accessibility GetAccessibility(Accessibility a) =>
-            a == Accessibility.AInternal ? TS.Accessibility.Internal :
-            a == Accessibility.APrivate ? TS.Accessibility.Private :
-            a == Accessibility.APrivateProtected ? TS.Accessibility.ProtectedAndInternal :
-            a == Accessibility.AProtected ? TS.Accessibility.Protected :
-            a == Accessibility.AProtectedInternal ? TS.Accessibility.ProtectedOrInternal :
-            a == Accessibility.APublic ? TS.Accessibility.Public :
-            throw new NotImplementedException();
-
         // public static TS.ITypeDefinition GetTypeDefinition(this MetadataContext c, TypeSignature t) =>
         //     (TS.ITypeDefinition)c.DeclaredEntities.GetValueOrDefault(t) ??
         //     c.Compilation.FindType(t.GetFullTypeName()).GetDefinition() ??
@@ -186,7 +171,7 @@ namespace Coberec.ExprCS
 
             var vt = new VirtualType(
                 kind,
-                GetAccessibility(sgn.Accessibility),
+                sgn.Accessibility.GetILSpyAccessibility(),
                 name ?? cx.SanitizeTypeName(sgn.GetFullTypeName(), t),
                 isStatic: !sgn.CanOverride && sgn.IsAbstract,
                 isSealed: !sgn.CanOverride,
@@ -258,7 +243,7 @@ namespace Coberec.ExprCS
 
             return new VirtualMethod(
                 declType,
-                GetAccessibility(sgn.Accessibility),
+                sgn.Accessibility.GetILSpyAccessibility(),
                 name: explicitImpl?.name ?? name,
                 _ => parameters(),
                 _ => GetTypeReference(cx, sgn.ResultType),
@@ -363,7 +348,7 @@ namespace Coberec.ExprCS
 
             var prop = new VirtualProperty(
                 declType,
-                GetAccessibility(sgn.Accessibility),
+                sgn.Accessibility.GetILSpyAccessibility(),
                 explicitImpl?.name ?? name,
                 getter,
                 setter,
@@ -387,7 +372,7 @@ namespace Coberec.ExprCS
             var special = SymbolNamer.IsSpecial(sgn);
             var result = new VirtualField(
                 declType,
-                GetAccessibility(sgn.Accessibility),
+                sgn.Accessibility.GetILSpyAccessibility(),
                 name,
                 GetTypeReference(cx, sgn.ResultType),
                 isReadOnly: sgn.IsReadonly,

@@ -4,7 +4,8 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
 using Coberec.CoreLib;
-using Coberec.CSharpGen;
+using Coberec.Utils;
+using TS=ICSharpCode.Decompiler.TypeSystem;
 using Xunit;
 
 namespace Coberec.ExprCS
@@ -20,6 +21,13 @@ namespace Coberec.ExprCS
                 if (t.IsAbstract) e.Add(ValidationErrors.Create($"Can not have abstract value type {t}").Nest("isAbstract"));
             }
         }
+
+        public TS.FullTypeName GetFullTypeName() =>
+            this.Parent.Match(
+                ns => new TS.FullTypeName(new TS.TopLevelTypeName(ns.ToString(), this.Name, this.TypeParameters.Length)),
+                parentType => parentType.GetFullTypeName().NestedType(this.Name, this.TypeParameters.Length)
+            );
+
         /// <summary> Returns total type parameter count (including those from parent types) </summary>
         public int TotalParameterCount() => this.Parent.Match(ns => 0, t => t.TotalParameterCount()) + this.TypeParameters.Length;
         /// <summary> Returns all type parameters (including those from parent types) </summary>

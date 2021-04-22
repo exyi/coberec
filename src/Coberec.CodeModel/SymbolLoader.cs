@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using Coberec.CSharpGen;
+using Coberec.Utils;
 using ICSharpCode.Decompiler.TypeSystem;
 using TS=ICSharpCode.Decompiler.TypeSystem;
 

@@ -9,6 +9,7 @@ using Coberec.MetaSchema;
 using M=Coberec.MetaSchema;
 using E=Coberec.ExprCS;
 using Coberec.ExprCS;
+using Coberec.Utils;
 using Xunit;
 
 namespace Coberec.CSharpGen.Emit

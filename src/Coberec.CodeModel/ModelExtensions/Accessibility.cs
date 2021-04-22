@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Coberec.CoreLib;
+using TS=ICSharpCode.Decompiler.TypeSystem;
 
 namespace Coberec.ExprCS
 {
@@ -38,6 +39,15 @@ namespace Coberec.ExprCS
 			// only remaining options are `internal` and `protected` and we certainly have both of them
 			return AProtectedInternal;
 		}
+
+        public TS.Accessibility GetILSpyAccessibility() =>
+            this == Accessibility.AInternal ? TS.Accessibility.Internal :
+            this == Accessibility.APrivate ? TS.Accessibility.Private :
+            this == Accessibility.APrivateProtected ? TS.Accessibility.ProtectedAndInternal :
+            this == Accessibility.AProtected ? TS.Accessibility.Protected :
+            this == Accessibility.AProtectedInternal ? TS.Accessibility.ProtectedOrInternal :
+            this == Accessibility.APublic ? TS.Accessibility.Public :
+            throw new NotImplementedException();
 
 		public FmtToken Format() =>
 			this == AInternal ? "internal" :

@@ -14,7 +14,7 @@ using Coberec.CSharpGen.Emit;
 using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.CSharp;
 using ICSharpCode.Decompiler.CSharp.OutputVisitor;
-using Coberec.CSharpGen;
+using Coberec.Utils;
 using ICSharpCode.Decompiler.CSharp.Resolver;
 using Xunit;
 using ICSharpCode.Decompiler.Documentation;

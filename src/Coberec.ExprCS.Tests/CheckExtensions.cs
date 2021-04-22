@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using CheckTestOutput;
-using Coberec.CSharpGen;
+using Coberec.Utils;
 
 namespace Coberec.ExprCS.Tests
 {

@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../Coberec.CLI/Coberec.CLI.csproj" />
+    <ProjectReference Include="../Coberec.CodeModel/Coberec.CodeModel.csproj" />
     <ProjectReference Include="..\Coberec.JsonSerialization\Coberec.JsonSerialization.csproj" />
     <ProjectReference Include="..\SampleProject\SampleProject.csproj" />
   </ItemGroup>

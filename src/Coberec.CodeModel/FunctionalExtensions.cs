@@ -4,7 +4,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
 
-namespace Coberec.CSharpGen
+namespace Coberec.Utils
 {
     public static class FunctionalExtensions
     {
