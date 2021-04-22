@@ -15,7 +15,10 @@ namespace Coberec.ExprCS
             if (kind == "class" && !(type.Signature.IsAbstract && !type.Signature.CanOverride) && !type.Members.OfType<MethodDef>().Any(m => m.Signature.IsConstructor()))
             {
                 type = type.AddMember(
-                    MethodDef.Create(MethodSignature.ImplicitConstructor(type.Signature), @this => @this.Read().Box().CallMethod(MethodSignature.Object_Constructor))
+                    MethodDef.Create(MethodSignature.ImplicitConstructor(type.Signature),
+                        // @this => @this.Read().Box().CallMethod(MethodSignature.Object_Constructor)
+                        @this => Expression.Nop
+                    )
                 );
             }
 

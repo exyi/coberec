@@ -1,15 +1,13 @@
-using Coberec.CoreLib;
 using System;
 using System.Collections.Immutable;
+using Coberec.CoreLib;
 
 namespace GeneratedProject.ModelNamespace
 {
 	/// <summary> comment for interface Ifc </summary>
 	public interface Ifc
 	{
-		string PropA {
-			get;
-		}
+		string PropA { get; }
 
 		ValidationResult<Ifc> With(string propA);
 	}
@@ -17,14 +15,10 @@ namespace GeneratedProject.ModelNamespace
 	public sealed class A : Ifc, ITokenFormatable, ITraversableObject, IEquatable<A>
 	{
 		/// <summary> comment for propA </summary>
-		public string PropA {
-			get;
-		}
+		public string PropA { get; }
 
 		/// <summary> comment for propAX </summary>
-		public string PropAX {
-			get;
-		}
+		public string PropAX { get; }
 
 		ImmutableArray<string> ITraversableObject.Properties => ImmutableArray.Create("propA", "propAX");
 
@@ -69,21 +63,7 @@ namespace GeneratedProject.ModelNamespace
 
 		public FmtToken Format()
 		{
-			return FmtToken.Concat(ImmutableArray.Create(new object[5]
-			{
-				"A {propA = ",
-				PropA,
-				", propAX = ",
-				PropAX,
-				"}"
-			}), new string[5]
-			{
-				"",
-				"propA",
-				"",
-				"propAX",
-				""
-			});
+			return FmtToken.Concat(ImmutableArray.Create(new object[5] { "A {propA = ", PropA, ", propAX = ", PropAX, "}" }), new string[5] { "", "propA", "", "propAX", "" });
 		}
 
 		object ITraversableObject.GetValue(int propIndex)
@@ -141,9 +121,7 @@ namespace GeneratedProject.ModelNamespace
 	public sealed class B : ITokenFormatable, ITraversableObject, IEquatable<B>
 	{
 		/// <summary> comment for propB </summary>
-		public string PropB {
-			get;
-		}
+		public string PropB { get; }
 
 		ImmutableArray<string> ITraversableObject.Properties => ImmutableArray.Create("propB");
 
@@ -182,12 +160,7 @@ namespace GeneratedProject.ModelNamespace
 
 		public FmtToken Format()
 		{
-			return FmtToken.Concat(ImmutableArray.Create((object)"B {propB = ", (object)PropB, (object)"}"), new string[3]
-			{
-				"",
-				"propB",
-				""
-			});
+			return FmtToken.Concat(ImmutableArray.Create((object)"B {propB = ", (object)PropB, (object)"}"), new string[3] { "", "propB", "" });
 		}
 
 		object ITraversableObject.GetValue(int propIndex)
@@ -233,9 +206,7 @@ namespace GeneratedProject.ModelNamespace
 		/// <summary> comment for type A </summary>
 		public sealed class ACase : U
 		{
-			public A Item {
-				get;
-			}
+			public A Item { get; }
 
 			public sealed override string CaseName => "A";
 
@@ -264,16 +235,14 @@ namespace GeneratedProject.ModelNamespace
 			private protected override bool EqualsCore(U b)
 			{
 				ACase aCase;
-				return (object)(aCase = (b as ACase)) != null && Item == ((ACase)b).Item;
+				return (object)(aCase = b as ACase) != null && Item == ((ACase)b).Item;
 			}
 		}
 
 		/// <summary> comment for type B </summary>
 		public sealed class BCase : U
 		{
-			public B Item {
-				get;
-			}
+			public B Item { get; }
 
 			public sealed override string CaseName => "B";
 
@@ -302,17 +271,13 @@ namespace GeneratedProject.ModelNamespace
 			private protected override bool EqualsCore(U b)
 			{
 				BCase bCase;
-				return (object)(bCase = (b as BCase)) != null && Item == ((BCase)b).Item;
+				return (object)(bCase = b as BCase) != null && Item == ((BCase)b).Item;
 			}
 		}
 
-		public abstract string CaseName {
-			get;
-		}
+		public abstract string CaseName { get; }
 
-		public abstract object RawItem {
-			get;
-		}
+		public abstract object RawItem { get; }
 
 		int ITraversableObject.PropertyCount => 1;
 

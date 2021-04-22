@@ -1,20 +1,16 @@
-using Coberec.CoreLib;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using Coberec.CoreLib;
 
 namespace GeneratedProject.ModelNamespace
 {
 	public sealed class Test123 : ITokenFormatable, ITraversableObject, IEquatable<Test123>
 	{
-		public ImmutableArray<string> Field543 {
-			get;
-		}
+		public ImmutableArray<string> Field543 { get; }
 
-		public int AbcSS {
-			get;
-		}
+		public int AbcSS { get; }
 
 		ImmutableArray<string> ITraversableObject.Properties => ImmutableArray.Create("Field543", "abcSS");
 
@@ -70,14 +66,7 @@ namespace GeneratedProject.ModelNamespace
 				", abcSS = ",
 				AbcSS,
 				"}"
-			}), new string[5]
-			{
-				"",
-				"Field543",
-				"",
-				"abcSS",
-				""
-			});
+			}), new string[5] { "", "Field543", "", "abcSS", "" });
 		}
 
 		object ITraversableObject.GetValue(int propIndex)
@@ -124,9 +113,7 @@ namespace GeneratedProject.ModelNamespace
 	{
 		public sealed class Test123Case : Union123
 		{
-			public Test123 Item {
-				get;
-			}
+			public Test123 Item { get; }
 
 			public sealed override string CaseName => "Test123";
 
@@ -155,15 +142,13 @@ namespace GeneratedProject.ModelNamespace
 			private protected override bool EqualsCore(Union123 b)
 			{
 				Test123Case test123Case;
-				return (object)(test123Case = (b as Test123Case)) != null && Item == ((Test123Case)b).Item;
+				return (object)(test123Case = b as Test123Case) != null && Item == ((Test123Case)b).Item;
 			}
 		}
 
 		public sealed class StringCase : Union123
 		{
-			public string Item {
-				get;
-			}
+			public string Item { get; }
 
 			public sealed override string CaseName => "String";
 
@@ -192,17 +177,13 @@ namespace GeneratedProject.ModelNamespace
 			private protected override bool EqualsCore(Union123 b)
 			{
 				StringCase stringCase;
-				return (object)(stringCase = (b as StringCase)) != null && Item == ((StringCase)b).Item;
+				return (object)(stringCase = b as StringCase) != null && Item == ((StringCase)b).Item;
 			}
 		}
 
-		public abstract string CaseName {
-			get;
-		}
+		public abstract string CaseName { get; }
 
-		public abstract object RawItem {
-			get;
-		}
+		public abstract object RawItem { get; }
 
 		int ITraversableObject.PropertyCount => 1;
 

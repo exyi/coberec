@@ -40,7 +40,7 @@ namespace Coberec.CSharpGen.Emit
                         return @this.AccessField(f.field)
                                .ReferenceAssign(p[index + 1 + indexOffset]);
                     })
-                    .Prepend(Expression.MethodCall(MethodSignature.Object_Constructor, ImmutableArray<Expression>.Empty, @this.Box())) // TODO!
+                    // .Prepend(Expression.MethodCall(MethodSignature.Object_Constructor, ImmutableArray<Expression>.Empty, @this.Box())) // TODO!
                     ;
                 if (validationMethod is object)
                     statements = statements.Append(

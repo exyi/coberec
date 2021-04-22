@@ -1,6 +1,6 @@
-using Coberec.CoreLib;
 using System;
 using System.Collections.Immutable;
+using Coberec.CoreLib;
 
 namespace GeneratedProject.ModelNamespace
 {
@@ -8,9 +8,7 @@ namespace GeneratedProject.ModelNamespace
 	{
 		public sealed class ConstantCase : Expression
 		{
-			public string Item {
-				get;
-			}
+			public string Item { get; }
 
 			public sealed override string CaseName => "Constant";
 
@@ -39,15 +37,13 @@ namespace GeneratedProject.ModelNamespace
 			private protected override bool EqualsCore(Expression b)
 			{
 				ConstantCase constantCase;
-				return (object)(constantCase = (b as ConstantCase)) != null && Item == ((ConstantCase)b).Item;
+				return (object)(constantCase = b as ConstantCase) != null && Item == ((ConstantCase)b).Item;
 			}
 		}
 
 		public sealed class ConstantExpressionCase : Expression
 		{
-			public string Item {
-				get;
-			}
+			public string Item { get; }
 
 			public sealed override string CaseName => "ConstantExpression";
 
@@ -76,17 +72,13 @@ namespace GeneratedProject.ModelNamespace
 			private protected override bool EqualsCore(Expression b)
 			{
 				ConstantExpressionCase constantExpressionCase;
-				return (object)(constantExpressionCase = (b as ConstantExpressionCase)) != null && Item == ((ConstantExpressionCase)b).Item;
+				return (object)(constantExpressionCase = b as ConstantExpressionCase) != null && Item == ((ConstantExpressionCase)b).Item;
 			}
 		}
 
-		public abstract string CaseName {
-			get;
-		}
+		public abstract string CaseName { get; }
 
-		public abstract object RawItem {
-			get;
-		}
+		public abstract object RawItem { get; }
 
 		int ITraversableObject.PropertyCount => 1;
 

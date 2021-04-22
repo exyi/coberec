@@ -13,6 +13,10 @@ namespace GeneratedProject.ModelNamespace
 
 		int ITraversableObject.PropertyCount => 0;
 
+		public A()
+		{
+		}
+
 		public static ValidationResult<A> Create()
 		{
 			A result = new A();
