@@ -25,6 +25,7 @@ namespace Coberec.ExprCS
 
         /// <summary> Gets a generic parameter creates for the specified member. The method creates a new parameter (with unique ID) only once, stores the answer and reuses it. </summary>
         internal static GenericParameter Get(object owner, string name) =>
+            owner == null ? new GenericParameter(Guid.NewGuid(), name) :
             typeParameterAssignment.GetOrAdd((OwnerToString(owner), name), x => new GenericParameter(Guid.NewGuid(), x.name));
 
         /// <summary> Converts <see cref="Type" /> from standard reflection. The Type must have `IsGenericParameter == true` </summary>

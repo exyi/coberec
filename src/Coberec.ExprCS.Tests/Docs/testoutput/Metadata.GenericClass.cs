@@ -13,7 +13,8 @@ namespace NS
 
 		public void CopyFrom(MyContainer<T> other)
 		{
-			Item = other.Item;
+			ref T reference = ref Item;
+			reference = other.Item;
 		}
 	}
 }

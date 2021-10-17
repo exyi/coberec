@@ -13,7 +13,7 @@ namespace Coberec.ExprCS
             type.IsGenericType && !type.IsGenericTypeDefinition ? TypeDefToString(type.GetGenericTypeDefinition()) :
             type.FullName;
         public static string TypeDefToString(TS.IType type) =>
-            type.GetDefinition().ReflectionName;
+            type.GetDefinition()?.ReflectionName ?? type.FullName;
         // public static string TypeDefToString(TypeSignature type) =>
         //     type.ReflectionName();
         // public static string TypeToString(TypeReference type) =>

@@ -62,6 +62,10 @@ namespace Coberec.ExprCS
             if (type.IsGenericType && !type.IsGenericTypeDefinition)
                 type = type.GetGenericTypeDefinition();
 
+            if (type == typeof(void)) return TypeSignature.Void;
+            if (type == typeof(byte)) return TypeSignature.Byte;
+            if (type == typeof(object)) return TypeSignature.Object;
+
             var parent = type.DeclaringType is object ? FromType(type.DeclaringType) :
                          type.Namespace is null       ? (TypeOrNamespace)NamespaceSignature.Global :
                                                         (TypeOrNamespace)NamespaceSignature.Parse(type.Namespace);

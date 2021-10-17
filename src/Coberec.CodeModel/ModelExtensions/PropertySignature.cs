@@ -18,12 +18,35 @@ namespace Coberec.ExprCS
                 e.AddErr("Getter or setter must specified", "getter");
                 e.AddErr("Setter or getter must specified", "setter");
             }
+            if (p.Setter is object)
+            {
+                if (p.Setter.Params.Length == 0)
+                    e.AddErr("Setter must have one parameter - the value being set", "setter");
+                if (p.Setter.Params.Last().Type != p.Type)
+                    e.AddErr($"Setters first parameter must be of the property type: {p.Type}", "setter", "params", "0", "type");
+                if (p.Setter.ResultType != TypeSignature.Void)
+                    e.AddErr($"Setter must return void, not {p.Setter.ResultType}", "setter", "resultType");
+                // if (p.Setter.Accessibility != p.Accessibility)
+                //     e.AddErr($"Setter must have the same accessibility as the declaring property: {p.Accessibility}", "setter", "accessibility");
+            }
             if (p.Getter is object)
             {
-                if (!p.Getter.Params.IsEmpty)
-                    e.AddErr("Getter must have no parameters", "getter", "params");
+                if (p.Getter.ResultType != p.Type)
+                    e.AddErr($"Getter must return the same type as is the property type: {p.Type}", "getter", "resultType");
+                // if (p.Getter.Accessibility != p.Accessibility)
+                //     e.AddErr($"Getter must have the same accessibility as the declaring property: {p.Accessibility}", "getter", "accessibility");
+            }
+            if (p.Getter is object && p.Setter is object)
+            {
+                if (p.Getter.Params.Length != p.Setter.Params.Length - 1)
+                {
+                    e.AddErr("Indexer setter and getter must have the same number of parameters", "setter", "params", "length");
+                }
+                // TODO: param types
             }
         }
+
+        public bool IsIndexer() => this.Getter != null ? Getter.Params.Length > 0 : Setter.Params.Length > 1;
 
         /// <summary> Signature of <see cref="Nullable{T}.HasValue" /> </summary>
         public static readonly PropertySignature Nullable_HasValue =
