@@ -33,7 +33,7 @@ namespace Coberec.ExprCS
             type is TS.ByReferenceType refType ? TypeToString(refType.ElementType) + "&" :
             type is TS.PointerType ptrType ? TypeToString(ptrType.ElementType) + "*" :
             type is TS.ArrayType arrType ? TypeToString(arrType.ElementType) + $"[{new string(',', arrType.Dimensions - 1)}]" :
-            type is TS.ParameterizedType paramType ? TypeDefToString(paramType.GenericType.GetDefinition()) +
+            type is TS.ParameterizedType paramType ? TypeDefToString(paramType.GenericType) +
                                                      "<" + string.Join(",", paramType.TypeArguments.Select(TypeToString)) + ">" :
             type is TS.ITypeParameter typeParam ? "!" + typeParam.Name :
             type is TS.TupleType tupleType ? TypeToString(tupleType.UnderlyingType) :
